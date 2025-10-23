@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from 'react-bootstrap';
+import { Button, Card } from 'react-bootstrap';
 
 const Settings: React.FC = () => {
 
@@ -25,7 +25,8 @@ const Settings: React.FC = () => {
           for (const key in data) {
             localStorage.setItem(key, data[key]);
           }
-          alert('Data restored successfully!');
+          alert('Data restored successfully! Reloading page.');
+          window.location.reload();
         } catch (error) {
           alert('Error restoring data. Please select a valid backup file.');
         }
@@ -34,19 +35,34 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleReset = () => {
+    if (window.confirm('Are you sure you want to reset your session? All data will be lost.')) {
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
+
   return (
     <div>
       <h1>Settings</h1>
-      <p>This is where you will configure the application settings.</p>
       
-      <div className="mt-4">
-        <h2>Backup and Restore</h2>
-        <Button variant="primary" onClick={handleBackup}>Backup Data</Button>
-        <div className="mt-2">
-          <label htmlFor="restore-input" className="btn btn-secondary">Restore Data</label>
+      <Card className="mt-4">
+        <Card.Header>Session</Card.Header>
+        <Card.Body>
+          <p>Backup your current session to a file, or restore from a previous backup.</p>
+          <Button variant="primary" onClick={handleBackup}>Backup Data</Button>
+          <label htmlFor="restore-input" className="btn btn-secondary ml-2">Restore Data</label>
           <input id="restore-input" type="file" accept=".json" onChange={handleRestore} style={{ display: 'none' }} />
-        </div>
-      </div>
+        </Card.Body>
+      </Card>
+
+      <Card className="mt-4">
+        <Card.Header>Danger Zone</Card.Header>
+        <Card.Body>
+          <p>Reset the application to a blank slate. This will clear all sources, translations, and memories.</p>
+          <Button variant="danger" onClick={handleReset}>Reset Session</Button>
+        </Card.Body>
+      </Card>
     </div>
   );
 }
