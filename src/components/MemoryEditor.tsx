@@ -110,7 +110,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ source, allSources }) => {
 
   return (
     <div>
-      <h1>Memory Editing: {source.title}</h1>
+      <h1>{source.title}</h1>
       
       <Card className="mt-4">
         <Card.Body>
