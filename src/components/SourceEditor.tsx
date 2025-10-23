@@ -17,6 +17,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
   const [originalSegmentationRule, setOriginalSegmentationRule] = useState('\n');
   const [showPreview, setShowPreview] = useState(false);
   const [stats, setStats] = useState<Record<string, number | string>>({});
+  const [previewContent, setPreviewContent] = useState('');
 
   const countWords = (text: string) => {
     return text.split(/\s+/).filter(word => word !== '').length;
@@ -28,17 +29,22 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
       setContent(source.content);
       setOriginalTitle(source.title);
       setOriginalContent(source.content);
-      setSegmentationRule(source.segmentationRule || '\n');
-      setOriginalSegmentationRule(source.segmentationRule || '\n');
+      const rule = source.segmentationRule || '\n';
+      setSegmentationRule(rule);
+      setOriginalSegmentationRule(rule);
 
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const translations = storedTranslations ? JSON.parse(storedTranslations) : {};
+      
+      const wrappedRule = `(${rule})`;
+      const parts = source.content.split(new RegExp(wrappedRule));
+      const segments = parts.filter((_, i) => i % 2 === 0);
+      const delimiters = parts.filter((_, i) => i % 2 !== 0);
 
-      const segments = source.content.split(new RegExp(source.segmentationRule || '\n')).filter(segment => segment.trim() !== '');
       const sourceWordCount = countWords(source.content);
       const translatedSegments = Object.keys(translations).filter(key => key !== '__title__');
       const translatedWordCount = translatedSegments.reduce((acc, key) => acc + countWords(translations[key]), 0);
-      const numSegments = segments.length;
+      const numSegments = segments.filter(seg => seg.trim() !== '').length;
       const avgSourceWords = numSegments > 0 ? (sourceWordCount / numSegments).toFixed(2) : 0;
       const numTranslatedSegments = translatedSegments.length;
       const avgTranslatedWords = numTranslatedSegments > 0 ? (translatedWordCount / numTranslatedSegments).toFixed(2) : 0;
@@ -51,21 +57,34 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
         numTranslatedSegments,
         avgTranslatedWords,
       });
+
+      // Reconstruct translated content for preview
+      let reconstructed = '';
+      segments.forEach((seg, i) => {
+        reconstructed += translations[seg.trim()] || seg;
+        if (delimiters[i]) {
+          reconstructed += delimiters[i];
+        }
+      });
+      setPreviewContent(reconstructed);
     }
   }, [source]);
 
   const handleContentSave = () => {
     if (source) {
-      const oldSegments = source.content.split(new RegExp(source.segmentationRule || '\n')).filter(segment => segment.trim() !== '') || [];
-      const newSegments = content.split(new RegExp(segmentationRule)).filter(segment => segment.trim() !== '');
+      const wrappedRule = `(${segmentationRule})`;
+      const parts = content.split(new RegExp(wrappedRule));
+      const newSegments = parts.filter((_, i) => i % 2 === 0).map(s => s.trim()).filter(Boolean);
+      const newDelimiters = parts.filter((_, i) => i % 2 !== 0);
+      localStorage.setItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
 
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const oldTranslations = storedTranslations ? JSON.parse(storedTranslations) : {};
       const newTranslations: Record<string, string> = {};
 
-      oldSegments.forEach(oldSegment => {
-        if (newSegments.includes(oldSegment) && oldTranslations[oldSegment]) {
-          newTranslations[oldSegment] = oldTranslations[oldSegment];
+      newSegments.forEach(newSegment => {
+        if (oldTranslations[newSegment]) {
+          newTranslations[newSegment] = oldTranslations[newSegment];
         }
       });
 
@@ -84,16 +103,19 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
 
   const handleSegmentationSave = () => {
     if (source) {
-      const oldSegments = source.content.split(new RegExp(source.segmentationRule || '\n')).filter(segment => segment.trim() !== '') || [];
-      const newSegments = content.split(new RegExp(segmentationRule)).filter(segment => segment.trim() !== '');
+      const wrappedRule = `(${segmentationRule})`;
+      const parts = content.split(new RegExp(wrappedRule));
+      const newSegments = parts.filter((_, i) => i % 2 === 0).map(s => s.trim()).filter(Boolean);
+      const newDelimiters = parts.filter((_, i) => i % 2 !== 0);
+      localStorage.setItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
 
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const oldTranslations = storedTranslations ? JSON.parse(storedTranslations) : {};
       const newTranslations: Record<string, string> = {};
 
-      oldSegments.forEach(oldSegment => {
-        if (newSegments.includes(oldSegment) && oldTranslations[oldSegment]) {
-          newTranslations[oldSegment] = oldTranslations[oldSegment];
+      newSegments.forEach(newSegment => {
+        if (oldTranslations[newSegment]) {
+          newTranslations[newSegment] = oldTranslations[newSegment];
         }
       });
 
@@ -105,15 +127,21 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
   };
 
   const handleExport = () => {
-    if (source) {
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${title}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+    const blob = new Blob([previewContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title}_translated.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(previewContent).then(() => {
+      alert('Copied to clipboard!');
+    }, () => {
+      alert('Failed to copy!');
+    });
   };
 
   const isContentChanged = title !== originalTitle || content !== originalContent;
@@ -181,7 +209,16 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
 
       <div className="mt-4">
         <h2>Export</h2>
-        <Button variant="secondary" onClick={handleExport}>Export Translated Source</Button>
+        <Card>
+          <Card.Header>Preview</Card.Header>
+          <Card.Body>
+            <div dangerouslySetInnerHTML={{ __html: previewContent.replace(/\n/g, '<br />') }} />
+          </Card.Body>
+          <Card.Footer>
+            <Button variant="secondary" onClick={handleExport}>Export to TXT</Button>
+            <Button variant="secondary" onClick={handleCopy} className="ml-2">Copy</Button>
+          </Card.Footer>
+        </Card>
       </div>
       <SegmentationPreviewModal 
         show={showPreview} 

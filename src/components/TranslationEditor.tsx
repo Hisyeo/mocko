@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Form, ListGroup, Button, Alert } from 'react-bootstrap';
+import { Form, ListGroup, Button, Alert, Badge } from 'react-bootstrap';
 import { InputStream, CommonTokenStream } from 'antlr4';
 import HisyeoLexer from '../vendor/grammar/HisyeoLexer.js';
 import HisyeoParser from '../vendor/grammar/HisyeoParser.js';
@@ -15,6 +15,7 @@ interface TranslationEditorProps {
 
 const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
   const [segments, setSegments] = useState<string[]>([]);
+  const [delimiters, setDelimiters] = useState<string[]>([]);
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [editingSegment, setEditingSegment] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
@@ -30,14 +31,16 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
   useEffect(() => {
     if (source) {
       const storedMemories = localStorage.getItem(`memories_${source.id}`);
-      if (storedMemories) {
-        setMemories(JSON.parse(storedMemories));
-      }
+      setMemories(storedMemories ? JSON.parse(storedMemories) : {});
 
-      const segmentationRule = source.segmentationRule || '\n';
-      const sourceSegments = source.content.split(new RegExp(segmentationRule)).filter(segment => segment.trim() !== '');
-      setSegments(sourceSegments);
+      const rule = source.segmentationRule || '\n';
+      const wrappedRule = `(${rule})`;
+      const parts = source.content.split(new RegExp(wrappedRule));
+      setSegments(parts.filter((_, i) => i % 2 === 0));
       
+      const storedDelimiters = localStorage.getItem(`delimiters_${source.id}`);
+      setDelimiters(storedDelimiters ? JSON.parse(storedDelimiters) : parts.filter((_, i) => i % 2 !== 0));
+
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       if (storedTranslations) {
         const parsedTranslations = JSON.parse(storedTranslations);
@@ -80,15 +83,15 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
   };
 
   const handleEdit = (segment: string) => {
-    setEditingSegment(segment);
-    setCurrentTranslation(translations[segment] || '');
+    setEditingSegment(segment.trim());
+    setCurrentTranslation(translations[segment.trim()] || '');
     setValidationErrors([]);
   };
 
   const handleSave = (segment: string) => {
     const errors = validateSegment(currentTranslation);
     if (errors.length === 0) {
-      const updatedTranslations = { ...translations, [segment]: currentTranslation };
+      const updatedTranslations = { ...translations, [segment.trim()]: currentTranslation };
       setTranslations(updatedTranslations);
       if (source) {
         localStorage.setItem(`translations_${source.id}`, JSON.stringify(updatedTranslations));
@@ -184,41 +187,47 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
       </Form.Group>
       
       <ListGroup className="mt-4">
-        {segments.map((segment, index) => (
-          <ListGroup.Item key={index}>
-            {editingSegment === segment ? (
-              <div>
-                <UnderlinedText text={segment} memories={memories} onInsert={handleInsertMemory} />
-                {validationErrors.length > 0 && (
-                  <Alert variant="danger">
-                    {validationErrors.map((error, i) => (
-                      <div key={i}>{`Line ${error.line}, Column ${error.column}: ${error.msg}`}</div>
-                    ))}
-                  </Alert>
-                )}
-                <Form.Control 
-                  as="textarea" 
-                  rows={2} 
-                  placeholder="Enter translation"
-                  value={currentTranslation} 
-                  onChange={(e) => setCurrentTranslation(e.target.value)} 
-                  className="mt-2"
-                />
-                <Button variant="primary" size="sm" className="mt-2" onClick={() => handleSave(segment)}>Save</Button>
-                <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
-              </div>
-            ) : (
-              <div className="d-flex justify-content-between align-items-center">
-                {translations[segment] ? (
-                  <p>{translations[segment]}</p>
-                ) : (
-                  <p>{segment}</p>
-                )}
-                <Button variant="link" onClick={() => handleEdit(segment)}>✏️</Button>
-              </div>
-            )}
-          </ListGroup.Item>
-        ))}
+        {segments.map((segment, index) => {
+          const trimmedSegment = segment.trim();
+          if (!trimmedSegment) return null;
+
+          return (
+            <ListGroup.Item key={index} className="d-flex align-items-center">
+              {editingSegment === trimmedSegment ? (
+                <div className="w-100">
+                  <UnderlinedText text={segment} memories={memories} onInsert={handleInsertMemory} />
+                  {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiters[index]}</Badge>}
+                  {validationErrors.length > 0 && (
+                    <Alert variant="danger">
+                      {validationErrors.map((error, i) => (
+                        <div key={i}>{`Line ${error.line}, Column ${error.column}: ${error.msg}`}</div>
+                      ))}
+                    </Alert>
+                  )}
+                  <Form.Control 
+                    as="textarea" 
+                    rows={2} 
+                    placeholder="Enter translation"
+                    value={currentTranslation} 
+                    onChange={(e) => setCurrentTranslation(e.target.value)} 
+                    className="mt-2"
+                  />
+                  <Button variant="primary" size="sm" className="mt-2" onClick={() => handleSave(trimmedSegment)}>Save</Button>
+                  <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
+                </div>
+              ) : (
+                <div className="d-flex justify-content-between align-items-center w-100">
+                  <p className="mb-0">
+                    {translations[trimmedSegment] || segment}
+                    {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiters[index]}</Badge>}
+                  </p>
+                  <Button variant="link" onClick={() => handleEdit(trimmedSegment)}>✏️</Button>
+                </div>
+              )}
+              
+            </ListGroup.Item>
+          )
+        })}
       </ListGroup>
     </div>
   );

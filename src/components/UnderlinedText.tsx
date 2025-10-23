@@ -28,7 +28,7 @@ const UnderlinedText: React.FC<UnderlinedTextProps> = ({ text, memories, onInser
     }
   }, [text, memories, onInsert]);
 
-  return <div ref={textRef}>{text}</div>;
+  return <span ref={textRef}>{text}</span>;
 };
 
 export default UnderlinedText;
