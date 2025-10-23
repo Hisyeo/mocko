@@ -7,7 +7,7 @@ import MemoryEditor from './components/MemoryEditor';
 import Settings from './components/Settings';
 import AddSourceModal from './components/AddSourceModal';
 
-import './vendor/bootstrap/journal/bootstrap.css'
+import './vendor/bootstrap/brite/bootstrap.css'
 
 export interface Source {
   id: string;
@@ -60,7 +60,7 @@ const App: React.FC = () => {
   return (
     <div className={`d-flex ${sidebarOpen ? '' : 'toggled'}`} id="wrapper">
       <div className="bg-light border-right" id="sidebar-wrapper">
-        <div className="sidebar-heading">yôn Mocko</div>
+        <div className="sidebar-heading">Your Sources</div>
         <Nav className="flex-column" navbarScroll>
           {sources.map(source => (
             <Nav.Link key={source.id} onClick={() => handleSelectSource(source)} className={selectedSource?.id === source.id ? 'bg-info text-bg-info' : ''}>{source.title}</Nav.Link>
@@ -72,25 +72,44 @@ const App: React.FC = () => {
       <div id="page-content-wrapper">
         <div className="page-content">
           <Container fluid>
-            <Row className="align-items-center header-row">
-              <Col xs="auto">
-                <Button variant="primary" onClick={toggleSidebar}>☰</Button>
-              </Col>
-              <Col>
-                <Tabs activeKey={mode} onSelect={(k) => setMode(k as Mode)} id="mode-tabs">
-                  <Tab eventKey="source" title="Source Editing" />
-                  <Tab eventKey="translation" title="Translation Editing" />
-                  <Tab eventKey="memory" title="Memory Editing" />
-                  <Tab eventKey="settings" title="Settings" />
-                </Tabs>
-              </Col>
-            </Row>
-            <div className="mt-3">
-              {mode === 'source' && <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} />}
-              {mode === 'translation' && <TranslationEditor source={selectedSource} />}
-              {mode === 'memory' && <MemoryEditor source={selectedSource} allSources={sources} />}
-              {mode === 'settings' && <Settings />}
-            </div>
+            <Tab.Container defaultActiveKey='source'>
+              <Row className="align-items-center header-row">
+                <Nav variant='pills' className='flex-row'>
+                  <Nav.Item>
+
+                  <Nav.Link onClick={toggleSidebar}>☰</Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey='source'>Source</Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey='translation'>Translation</Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey='memory'>Memories</Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey='settings'>Settings</Nav.Link>
+                  </Nav.Item>
+                </Nav>
+              </Row>
+              <Row>
+                <Tab.Content>
+                  <Tab.Pane eventKey="source">
+                    <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} />
+                  </Tab.Pane>
+                  <Tab.Pane eventKey="translation">
+                    <TranslationEditor source={selectedSource} />
+                  </Tab.Pane>
+                  <Tab.Pane eventKey="memory">
+                    <MemoryEditor source={selectedSource} allSources={sources} />
+                  </Tab.Pane>
+                  <Tab.Pane eventKey="settings">
+                    <Settings />
+                  </Tab.Pane>
+                </Tab.Content>
+              </Row>
+            </Tab.Container>
           </Container>
         </div>
         <footer className='mt-auto'>
