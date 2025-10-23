@@ -102,6 +102,30 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
     }
   };
 
+  const handleSaveAndEditNext = (currentSegmentTrimmed: string) => {
+    const errors = validateSegment(currentTranslation);
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    const updatedTranslations = { ...translations, [currentSegmentTrimmed]: currentTranslation };
+    setTranslations(updatedTranslations);
+    if (source) {
+      localStorage.setItem(`translations_${source.id}`, JSON.stringify(updatedTranslations));
+    }
+
+    const validSegments = segments.map(s => s.trim()).filter(Boolean);
+    const currentIndex = validSegments.indexOf(currentSegmentTrimmed);
+
+    if (currentIndex < validSegments.length - 1) {
+      const nextSegmentToEdit = validSegments[currentIndex + 1];
+      handleEdit(nextSegmentToEdit);
+    } else {
+      setEditingSegment(null);
+    }
+  };
+
   const handleCancel = () => {
     setEditingSegment(null);
   };
@@ -162,6 +186,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
     return <div>Please select a source from the sidebar to start translating.</div>;
   }
 
+  const validSegments = segments.map(s => s.trim()).filter(Boolean);
+
   return (
     <div ref={editorRef} onMouseUp={handleMouseUp}>
       {tooltip && (
@@ -191,12 +217,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
           const trimmedSegment = segment.trim();
           if (!trimmedSegment) return null;
 
+          const isLastSegment = validSegments.indexOf(trimmedSegment) === validSegments.length - 1;
+
           return (
             <ListGroup.Item key={index} className="d-flex align-items-center">
               {editingSegment === trimmedSegment ? (
                 <div className="w-100">
                   <UnderlinedText text={segment} memories={memories} onInsert={handleInsertMemory} />
-                  {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiters[index]}</Badge>}
+                  {delimiters[index] && <Badge title='Segment Delimiter' bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiters[index]}</Badge>}
                   {validationErrors.length > 0 && (
                     <Alert variant="danger">
                       {validationErrors.map((error, i) => (
@@ -212,7 +240,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
                     onChange={(e) => setCurrentTranslation(e.target.value)} 
                     className="mt-2"
                   />
-                  <Button variant="primary" size="sm" className="mt-2" onClick={() => handleSave(trimmedSegment)}>Save</Button>
+                  <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(trimmedSegment)} disabled={isLastSegment}>Save & Edit Next</Button>
+                  <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(trimmedSegment)}>Save</Button>
                   <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
                 </div>
               ) : (

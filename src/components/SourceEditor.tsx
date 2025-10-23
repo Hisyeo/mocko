@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Form, Alert, Card } from 'react-bootstrap';
+import { Button, Form, Alert, Card, Collapse, Stack } from 'react-bootstrap';
 import SegmentationPreviewModal from './SegmentationPreviewModal';
 import { Source } from '../App';
 
@@ -15,9 +15,11 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
   const [originalContent, setOriginalContent] = useState('');
   const [segmentationRule, setSegmentationRule] = useState('\n');
   const [originalSegmentationRule, setOriginalSegmentationRule] = useState('\n');
-  const [showPreview, setShowPreview] = useState(false);
+  const [showSegPreview, setShowSegPreview] = useState(false);
   const [stats, setStats] = useState<Record<string, number | string>>({});
-  const [previewContent, setPreviewContent] = useState('');
+  const [renderedContent, setRenderedContent] = useState('');
+  const [showRenPreview, setShowRenPreview] = useState(false);
+  const [translatedTitle, setTranslatedTitle] = useState('');
 
   const countWords = (text: string) => {
     return text.split(/\s+/).filter(word => word !== '').length;
@@ -35,6 +37,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
 
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const translations = storedTranslations ? JSON.parse(storedTranslations) : {};
+      setTranslatedTitle(translations['__title__'] || '');
       
       const wrappedRule = `(${rule})`;
       const parts = source.content.split(new RegExp(wrappedRule));
@@ -66,7 +69,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
           reconstructed += delimiters[i];
         }
       });
-      setPreviewContent(reconstructed);
+      setRenderedContent(reconstructed);
     }
   }, [source]);
 
@@ -122,12 +125,12 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
       localStorage.setItem(`translations_${source.id}`, JSON.stringify(newTranslations));
       onSourceUpdate({ ...source, segmentationRule });
       setOriginalSegmentationRule(segmentationRule);
-      setShowPreview(false);
+      setShowSegPreview(false);
     }
   };
 
   const handleExport = () => {
-    const blob = new Blob([previewContent], { type: 'text/plain' });
+    const blob = new Blob([renderedContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -137,7 +140,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(previewContent).then(() => {
+    navigator.clipboard.writeText(renderedContent).then(() => {
       alert('Copied to clipboard!');
     }, () => {
       alert('Failed to copy!');
@@ -147,7 +150,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
   const isContentChanged = title !== originalTitle || content !== originalContent;
 
   if (!source) {
-    return <div>Please select a source from the sidebar to edit.</div>;
+    return <div><p>Please select a source from the sidebar to edit.</p></div>;
   }
 
   return (
@@ -190,7 +193,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
             onChange={(e) => setSegmentationRule(e.target.value)} 
           />
         </Form.Group>
-        <Button variant="info" onClick={() => setShowPreview(true)} className="mt-2">Preview</Button>
+        <Button variant="info" onClick={() => setShowSegPreview(true)} className="mt-2">Preview</Button>
       </div>
 
       <div className="mt-4">
@@ -209,20 +212,24 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
 
       <div className="mt-4">
         <h2>Export</h2>
-        <Card>
-          <Card.Header>Preview</Card.Header>
-          <Card.Body>
-            <div dangerouslySetInnerHTML={{ __html: previewContent.replace(/\n/g, '<br />') }} />
-          </Card.Body>
-          <Card.Footer>
-            <Button variant="secondary" onClick={handleExport}>Export to TXT</Button>
-            <Button variant="secondary" onClick={handleCopy} className="ml-2">Copy</Button>
-          </Card.Footer>
-        </Card>
+        <Stack direction='horizontal' gap={3}>
+          <Button variant="primary" onClick={handleExport}>Export to TXT</Button>
+          <Button variant="secondary" onClick={handleCopy}>Copy</Button>
+          <Button variant="info" onClick={() => setShowRenPreview(!showRenPreview)} className="ms-auto">Preview</Button>
+        </Stack>
+        <br/>
+        <Collapse in={showRenPreview}>
+          <Card>
+            <Card.Title>{translatedTitle || title}</Card.Title>
+            <Card.Body>
+                  <div dangerouslySetInnerHTML={{ __html: renderedContent.replace(/\n/g, '<br />') }} />
+            </Card.Body>
+          </Card>
+        </Collapse>
       </div>
       <SegmentationPreviewModal 
-        show={showPreview} 
-        onHide={() => setShowPreview(false)} 
+        show={showSegPreview} 
+        onHide={() => setShowSegPreview(false)} 
         content={content} 
         rule={segmentationRule} 
         originalRule={originalSegmentationRule}

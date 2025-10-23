@@ -7,6 +7,8 @@ import MemoryEditor from './components/MemoryEditor';
 import Settings from './components/Settings';
 import AddSourceModal from './components/AddSourceModal';
 
+import './vendor/bootstrap/journal/bootstrap.css'
+
 export interface Source {
   id: string;
   title: string;
@@ -59,37 +61,45 @@ const App: React.FC = () => {
     <div className={`d-flex ${sidebarOpen ? '' : 'toggled'}`} id="wrapper">
       <div className="bg-light border-right" id="sidebar-wrapper">
         <div className="sidebar-heading">yôn Mocko</div>
-        <Nav className="flex-column">
+        <Nav className="flex-column" navbarScroll>
           {sources.map(source => (
-            <Nav.Link key={source.id} onClick={() => handleSelectSource(source)}>{source.title}</Nav.Link>
+            <Nav.Link key={source.id} onClick={() => handleSelectSource(source)} className={selectedSource?.id === source.id ? 'bg-info text-bg-info' : ''}>{source.title}</Nav.Link>
           ))}
           <Nav.Link onClick={() => setShowAddSourceModal(true)}>+ Add Source</Nav.Link>
         </Nav>
       </div>
 
       <div id="page-content-wrapper">
-        <Container fluid>
-          <Row className="align-items-center header-row">
-            <Col xs="auto">
-              <Button variant="primary" onClick={toggleSidebar}>☰</Button>
-            </Col>
-            <Col>
-              <Tabs activeKey={mode} onSelect={(k) => setMode(k as Mode)} id="mode-tabs">
-                <Tab eventKey="source" title="Source Editing" />
-                <Tab eventKey="translation" title="Translation Editing" />
-                <Tab eventKey="memory" title="Memory Editing" />
-                <Tab eventKey="settings" title="Settings" />
-              </Tabs>
-            </Col>
-          </Row>
-          <div className="mt-3">
-            {mode === 'source' && <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} />}
-            {mode === 'translation' && <TranslationEditor source={selectedSource} />}
-            {mode === 'memory' && <MemoryEditor source={selectedSource} allSources={sources} />}
-            {mode === 'settings' && <Settings />}
-          </div>
-        </Container>
-
+        <div className="page-content">
+          <Container fluid>
+            <Row className="align-items-center header-row">
+              <Col xs="auto">
+                <Button variant="primary" onClick={toggleSidebar}>☰</Button>
+              </Col>
+              <Col>
+                <Tabs activeKey={mode} onSelect={(k) => setMode(k as Mode)} id="mode-tabs">
+                  <Tab eventKey="source" title="Source Editing" />
+                  <Tab eventKey="translation" title="Translation Editing" />
+                  <Tab eventKey="memory" title="Memory Editing" />
+                  <Tab eventKey="settings" title="Settings" />
+                </Tabs>
+              </Col>
+            </Row>
+            <div className="mt-3">
+              {mode === 'source' && <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} />}
+              {mode === 'translation' && <TranslationEditor source={selectedSource} />}
+              {mode === 'memory' && <MemoryEditor source={selectedSource} allSources={sources} />}
+              {mode === 'settings' && <Settings />}
+            </div>
+          </Container>
+        </div>
+        <footer className='mt-auto'>
+            <div className='text-center p-4' style={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}>
+              © 2025 Copyright: <a className='text-reset fw-bold' href='https://hisyeo.github.io/'>
+                Hîsyêô Institute
+              </a>
+            </div>
+        </footer>
       </div>
       <AddSourceModal 
         show={showAddSourceModal} 
