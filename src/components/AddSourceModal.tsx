@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Form, Modal } from 'react-bootstrap';
+import { Button, Form, Modal, Stack } from 'react-bootstrap';
 
 interface AddSourceModalProps {
   show: boolean;
@@ -66,10 +66,12 @@ const AddSourceModal: React.FC<AddSourceModalProps> = ({ show, onHide, onAddSour
         </Form>
       </Modal.Body>
       <Modal.Footer>
-        <label htmlFor="import-mocko" className="btn btn-info">Import MOCKO file</label>
-        <input id="import-mocko" type="file" accept=".mocko" onChange={handleFileChange} style={{ display: 'none' }} />
-        <Button variant="secondary" onClick={onHide}>Close</Button>
-        <Button variant="primary" onClick={handleAddSource}>Add Source</Button>
+        <Stack direction='horizontal' gap={3}>
+          <label htmlFor="import-mocko" className="btn btn-info">Import MOCKO file</label>
+          <input id="import-mocko" type="file" accept=".mocko" onChange={handleFileChange}  style={{ display: 'none' }} />
+          <Button variant="secondary" onClick={onHide}>Close</Button>
+          <Button variant="primary" onClick={handleAddSource}>Add Source</Button>
+        </Stack>
       </Modal.Footer>
     </Modal>
   );
