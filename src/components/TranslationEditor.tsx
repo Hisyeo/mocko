@@ -211,7 +211,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
           onBlur={handleTitleSave}
         />
       </Form.Group>
-      
+      <br />
+      <Alert variant='light'>Delimiters are shown in a badge to the right of each segment.</Alert>
       <ListGroup className="mt-4">
         {segments.map((segment, index) => {
           const trimmedSegment = segment.trim();
