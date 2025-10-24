@@ -1,7 +1,9 @@
 import React from 'react';
-import { Button, Card } from 'react-bootstrap';
+import { Button, Card, Form } from 'react-bootstrap';
+import { useTheme } from '../ThemeContext';
 
 const Settings: React.FC = () => {
+  const { theme, setTheme } = useTheme();
 
   const handleBackup = () => {
     const data = JSON.stringify(localStorage);
@@ -42,9 +44,26 @@ const Settings: React.FC = () => {
     }
   };
 
+  const themes = ['brite', 'cerulean', 'cosmo', 'cyborg', 'darkly', 'flatly', 'journal', 'litera', 'lumen', 'lux', 'materia', 'minty', 'morph', 'pulse', 'quartz', 'sandstone', 'simplex', 'sketchy', 'slate', 'solar', 'spacelab',
+'superhero', 'united', 'vapor', 'yeti', 'zephyr'];
+
   return (
     <div>
       <h1>Settings</h1>
+
+      <Card className="mt-4">
+        <Card.Header>Theme</Card.Header>
+        <Card.Body>
+          <Form.Group controlId="themeSelect">
+            <Form.Label>Select a theme:</Form.Label>
+            <Form.Control as="select" value={theme} onChange={(e) => setTheme(e.target.value)}>
+              {themes.map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+        </Card.Body>
+      </Card>
       
       <Card className="mt-4">
         <Card.Header>Session</Card.Header>

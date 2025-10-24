@@ -7,8 +7,7 @@ import MemoryEditor from './components/MemoryEditor';
 import Settings from './components/Settings';
 import AddSourceModal from './components/AddSourceModal';
 import SizeBlocker from './components/SizeBlocker';
-
-import './vendor/bootstrap/brite/bootstrap.css'
+import { useTheme } from './ThemeContext';
 
 export interface Source {
   id: string;
@@ -26,6 +25,14 @@ const App: React.FC = () => {
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
   const [showAddSourceModal, setShowAddSourceModal] = useState(false);
   const [isScreenTooSmall, setIsScreenTooSmall] = useState(window.innerWidth < 800);
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    const themeLink = document.getElementById('theme-link') as HTMLLinkElement;
+    if (themeLink) {
+      themeLink.href = `/bootstrap/${theme}/bootstrap.min.css`;
+    }
+  }, [theme]);
 
   useEffect(() => {
     const handleResize = () => {
