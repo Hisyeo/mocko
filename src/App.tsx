@@ -68,6 +68,19 @@ const App: React.FC = () => {
     localStorage.setItem('sources', JSON.stringify(updatedSources));
   };
 
+  const handleImportMocko = (data: any) => {
+    const { source, translations, memories, delimiters } = data;
+    const newId = new Date().toISOString();
+    const newSource = { ...source, id: newId };
+
+    const updatedSources = [...sources, newSource];
+    setSources(updatedSources);
+    localStorage.setItem('sources', JSON.stringify(updatedSources));
+    localStorage.setItem(`translations_${newId}`, JSON.stringify(translations));
+    localStorage.setItem(`memories_${newId}`, JSON.stringify(memories));
+    localStorage.setItem(`delimiters_${newId}`, JSON.stringify(delimiters));
+  };
+
   if (isScreenTooSmall) {
     return <SizeBlocker />;
   }
@@ -139,6 +152,7 @@ const App: React.FC = () => {
         show={showAddSourceModal} 
         onHide={() => setShowAddSourceModal(false)} 
         onAddSource={handleAddSource} 
+        onImport={handleImportMocko}
       />
     </div>
   );

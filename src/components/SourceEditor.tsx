@@ -139,6 +139,25 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
     URL.revokeObjectURL(url);
   };
 
+  const handleExportMocko = () => {
+    if (!source) return;
+
+    const mockoData = {
+      source: source,
+      translations: JSON.parse(localStorage.getItem(`translations_${source.id}`) || '{}'),
+      memories: JSON.parse(localStorage.getItem(`memories_${source.id}`) || '{}'),
+      delimiters: JSON.parse(localStorage.getItem(`delimiters_${source.id}`) || '[]'),
+    };
+
+    const blob = new Blob([JSON.stringify(mockoData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${source.title}.mocko`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleCopy = () => {
     navigator.clipboard.writeText(renderedContent).then(() => {
       alert('Copied to clipboard!');
@@ -214,6 +233,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
         <h2>Export</h2>
         <Stack direction='horizontal' gap={3}>
           <Button variant="primary" onClick={handleExport}>Export to TXT</Button>
+          <Button variant="primary" onClick={handleExportMocko}>Export to MOCKO</Button>
           <Button variant="secondary" onClick={handleCopy}>Copy</Button>
           <Button variant="info" onClick={() => setShowRenPreview(!showRenPreview)} className="ms-auto">Preview</Button>
         </Stack>

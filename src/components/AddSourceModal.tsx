@@ -5,9 +5,10 @@ interface AddSourceModalProps {
   show: boolean;
   onHide: () => void;
   onAddSource: (title: string, content: string) => void;
+  onImport: (data: any) => void;
 }
 
-const AddSourceModal: React.FC<AddSourceModalProps> = ({ show, onHide, onAddSource }) => {
+const AddSourceModal: React.FC<AddSourceModalProps> = ({ show, onHide, onAddSource, onImport }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
@@ -16,6 +17,24 @@ const AddSourceModal: React.FC<AddSourceModalProps> = ({ show, onHide, onAddSour
     setTitle('');
     setContent('');
     onHide();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const fileContent = e.target?.result as string;
+        try {
+          const data = JSON.parse(fileContent);
+          onImport(data);
+          onHide();
+        } catch (error) {
+          alert('Error parsing MOCKO file.');
+        }
+      };
+      reader.readAsText(file);
+    }
   };
 
   return (
@@ -47,6 +66,8 @@ const AddSourceModal: React.FC<AddSourceModalProps> = ({ show, onHide, onAddSour
         </Form>
       </Modal.Body>
       <Modal.Footer>
+        <label htmlFor="import-mocko" className="btn btn-info">Import MOCKO file</label>
+        <input id="import-mocko" type="file" accept=".mocko" onChange={handleFileChange} style={{ display: 'none' }} />
         <Button variant="secondary" onClick={onHide}>Close</Button>
         <Button variant="primary" onClick={handleAddSource}>Add Source</Button>
       </Modal.Footer>
