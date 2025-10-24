@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 interface ThemeContextType {
   theme: string;
@@ -8,7 +8,22 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState('brite'); // default theme
+  const [theme, rawSetTheme] = useState(() => {
+    const storedTheme = localStorage.getItem('theme');
+    return storedTheme || 'brite'; // default theme
+  });
+
+  const setTheme = (newTheme: string) => {
+    rawSetTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+  };
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme) {
+      rawSetTheme(storedTheme);
+    }
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
