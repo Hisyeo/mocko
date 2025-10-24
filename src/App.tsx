@@ -6,6 +6,7 @@ import TranslationEditor from './components/TranslationEditor';
 import MemoryEditor from './components/MemoryEditor';
 import Settings from './components/Settings';
 import AddSourceModal from './components/AddSourceModal';
+import SizeBlocker from './components/SizeBlocker';
 
 import './vendor/bootstrap/brite/bootstrap.css'
 
@@ -24,6 +25,16 @@ const App: React.FC = () => {
   const [sources, setSources] = useState<Source[]>([]);
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
   const [showAddSourceModal, setShowAddSourceModal] = useState(false);
+  const [isScreenTooSmall, setIsScreenTooSmall] = useState(window.innerWidth < 800);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsScreenTooSmall(window.innerWidth < 800);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const storedSources = localStorage.getItem('sources');
@@ -56,6 +67,10 @@ const App: React.FC = () => {
     setSelectedSource(updatedSource);
     localStorage.setItem('sources', JSON.stringify(updatedSources));
   };
+
+  if (isScreenTooSmall) {
+    return <SizeBlocker />;
+  }
 
   return (
     <div className={`d-flex ${sidebarOpen ? '' : 'toggled'}`} id="wrapper">
