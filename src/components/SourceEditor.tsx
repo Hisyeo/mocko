@@ -201,9 +201,11 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
             onChange={(e) => setContent(e.target.value)} 
           />
         </Form.Group>
-        <Button variant="primary" onClick={handleContentSave} className="mt-2" disabled={!isContentChanged}>Save</Button>
-        <Button variant="secondary" onClick={handleContentDiscard} className="mt-2 ml-2" disabled={!isContentChanged}>Discard</Button>
-        <Button variant="danger" onClick={handleDelete} className="mt-2 ml-2">Delete</Button>
+        <Stack direction='horizontal' gap={3}>
+          <Button variant="primary" onClick={handleContentSave} className="mt-2" disabled={!isContentChanged}>Save</Button>
+          <Button variant="secondary" onClick={handleContentDiscard} className="mt-2 ml-2" disabled={!isContentChanged}>Discard Changes</Button>
+          <Button variant="danger" onClick={handleDelete} className="mt-2 ml-2 ms-auto">Delete</Button>
+        </Stack>
       </Form>
 
       <div className="mt-4">
