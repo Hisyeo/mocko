@@ -1,5 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Form, Modal, Stack } from 'react-bootstrap';
+
+import aesopFables from '../vendor/stories/aesopFables.json'
+
+interface Fable {
+  title: string;
+  story: string;
+}
 
 interface AddSourceModalProps {
   show: boolean;
@@ -14,6 +21,12 @@ const AddSourceModal: React.FC<AddSourceModalProps> = ({ show, onHide, onAddSour
 
   const handleAddSource = () => {
     onAddSource(title, content);
+    setTitle('');
+    setContent('');
+    onHide();
+  };
+
+  const handleCancel = () => {
     setTitle('');
     setContent('');
     onHide();
@@ -36,6 +49,16 @@ const AddSourceModal: React.FC<AddSourceModalProps> = ({ show, onHide, onAddSour
       reader.readAsText(file);
     }
   };
+
+  const handleMagicWand = () => {
+    if (aesopFables.stories.length > 0) {
+      const randomFable = aesopFables.stories[Math.floor(Math.random() * aesopFables.stories.length)];
+      setTitle(randomFable.title);
+      setContent(randomFable.story.join(' '));
+    }
+  };
+
+  const isWandDisabled = title !== '' || content !== '';
 
   return (
     <Modal show={show} onHide={onHide}>
@@ -69,8 +92,10 @@ const AddSourceModal: React.FC<AddSourceModalProps> = ({ show, onHide, onAddSour
         <Stack direction='horizontal' gap={3}>
           <label htmlFor="import-mocko" className="btn btn-info">Import MOCKO file</label>
           <input id="import-mocko" type="file" accept=".mocko" onChange={handleFileChange}  style={{ display: 'none' }} />
-          <Button variant="secondary" onClick={onHide}>Close</Button>
-          <Button variant="primary" onClick={handleAddSource}>Add Source</Button>
+          <div className='vr'/>
+          <Button variant="danger" onClick={handleMagicWand} disabled={isWandDisabled} title='Random story time!'>🪄</Button>
+          <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
+          <Button variant="primary" onClick={handleAddSource}>Add</Button>
         </Stack>
       </Modal.Footer>
     </Modal>

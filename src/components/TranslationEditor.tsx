@@ -212,7 +212,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
         />
       </Form.Group>
       <br />
-      <Alert variant='light'>Delimiters are shown in a badge to the right of each segment.</Alert>
+      <Alert variant='light'>Add a translation to a segment by clicking on the pencil icon. Delimiters are shown in a badge to the right of each segment.</Alert>
       <ListGroup className="mt-4">
         {segments.map((segment, index) => {
           const trimmedSegment = segment.trim();
