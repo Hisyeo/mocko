@@ -75,6 +75,18 @@ const App: React.FC = () => {
     localStorage.setItem('sources', JSON.stringify(updatedSources));
   };
 
+  const handleDeleteSource = (sourceId: string) => {
+    const updatedSources = sources.filter(s => s.id !== sourceId);
+    setSources(updatedSources);
+    localStorage.setItem('sources', JSON.stringify(updatedSources));
+    localStorage.removeItem(`translations_${sourceId}`);
+    localStorage.removeItem(`memories_${sourceId}`);
+    localStorage.removeItem(`delimiters_${sourceId}`);
+    if (selectedSource?.id === sourceId) {
+      setSelectedSource(null);
+    }
+  };
+
   const handleImportMocko = (data: any) => {
     const { source, translations, memories, delimiters } = data;
     const newId = new Date().toISOString();
@@ -131,7 +143,7 @@ const App: React.FC = () => {
               <Row>
                 <Tab.Content>
                   <Tab.Pane eventKey="source">
-                    <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} />
+                    <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} />
                   </Tab.Pane>
                   <Tab.Pane eventKey="translation">
                     <TranslationEditor source={selectedSource} />

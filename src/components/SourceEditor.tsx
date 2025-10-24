@@ -6,9 +6,10 @@ import { Source } from '../App';
 interface SourceEditorProps {
   source: Source | null;
   onSourceUpdate: (updatedSource: Source) => void;
+  onDelete: (sourceId: string) => void;
 }
 
-const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) => {
+const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onDelete }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [originalTitle, setOriginalTitle] = useState('');
@@ -129,6 +130,12 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
     }
   };
 
+  const handleDelete = () => {
+    if (source && window.confirm('Are you sure you want to delete this source? This action cannot be undone.')) {
+      onDelete(source.id);
+    }
+  };
+
   const handleExport = () => {
     const blob = new Blob([renderedContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -196,6 +203,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate }) =
         </Form.Group>
         <Button variant="primary" onClick={handleContentSave} className="mt-2" disabled={!isContentChanged}>Save</Button>
         <Button variant="secondary" onClick={handleContentDiscard} className="mt-2 ml-2" disabled={!isContentChanged}>Discard</Button>
+        <Button variant="danger" onClick={handleDelete} className="mt-2 ml-2">Delete</Button>
       </Form>
 
       <div className="mt-4">
