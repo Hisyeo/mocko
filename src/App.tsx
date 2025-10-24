@@ -30,7 +30,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const themeLink = document.getElementById('theme-link') as HTMLLinkElement;
     if (themeLink) {
-      themeLink.href = `${process.env.NODE_ENV == 'production' ? '/mocko' : ''}/bootstrap/${theme}/bootstrap.min.css`;
+      themeLink.href = `/mocko/bootstrap/${theme}/bootstrap.min.css`;
     }
   }, [theme]);
 
