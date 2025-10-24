@@ -212,7 +212,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
         />
       </Form.Group>
       <br />
-      <Alert variant='light'>Add a translation to a segment by clicking on the pencil icon. Delimiters are shown in a badge to the right of each segment.</Alert>
+      <Alert variant='light'>
+        Add a <strong>translation</strong> to a segment by clicking on the pencil icon.
+        Delimiters are shown in a badge to the right of each segment.
+        Select any amount of text to add a <strong>memory</strong>. When you are editing
+        a segment, all previously added memories will be highlighted
+        and clicking on a memory will cause it to be added to the
+        translation at your cursor location.
+      </Alert>
       <ListGroup className="mt-4">
         {segments.map((segment, index) => {
           const trimmedSegment = segment.trim();
