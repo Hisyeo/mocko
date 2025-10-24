@@ -116,7 +116,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ source, allSources }) => {
         <Card.Body>
           <Card.Title>Import Memories</Card.Title>
           <Form.Group controlId="importSelect">
-            <Form.Label>Select sources to import memories from:</Form.Label>
+            <Form.Label>Select sources to import memories from. Memories will only be displayed if there is a segment that contains the source text of the memory.</Form.Label>
             {allSources.filter(s => s.id !== source.id).map(s => (
               <Form.Check 
                 type="checkbox"
