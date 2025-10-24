@@ -245,8 +245,9 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
                     rows={2} 
                     placeholder="Enter translation"
                     value={currentTranslation} 
-                    onChange={(e) => setCurrentTranslation(e.target.value)} 
+                    onChange={(e) => setCurrentTranslation(e.target.value)}
                     className="mt-2"
+                    autoFocus
                   />
                   <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(trimmedSegment)} disabled={isLastSegment}>Save & Edit Next</Button>
                   <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(trimmedSegment)}>Save</Button>
