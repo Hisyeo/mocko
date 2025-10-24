@@ -153,8 +153,8 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ source, allSources }) => {
                   <Card.Text>{mem.target}</Card.Text>
                   {memories[sourceText] && (
                     <div>
-                      <Button variant="link" onClick={() => handleEdit(sourceText)}>✏️</Button>
-                      <Button variant="link" onClick={() => handleDelete(sourceText)}>🗑️</Button>
+                      <Button variant="link" onClick={() => handleEdit(sourceText)} style={{textDecoration: 'none'}}>✏️</Button>
+                      <Button variant="link" onClick={() => handleDelete(sourceText)} style={{textDecoration: 'none'}}>🗑️</Button>
                     </div>
                   )}
                 </div>
