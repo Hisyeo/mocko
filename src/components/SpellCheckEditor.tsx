@@ -3,7 +3,6 @@ import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history } from '@codemirror/commands';
 import { linter, lintGutter, Diagnostic, forEachDiagnostic } from '@codemirror/lint';
-import { search } from '@codemirror/search';
 import NSpell from 'nspell';
 import HisyeoLexer from '../vendor/grammar/HisyeoLexer.js';
 import HisyeoParser from '../vendor/grammar/HisyeoParser.js';
@@ -115,7 +114,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
     }
   }, [value]);
 
-  return <div ref={editorRef} />;
+  return <div ref={editorRef} style={{paddingTop: '0.5em', paddingBottom: '0.5em'}}/>;
 };
 
 export default SpellCheckEditor;

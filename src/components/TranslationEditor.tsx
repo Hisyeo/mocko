@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Form, ListGroup, Button, Alert, Badge } from 'react-bootstrap';
+import { Form, ListGroup, Button, Badge, Stack } from 'react-bootstrap';
 import Mark from 'mark.js';
 import MemoryTooltip from './MemoryTooltip';
 import UnderlinedText from './UnderlinedText';
@@ -198,11 +198,13 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
                     value={currentTranslation} 
                     onChange={setCurrentTranslation} 
                     onDiagnosticsChange={setDiagnostics}
-                    autofocus={editingSegment === trimmedSegment} 
+                    autofocus={editingSegment === trimmedSegment}
                   />
-                  <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(trimmedSegment)} disabled={isLastSegment || hasErrors}>Save & Edit Next</Button>
-                  <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(trimmedSegment)} disabled={hasErrors}>Save</Button>
-                  <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
+                  <Stack direction='horizontal' gap={1}>
+                    <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(trimmedSegment)} disabled={isLastSegment || hasErrors}>Save & Edit Next</Button>
+                    <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(trimmedSegment)} disabled={hasErrors}>Save</Button>
+                    <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
+                  </Stack>
                 </div>
               ) : (
                 <div className="d-flex justify-content-between align-items-center w-100">
