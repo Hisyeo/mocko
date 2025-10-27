@@ -238,7 +238,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
           <Button variant="primary" onClick={handleExport}>Export to TXT</Button>
           <Button variant="primary" onClick={handleExportMocko}>Export to MOCKO</Button>
           <Button variant="secondary" onClick={handleCopy}>Copy</Button>
-          <Button variant="info" onClick={() => setShowRenPreview(!showRenPreview)} className="ms-auto">Preview</Button>
+          <Button variant="info" onClick={() => setShowRenPreview(!showRenPreview)} className="ms-auto" active={showRenPreview}>Preview</Button>
         </Stack>
         <br/>
         <Collapse in={showRenPreview}>
@@ -264,7 +264,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
           </Card.Body>
         </Card>
       </div>
-      
+
       <SegmentationPreviewModal 
         show={showSegPreview} 
         onHide={() => setShowSegPreview(false)} 
