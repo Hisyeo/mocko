@@ -6,6 +6,12 @@ import antlr4 from 'antlr4';
 
 export default class HisyeoParserVisitor extends antlr4.tree.ParseTreeVisitor {
 
+	// Visit a parse tree produced by HisyeoParser#document.
+	visitDocument(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
 	// Visit a parse tree produced by HisyeoParser#sentences.
 	visitSentences(ctx) {
 	  return this.visitChildren(ctx);

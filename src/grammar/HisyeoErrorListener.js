@@ -7,6 +7,12 @@ export class HisyeoErrorListener extends ErrorListener {
   }
 
   syntaxError(recognizer, offendingSymbol, line, column, msg, e) {
-    this.errors.push({ line, column, msg });
+    this.errors.push({
+      line,
+      column,
+      msg,
+      start: offendingSymbol ? offendingSymbol.start : -1,
+      stop: offendingSymbol ? offendingSymbol.stop : -1,
+    });
   }
 }
