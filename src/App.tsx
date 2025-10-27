@@ -32,6 +32,8 @@ const App: React.FC = () => {
     if (themeLink) {
       themeLink.href = `/mocko/bootstrap/${theme}/bootstrap.min.css`;
     }
+    const htmlElement = document.documentElement
+    htmlElement.setAttribute('data-theme', theme)
   }, [theme]);
 
   useEffect(() => {
