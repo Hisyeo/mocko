@@ -216,7 +216,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
                     {translations[trimmedSegment] || segment}
                     {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiters[index]}</Badge>}
                   </p>
-                  <Button variant="link" onClick={() => handleEdit(trimmedSegment)}>✏️</Button>
+                  <Button variant="link" onClick={() => handleEdit(trimmedSegment)} style={{textDecoration: 'none'}}>✏️</Button>
                 </div>
               )}
               
