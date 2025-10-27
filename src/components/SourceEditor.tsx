@@ -236,8 +236,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
         <h2>Export</h2>
         <Stack direction='horizontal' gap={3}>
           <Button variant="primary" onClick={handleExport}>Export to TXT</Button>
-          <Button variant="primary" onClick={handleExportMocko}>Export to MOCKO</Button>
-          <Button variant="secondary" onClick={handleCopy}>Copy</Button>
+          <Button variant="success" onClick={handleExportMocko}>Export to MOCKO</Button>
+          <Button variant="secondary" onClick={handleCopy}>Copy to Clipboard</Button>
           <Button variant="info" onClick={() => setShowRenPreview(!showRenPreview)} className="ms-auto" active={showRenPreview}>Preview</Button>
         </Stack>
         <br/>
