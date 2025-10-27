@@ -233,20 +233,6 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
       </div>
 
       <div className="mt-4">
-        <h2>Source Stats</h2>
-        <Card>
-          <Card.Body>
-            <p>Words in source: {stats.sourceWordCount}</p>
-            <p>Words in translation: {stats.translatedWordCount}</p>
-            <p>Number of segments: {stats.numSegments}</p>
-            <p>Average source words per segment: {stats.avgSourceWords}</p>
-            <p>Completed translation segments: {stats.numTranslatedSegments}</p>
-            <p>Average translation words per completed segment: {stats.avgTranslatedWords}</p>
-          </Card.Body>
-        </Card>
-      </div>
-
-      <div className="mt-4">
         <h2>Export</h2>
         <Stack direction='horizontal' gap={3}>
           <Button variant="primary" onClick={handleExport}>Export to TXT</Button>
@@ -264,6 +250,21 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
           </Card>
         </Collapse>
       </div>
+
+      <div className="mt-4">
+        <h2>Source Stats</h2>
+        <Card>
+          <Card.Body>
+            <p>Words in source: {stats.sourceWordCount}</p>
+            <p>Words in translation: {stats.translatedWordCount}</p>
+            <p>Number of segments: {stats.numSegments}</p>
+            <p>Average source words per segment: {stats.avgSourceWords}</p>
+            <p>Completed translation segments: {stats.numTranslatedSegments}</p>
+            <p>Average translation words per completed segment: {stats.avgTranslatedWords}</p>
+          </Card.Body>
+        </Card>
+      </div>
+      
       <SegmentationPreviewModal 
         show={showSegPreview} 
         onHide={() => setShowSegPreview(false)} 
