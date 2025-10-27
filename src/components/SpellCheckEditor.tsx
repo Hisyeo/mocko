@@ -34,7 +34,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
         const lookbehind = '(?<=^|[\\s\\-"\'“«<¿])'
         const lookahead = '(?=[\\s\\.,;:\\-"\'”»>?]|$)'
         const words = text.match(new RegExp(`${lookbehind}\\p{Letter}+${lookahead}`, 'gv')) || [];
-        for (const w of words) if (!spell.correct(w)) for (const m of text.matchAll(new RegExp(`${lookbehind}${w}${lookahead}`, 'gv')))
+        for (const w of words) if (!/^[A-Z]/.test(w) && !spell.correct(w)) for (const m of text.matchAll(new RegExp(`${lookbehind}${w}${lookahead}`, 'gv')))
           diagnostics.push({
             from: m.index!,
             to: m.index! + w.length,
@@ -59,7 +59,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
         parser.removeErrorListeners();
         parser.addErrorListener(parserListener);
         parser.document();
-        
+
         [...lexerListener.errors, ...parserListener.errors].forEach(err => {
             const firstSpacePostCol = text.indexOf(' ', err.column)
             diagnostics.push({
