@@ -48,6 +48,12 @@ export default class HisyeoParserVisitor extends antlr4.tree.ParseTreeVisitor {
 	}
 
 
+	// Visit a parse tree produced by HisyeoParser#copulativePreposition.
+	visitCopulativePreposition(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
 	// Visit a parse tree produced by HisyeoParser#verbalPreposition.
 	visitVerbalPreposition(ctx) {
 	  return this.visitChildren(ctx);
@@ -68,12 +74,6 @@ export default class HisyeoParserVisitor extends antlr4.tree.ParseTreeVisitor {
 
 	// Visit a parse tree produced by HisyeoParser#subordinateClause.
 	visitSubordinateClause(ctx) {
-	  return this.visitChildren(ctx);
-	}
-
-
-	// Visit a parse tree produced by HisyeoParser#transitiveVerb.
-	visitTransitiveVerb(ctx) {
 	  return this.visitChildren(ctx);
 	}
 

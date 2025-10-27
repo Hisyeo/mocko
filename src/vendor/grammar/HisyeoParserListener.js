@@ -68,6 +68,15 @@ export default class HisyeoParserListener extends antlr4.tree.ParseTreeListener 
 	}
 
 
+	// Enter a parse tree produced by HisyeoParser#copulativePreposition.
+	enterCopulativePreposition(ctx) {
+	}
+
+	// Exit a parse tree produced by HisyeoParser#copulativePreposition.
+	exitCopulativePreposition(ctx) {
+	}
+
+
 	// Enter a parse tree produced by HisyeoParser#verbalPreposition.
 	enterVerbalPreposition(ctx) {
 	}
@@ -101,15 +110,6 @@ export default class HisyeoParserListener extends antlr4.tree.ParseTreeListener 
 
 	// Exit a parse tree produced by HisyeoParser#subordinateClause.
 	exitSubordinateClause(ctx) {
-	}
-
-
-	// Enter a parse tree produced by HisyeoParser#transitiveVerb.
-	enterTransitiveVerb(ctx) {
-	}
-
-	// Exit a parse tree produced by HisyeoParser#transitiveVerb.
-	exitTransitiveVerb(ctx) {
 	}
 
 
