@@ -1,0 +1,121 @@
+import React, { useEffect, useRef } from 'react';
+import { EditorState } from '@codemirror/state';
+import { EditorView, keymap, lineNumbers } from '@codemirror/view';
+import { defaultKeymap, history } from '@codemirror/commands';
+import { linter, lintGutter, Diagnostic, forEachDiagnostic } from '@codemirror/lint';
+import { search } from '@codemirror/search';
+import NSpell from 'nspell';
+import HisyeoLexer from '../vendor/grammar/HisyeoLexer.js';
+import HisyeoParser from '../vendor/grammar/HisyeoParser.js';
+import { HisyeoErrorListener } from '../grammar/HisyeoErrorListener.js';
+import { InputStream, CommonTokenStream } from 'antlr4';
+import { minimalSetup } from 'codemirror';
+import hisyeoHunspellFiles from '../vendor/hunspell/hisyeo.json';
+const { aff: hisyeoAff, dic: hisyeoDic } = hisyeoHunspellFiles
+
+interface SpellCheckEditorProps {
+  value: string;
+  onChange: (value: string) => void;
+  onDiagnosticsChange: (diagnostics: readonly Diagnostic[]) => void;
+  autofocus?: boolean;
+}
+
+const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, onDiagnosticsChange, autofocus }) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | null>(null);
+
+  useEffect(() => {
+    const spellLinter = linter(async (view) => {
+      const diagnostics: Diagnostic[] = [];
+      try {
+        const spell = new NSpell(hisyeoAff, hisyeoDic);
+
+        const text = view.state.doc.toString();
+        const lookbehind = '(?<=^|[\\s\\-"\'“«<¿])'
+        const lookahead = '(?=[\\s\\.,;:\\-"\'”»>?]|$)'
+        const words = text.match(new RegExp(`${lookbehind}\\p{Letter}+${lookahead}`, 'gv')) || [];
+        for (const w of words) if (!spell.correct(w)) for (const m of text.matchAll(new RegExp(`${lookbehind}${w}${lookahead}`, 'gv')))
+          diagnostics.push({
+            from: m.index!,
+            to: m.index! + w.length,
+            severity: 'error',
+            message: `Suggestions: ${spell.suggest(w).join(', ')}`,
+          });
+      } catch (e) { console.error(e) }
+      return diagnostics;
+    });
+
+    const grammarLinter = linter(view => {
+        const diagnostics: Diagnostic[] = [];
+        const text = view.state.doc.toString();
+        const chars = new InputStream(`${text}.`); // Adding a period so we can use the EOF docuemnt rule
+        const lexer = new HisyeoLexer(chars);
+        const lexerListener = new HisyeoErrorListener();
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(lexerListener);
+        const tokens = new CommonTokenStream(lexer);
+        const parser = new HisyeoParser(tokens);
+        const parserListener = new HisyeoErrorListener();
+        parser.removeErrorListeners();
+        parser.addErrorListener(parserListener);
+        parser.document();
+        
+        [...lexerListener.errors, ...parserListener.errors].forEach(err => {
+            const firstSpacePostCol = text.indexOf(' ', err.column)
+            diagnostics.push({
+                from: err.offendingSymbol?.start || Math.min(err.column, text.length) || 0,
+                to: err.offendingSymbol?.stop || firstSpacePostCol == -1 ? text.length : Math.min(firstSpacePostCol, text.length),
+                severity: 'info',
+                message: JSON.parse(`"${err.msg}"`),
+            });
+        });
+
+        return diagnostics;
+    });
+
+    const state = EditorState.create({
+      doc: value,
+      extensions: [
+        minimalSetup,
+        // lintGutter(),
+        spellLinter,
+        grammarLinter,
+        EditorView.updateListener.of((update) => {
+          if (update.docChanged) {
+            onChange(update.state.doc.toString());
+          }
+          const diagnostics: Diagnostic[] = []
+          forEachDiagnostic(update.state, d => diagnostics.push(d))
+          onDiagnosticsChange(diagnostics);
+        }),
+      ],
+    });
+
+    const view = new EditorView({
+      state,
+      parent: editorRef.current!,
+    });
+
+    viewRef.current = view;
+
+    if (autofocus) {
+      view.focus();
+    }
+
+    return () => {
+      view.destroy();
+    };
+  }, [autofocus, onChange, onDiagnosticsChange]);
+
+  useEffect(() => {
+    if (viewRef.current && value !== viewRef.current.state.doc.toString()) {
+        viewRef.current.dispatch({
+            changes: { from: 0, to: viewRef.current.state.doc.length, insert: value }
+        });
+    }
+  }, [value]);
+
+  return <div ref={editorRef} />;
+};
+
+export default SpellCheckEditor;

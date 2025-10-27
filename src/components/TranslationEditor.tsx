@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Form, ListGroup, Button, Alert, Badge } from 'react-bootstrap';
-import { InputStream, CommonTokenStream } from 'antlr4';
-import HisyeoLexer from '../vendor/grammar/HisyeoLexer.js';
-import HisyeoParser from '../vendor/grammar/HisyeoParser.js';
-import { HisyeoErrorListener } from '../grammar/HisyeoErrorListener.js';
 import Mark from 'mark.js';
 import MemoryTooltip from './MemoryTooltip';
 import UnderlinedText from './UnderlinedText';
 import { Source } from '../App';
+import SpellCheckEditor from './SpellCheckEditor';
+import { Diagnostic } from '@codemirror/lint';
 
 interface TranslationEditorProps {
   source: Source | null;
@@ -19,7 +17,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [editingSegment, setEditingSegment] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
-  const [validationErrors, setValidationErrors] = useState<any[]>([]);
+  const [diagnostics, setDiagnostics] = useState<readonly Diagnostic[]>([]);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const [isAddingMemory, setIsAddingMemory] = useState(false);
   const [memories, setMemories] = useState<Record<string, string>>({});
@@ -66,48 +64,24 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
     };
   }, [tooltipRef, isAddingMemory]);
 
-  const validateSegment = (text: string) => {
-    const chars = new InputStream(text);
-    const lexer = new HisyeoLexer(chars);
-    const lexerListener = new HisyeoErrorListener();
-    lexer.removeErrorListeners();
-    lexer.addErrorListener(lexerListener);
-    const tokens = new CommonTokenStream(lexer);
-    const parser = new HisyeoParser(tokens);
-    const parserListener = new HisyeoErrorListener();
-    parser.removeErrorListeners();
-    parser.addErrorListener(parserListener);
-    parser.buildParseTrees = true;
-    parser.sentence(); // or whatever the root rule is
-    return [...lexerListener.errors, ...parserListener.errors];
-  };
-
   const handleEdit = (segment: string) => {
     setEditingSegment(segment.trim());
     setCurrentTranslation(translations[segment.trim()] || '');
-    setValidationErrors([]);
+    setDiagnostics([]);
   };
 
   const handleSave = (segment: string) => {
-    const errors = validateSegment(currentTranslation);
-    if (errors.length === 0) {
-      const updatedTranslations = { ...translations, [segment.trim()]: currentTranslation };
-      setTranslations(updatedTranslations);
-      if (source) {
-        localStorage.setItem(`translations_${source.id}`, JSON.stringify(updatedTranslations));
-      }
-      setEditingSegment(null);
-    } else {
-      setValidationErrors(errors);
+    if (diagnostics.length > 0) return;
+    const updatedTranslations = { ...translations, [segment.trim()]: currentTranslation };
+    setTranslations(updatedTranslations);
+    if (source) {
+      localStorage.setItem(`translations_${source.id}`, JSON.stringify(updatedTranslations));
     }
+    setEditingSegment(null);
   };
 
   const handleSaveAndEditNext = (currentSegmentTrimmed: string) => {
-    const errors = validateSegment(currentTranslation);
-    if (errors.length > 0) {
-      setValidationErrors(errors);
-      return;
-    }
+    if (diagnostics.length > 0) return;
 
     const updatedTranslations = { ...translations, [currentSegmentTrimmed]: currentTranslation };
     setTranslations(updatedTranslations);
@@ -173,13 +147,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
   };
 
   const handleInsertMemory = (text: string) => {
-    const textarea = document.querySelector('textarea');
-    if (textarea) {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const newText = currentTranslation.substring(0, start) + text + currentTranslation.substring(end);
-      setCurrentTranslation(newText);
-    }
+    setCurrentTranslation(prev => prev + text);
   };
 
   if (!source) {
@@ -187,6 +155,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
   }
 
   const validSegments = segments.map(s => s.trim()).filter(Boolean);
+  const hasErrors = diagnostics.length > 0;
 
   return (
     <div ref={editorRef} onMouseUp={handleMouseUp}>
@@ -211,15 +180,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
           onBlur={handleTitleSave}
         />
       </Form.Group>
-      <br />
-      <Alert variant='light'>
-        Add a <strong>translation</strong> to a segment by clicking on the pencil icon.
-        Delimiters are shown in a badge to the right of each segment.
-        Select any amount of text to add a <strong>memory</strong>. When you are editing
-        a segment, all previously added memories will be highlighted
-        and clicking on a memory will cause it to be added to the
-        translation at your cursor location.
-      </Alert>
+      
       <ListGroup className="mt-4">
         {segments.map((segment, index) => {
           const trimmedSegment = segment.trim();
@@ -232,25 +193,15 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
               {editingSegment === trimmedSegment ? (
                 <div className="w-100">
                   <UnderlinedText text={segment} memories={memories} onInsert={handleInsertMemory} />
-                  {delimiters[index] && <Badge title='Segment Delimiter' bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiters[index]}</Badge>}
-                  {validationErrors.length > 0 && (
-                    <Alert variant="danger">
-                      {validationErrors.map((error, i) => (
-                        <div key={i}>{`Line ${error.line}, Column ${error.column}: ${error.msg}`}</div>
-                      ))}
-                    </Alert>
-                  )}
-                  <Form.Control 
-                    as="textarea" 
-                    rows={2} 
-                    placeholder="Enter translation"
+                  {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiters[index]}</Badge>}
+                  <SpellCheckEditor 
                     value={currentTranslation} 
-                    onChange={(e) => setCurrentTranslation(e.target.value)}
-                    className="mt-2"
-                    autoFocus
+                    onChange={setCurrentTranslation} 
+                    onDiagnosticsChange={setDiagnostics}
+                    autofocus={editingSegment === trimmedSegment} 
                   />
-                  <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(trimmedSegment)} disabled={isLastSegment}>Save & Edit Next</Button>
-                  <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(trimmedSegment)}>Save</Button>
+                  <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(trimmedSegment)} disabled={isLastSegment || hasErrors}>Save & Edit Next</Button>
+                  <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(trimmedSegment)} disabled={hasErrors}>Save</Button>
                   <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
                 </div>
               ) : (
@@ -259,7 +210,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
                     {translations[trimmedSegment] || segment}
                     {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiters[index]}</Badge>}
                   </p>
-                  <Button variant="link" onClick={() => handleEdit(trimmedSegment)} style={{textDecoration: 'none'}}>✏️</Button>
+                  <Button variant="link" onClick={() => handleEdit(trimmedSegment)}>✏️</Button>
                 </div>
               )}
               
