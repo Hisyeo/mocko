@@ -7,7 +7,7 @@ import MemoryEditor from './components/MemoryEditor';
 import Settings from './components/Settings';
 import AddSourceModal from './components/AddSourceModal';
 import SizeBlocker from './components/SizeBlocker';
-import { useTheme } from './ThemeContext';
+import { useApp } from './AppContext';
 
 export interface Source {
   id: string;
@@ -25,7 +25,7 @@ const App: React.FC = () => {
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
   const [showAddSourceModal, setShowAddSourceModal] = useState(false);
   const [isScreenTooSmall, setIsScreenTooSmall] = useState(window.innerWidth < 800);
-  const { theme } = useTheme();
+  const { theme } = useApp();
 
   useEffect(() => {
     const themeLink = document.getElementById('theme-link') as HTMLLinkElement;

@@ -6,6 +6,7 @@ import UnderlinedText from './UnderlinedText';
 import { Source } from '../App';
 import SpellCheckEditor from './SpellCheckEditor';
 import { Diagnostic } from '@codemirror/lint';
+import { useApp } from '../AppContext';
 
 interface TranslationEditorProps {
   source: Source | null;
@@ -22,6 +23,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
   const [isAddingMemory, setIsAddingMemory] = useState(false);
   const [memories, setMemories] = useState<Record<string, string>>({});
   const [translatedTitle, setTranslatedTitle] = useState('');
+  const { grammarCheck, spellCheck } = useApp();
 
   const editorRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -71,7 +73,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
   };
 
   const handleSave = (segment: string) => {
-    if (diagnostics.length > 0) return;
+    if (hasErrors) return;
     const updatedTranslations = { ...translations, [segment.trim()]: currentTranslation };
     setTranslations(updatedTranslations);
     if (source) {
@@ -81,7 +83,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
   };
 
   const handleSaveAndEditNext = (currentSegmentTrimmed: string) => {
-    if (diagnostics.length > 0) return;
+    if (hasErrors) return;
 
     const updatedTranslations = { ...translations, [currentSegmentTrimmed]: currentTranslation };
     setTranslations(updatedTranslations);
@@ -155,7 +157,9 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
   }
 
   const validSegments = segments.map(s => s.trim()).filter(Boolean);
-  const hasErrors = diagnostics.length > 0;
+  const grammarErrors = diagnostics.filter(d => d.severity === 'info');
+  const spellingErrors = diagnostics.filter(d => d.severity === 'warning');
+  const hasErrors = (grammarCheck && grammarErrors.length > 0) || (spellCheck && spellingErrors.length > 0);
 
   return (
     <div ref={editorRef} onMouseUp={handleMouseUp}>

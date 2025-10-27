@@ -11,6 +11,7 @@ import { minimalSetup } from 'codemirror';
 import { autocompletion, CompletionContext } from '@codemirror/autocomplete';
 import Fuse from 'fuse.js';
 import hisyeoHunspellFiles from '../vendor/hunspell/hisyeo.json';
+import { useApp } from '../AppContext';
 const { aff: hisyeoAff, dic: hisyeoDic } = hisyeoHunspellFiles
 
 interface HisyeoFuseResult {
@@ -31,6 +32,7 @@ interface SpellCheckEditorProps {
 const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, onDiagnosticsChange, autofocus }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const { grammarCheck, spellCheck, autocomplete } = useApp();
 
   useEffect(() => {
     if (viewRef.current) return; // Prevent re-initialization
@@ -42,9 +44,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
         if (!word || (word.from === word.to && !context.explicit)) {
           return null;
         }
-        console.log(word);
         const results = fuse.search(word.text);
-        console.log(results);
         return {
           from: word.from,
           options: results.map(r => ({ label: r.item.latin, type: r.item.type, detail: r.item.meaning, info: 'information!' })),
@@ -59,6 +59,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
         const fuse = new Fuse(Object.values(data), { keys: ['latin'], includeScore: true, threshold: 0.1 });
 
         const spellLinter = linter(async (view) => {
+          if (!spellCheck) return [];
           const diagnostics: Diagnostic[] = [];
           try {
             const spell = new NSpell(hisyeoAff, hisyeoDic);
@@ -79,6 +80,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
         });
     
         const grammarLinter = linter(view => {
+            if (!grammarCheck) return [];
             const diagnostics: Diagnostic[] = [];
             const text = view.state.doc.toString();
             const chars = new InputStream(`${text}.`); // Adding a period so we can use the EOF docuemnt rule
@@ -106,22 +108,27 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
             return diagnostics;
         });
     
+        const extensions = [
+          minimalSetup,
+          spellLinter,
+          grammarLinter,
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              onChange(update.state.doc.toString());
+            }
+            const diagnostics: Diagnostic[] = []
+            forEachDiagnostic(update.state, d => diagnostics.push(d))
+            onDiagnosticsChange(diagnostics);
+          }),
+        ];
+
+        if (autocomplete) {
+          extensions.push(autocompletion({ override: [(ctx) => customAutocomplete(ctx, fuse as Fuse<HisyeoFuseResult>)] }));
+        }
+
         const state = EditorState.create({
           doc: value,
-          extensions: [
-            minimalSetup,
-            spellLinter,
-            grammarLinter,
-            autocompletion({ filterStrict: true, override: [(ctx) => customAutocomplete(ctx, fuse as Fuse<HisyeoFuseResult>)] }),
-            EditorView.updateListener.of((update) => {
-              if (update.docChanged) {
-                onChange(update.state.doc.toString());
-              }
-              const diagnostics: Diagnostic[] = []
-              forEachDiagnostic(update.state, d => diagnostics.push(d))
-              onDiagnosticsChange(diagnostics);
-            }),
-          ],
+          extensions,
         });
     
         const view = new EditorView({
@@ -144,7 +151,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
         viewRef.current = null;
       }
     };
-  }, [autofocus, onChange, onDiagnosticsChange]);
+  }, [autofocus, onChange, onDiagnosticsChange, grammarCheck, spellCheck, autocomplete]);
 
   useEffect(() => {
     if (viewRef.current && value !== viewRef.current.state.doc.toString()) {

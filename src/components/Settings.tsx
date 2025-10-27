@@ -1,9 +1,9 @@
 import React from 'react';
-import { Button, Card, Form } from 'react-bootstrap';
-import { useTheme } from '../ThemeContext';
+import { Button, Card, Form, Stack } from 'react-bootstrap';
+import { useApp } from '../AppContext';
 
 const Settings: React.FC = () => {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete } = useApp();
 
   const handleBackup = () => {
     const data = JSON.stringify(localStorage);
@@ -64,14 +64,43 @@ const Settings: React.FC = () => {
           </Form.Group>
         </Card.Body>
       </Card>
+
+      <Card className="mt-4">
+        <Card.Header>Session Settings</Card.Header>
+        <Card.Body>
+          <Form.Check 
+            type="switch"
+            id="grammar-check-switch"
+            label="Grammar Checking"
+            checked={grammarCheck}
+            onChange={(e) => setGrammarCheck(e.target.checked)}
+          />
+          <Form.Check 
+            type="switch"
+            id="spell-check-switch"
+            label="Spell Checking"
+            checked={spellCheck}
+            onChange={(e) => setSpellCheck(e.target.checked)}
+          />
+          <Form.Check 
+            type="switch"
+            id="autocomplete-switch"
+            label="Autocomplete"
+            checked={autocomplete}
+            onChange={(e) => setAutocomplete(e.target.checked)}
+          />
+        </Card.Body>
+      </Card>
       
       <Card className="mt-4">
-        <Card.Header>Session</Card.Header>
+        <Card.Header>Backup</Card.Header>
         <Card.Body>
           <p>Backup your current session to a file, or restore from a previous backup.</p>
-          <Button variant="primary" onClick={handleBackup}>Backup Data</Button>
-          <label htmlFor="restore-input" className="btn btn-secondary ml-2">Restore Data</label>
-          <input id="restore-input" type="file" accept=".json" onChange={handleRestore} style={{ display: 'none' }} />
+          <Stack direction='horizontal' gap={1}>
+            <Button variant="primary" onClick={handleBackup}>Backup Data</Button>
+            <label htmlFor="restore-input" className="btn btn-secondary ml-2">Restore Data</label>
+            <input id="restore-input" type="file" accept=".json" onChange={handleRestore} style={{ display: 'none' }} />
+          </Stack>
         </Card.Body>
       </Card>
 
