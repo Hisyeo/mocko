@@ -257,7 +257,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
         <br/>
         <Collapse in={showRenPreview}>
           <Card>
-            <Card.Title>{translatedTitle || title}</Card.Title>
+            <Card.Title id='RenPreviewCollapseCardTitle'>{translatedTitle || title}</Card.Title>
             <Card.Body>
                   <div dangerouslySetInnerHTML={{ __html: renderedContent.replace(/\n/g, '<br />') }} />
             </Card.Body>
