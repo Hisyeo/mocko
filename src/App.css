@@ -69,7 +69,7 @@ html, body, #root {
   color: black;
 }
 
-[data-theme="cyborg"] .cm-editor {
+[data-theme="cyborg"] .cm-editor, [data-theme="darkly"] .cm-editor  {
     color: #212529;
     background-color: #fff;
     border-color: #95cfeb;
