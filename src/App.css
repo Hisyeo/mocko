@@ -5,39 +5,42 @@ html, body, #root {
 #wrapper {
     display: flex;
     height: 100vh;
-    overflow: hidden; /* Prevent body from scrolling */
+    overflow-x: hidden;
 }
 
 #sidebar-wrapper {
+    width: 0;
     height: 100%;
-    margin-left: -240px;
-    transition: margin .25s ease-out;
+    transition: width .25s ease-out;
     flex-shrink: 0; /* Prevent sidebar from shrinking */
+    overflow-x: hidden;
+}
+
+#wrapper.toggled #sidebar-wrapper {
+    width: 240px;
 }
 
 #sidebar-wrapper .sidebar-heading {
     padding: 0.875rem 1.25rem;
     font-size: 1.2rem;
+    white-space: nowrap;
 }
 
 #sidebar-wrapper .nav-link {
     padding: 0.5rem 1rem;
+    white-space: nowrap;
 }
 
 #page-content-wrapper {
     display: flex;
     flex-direction: column;
-    flex-grow: 1; /* Allow this wrapper to grow */
-    overflow-y: auto; /* Make this the scrolling container */
+    flex-grow: 1;
+    overflow-y: auto;
     width: 100%;
 }
 
 .page-content {
     flex: 1 0 auto;
-}
-
-#wrapper.toggled #sidebar-wrapper {
-    margin-left: 0;
 }
 
 .underline {
@@ -55,22 +58,6 @@ html, body, #root {
 
 .header-row .nav-tabs .nav-link.active {
   border-bottom: 1px solid #dee2e6;
-}
-
-
-@media (min-width: 768px) {
-    #sidebar-wrapper {
-        margin-left: 0;
-    }
-
-    #page-content-wrapper {
-        min-width: 0;
-        width: 100%;
-    }
-
-    #wrapper.toggled #sidebar-wrapper {
-        margin-left: -240px;
-    }
 }
 
 #RenPreviewCollapseCardTitle {

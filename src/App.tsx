@@ -107,8 +107,8 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className='d-flex' id="wrapper">
-      <div className={`bg-light border-right collapse-horizontal collapse ${sidebarOpen ? 'show' : ''}`} id="sidebar-wrapper">
+    <div className={`d-flex ${sidebarOpen ? 'toggled' : ''}`} id="wrapper">
+      <div className="bg-light border-right" id="sidebar-wrapper">
         <div className="sidebar-heading">Your Sources</div>
         <Nav className="flex-column" navbarScroll>
           {sources.map(source => (
@@ -125,7 +125,7 @@ const App: React.FC = () => {
               <Row className="align-items-center header-row">
                 <Nav variant='pills' className='flex-row'>
                   <Nav.Item>
-                    <Nav.Link className={sidebarOpen ? '' : 'bg-warning'} onClick={toggleSidebar}>☰</Nav.Link>
+                    <Nav.Link title='Toggle source list' onClick={toggleSidebar}>{sidebarOpen ? '◀' : '▶'}</Nav.Link>
                   </Nav.Item>
                   <Nav.Item>
                     <Nav.Link eventKey='source'>Source</Nav.Link>
