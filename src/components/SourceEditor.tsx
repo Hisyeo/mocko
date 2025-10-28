@@ -227,7 +227,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
           <option value='\n'/>
           <option value='\. '/>
           <option value='\.|;'/>
-          <option value={"[\.:;?][\s\"']*|,\s*"}/>
+          <option value={"[\.:;?][\s\"']*|,\s*\""}/>
         </datalist>
         <Button variant="info" onClick={() => setShowSegPreview(true)} className="mt-2">Preview</Button>
       </div>
