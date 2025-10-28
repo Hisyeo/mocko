@@ -76,3 +76,79 @@ html, body, #root {
     outline: 0;
     box-shadow: 0 0 0 .25rem rgba(42,159,214,.25);
 }
+
+/* This is needed because of the longer content in the icons below */
+.cm-completionIcon {
+    width: 1em !important;
+    padding-right: 1.5em !important;
+}
+
+.cm-completionIcon-Adjective {
+    &::after {
+        content: 'ADJ'
+    }
+}
+
+
+.cm-completionIcon-Noun {
+    &::after {
+        content: 'NOM'
+    }
+}
+
+
+.cm-completionIcon-Verb {
+    &::after {
+        content: 'VRB'
+    }
+}
+
+
+.cm-completionIcon-Determiner {
+    &::after {
+        content: 'DET'
+    }
+}
+
+
+.cm-completionIcon-Particle {
+    &::after {
+        content: 'PRT'
+    }
+}
+
+.cm-completionIcon-Preposition {
+    &::after {
+        content: 'PRP'
+    }
+}
+
+.cm-completionIcon-Pronoun {
+    &::after {
+        content: 'PRO'
+    }
+}
+
+.cm-completionIcon-Numeral {
+    &::after {
+        content: 'NUM'
+    }
+}
+
+.cm-completionIcon-Conjunction {
+    &::after {
+        content: 'CNJ'
+    }
+}
+
+.cm-completionIcon-Postposition {
+    &::after {
+        content: 'PST'
+    }
+}
+
+.cm-completionIcon-Interjection {
+    &::after {
+        content: 'INT'
+    }
+}

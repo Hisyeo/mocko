@@ -19,7 +19,10 @@ interface HisyeoFuseResult {
   latin: string,
   syllabary: string,
   abugida: string,
-  meaning: string
+  meaning: string,
+  verb: string,
+  noun: string,
+  modifier: string,
 }
 
 interface SpellCheckEditorProps {
@@ -45,11 +48,20 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
           return null;
         }
         const results = fuse.search(word.text);
+
         return {
           from: word.from,
-          options: results.map(r => ({ label: r.item.latin, type: r.item.type, detail: r.item.meaning, info: 'information!' })),
+          options: results.map(r => {
+            const infoElem = document.createElement('div')
+            infoElem.innerHTML = 
+              `<strong>Type:</strong> ${r.item.type}
+               <strong>Verb:</strong> ${r.item.verb}
+               <strong>Noun:</strong> ${r.item.noun}
+               <strong>Adjective:</strong> ${r.item.modifier}`
+            return { label: r.item.latin, type: r.item.type, detail: r.item.meaning, info: () => infoElem}
+          }),
         };
-      };
+    };
 
     fetch('https://hisyeo.github.io/words.json')
       .then(response => response.json())
