@@ -15,9 +15,9 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, rawSetTheme] = useState(() => localStorage.getItem('theme') || 'brite');
-  const [grammarCheck, rawSetGrammarCheck] = useState(() => localStorage.getItem('grammarCheck') === 'true');
-  const [spellCheck, rawSetSpellCheck] = useState(() => localStorage.getItem('spellCheck') === 'true');
-  const [autocomplete, rawSetAutocomplete] = useState(() => localStorage.getItem('autocomplete') === 'true');
+  const [grammarCheck, rawSetGrammarCheck] = useState(() => localStorage.getItem('grammarCheck') !== 'true');
+  const [spellCheck, rawSetSpellCheck] = useState(() => localStorage.getItem('spellCheck') !== 'true');
+  const [autocomplete, rawSetAutocomplete] = useState(() => localStorage.getItem('autocomplete') !== 'true');
 
   const setTheme = (newTheme: string) => {
     rawSetTheme(newTheme);
