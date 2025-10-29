@@ -43,7 +43,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
     let isCancelled = false;
 
     const customAutocomplete = (context: CompletionContext, fuse: Fuse<HisyeoFuseResult>) => {
-        const word = context.matchBefore(/\w*/);
+        const word = context.matchBefore(/[A-ZÔÊÎÛa-zôêîûꞌ']*/);
         if (!word || (word.from === word.to && !context.explicit)) {
           return null;
         }
