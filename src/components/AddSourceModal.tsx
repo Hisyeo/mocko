@@ -54,7 +54,7 @@ const AddSourceModal: React.FC<AddSourceModalProps> = ({ show, onHide, onAddSour
     if (aesopFables.stories.length > 0) {
       const randomFable = aesopFables.stories[Math.floor(Math.random() * aesopFables.stories.length)];
       setTitle(randomFable.title);
-      setContent(randomFable.story.join(' '));
+      setContent(randomFable.story.concat(`\n\n${randomFable.moral}`).join(' '));
     }
   };
 
