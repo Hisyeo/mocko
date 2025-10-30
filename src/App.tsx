@@ -155,7 +155,12 @@ const App: React.FC = () => {
   return (
     <div className={`d-flex ${sidebarOpen ? 'toggled' : ''}`} id="wrapper">
       <div className="bg-light border-right" id="sidebar-wrapper" style={{ width: sidebarOpen ? sidebarWidth : 0 }}>
-        <div className="sidebar-heading">Your Sources</div>
+        <div className="sidebar-heading">
+          <Stack direction='horizontal'>
+            <span>Your Sources</span>
+            <Button variant='outline-info' className='ms-auto' onClick={() => setShowAddSourceModal(true)}>+</Button>
+          </Stack>
+        </div>
         <div className="p-2">
           <Stack direction='horizontal'>
             <Form.Control 
@@ -172,7 +177,6 @@ const App: React.FC = () => {
           {filteredSources.map(source => (
             <Nav.Link key={source.id} onClick={() => handleSelectSource(source)} className={selectedSource?.id === source.id ? 'bg-info text-bg-info' : ''}>{source.title}</Nav.Link>
           ))}
-          <Nav.Link onClick={() => setShowAddSourceModal(true)}>+ Add Source</Nav.Link>
         </Nav>
       </div>
       <Resizer onResize={handleResize} onResizeEnd={handleResizeEnd} />
