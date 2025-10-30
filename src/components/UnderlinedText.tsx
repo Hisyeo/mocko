@@ -28,7 +28,7 @@ const UnderlinedText: React.FC<UnderlinedTextProps> = ({ text, memories, onInser
     }
   }, [text, memories, onInsert]);
 
-  return <span ref={textRef}>{text}</span>;
+  return <span ref={textRef} id='current-editing-translation-source-text'>{text}</span>;
 };
 
 export default UnderlinedText;

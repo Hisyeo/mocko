@@ -164,7 +164,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
       return;
     }
     const selection = window.getSelection();
-    if (selection && selection.toString() && isSelectionInSelector(selection, '.source-text')) {
+    if (selection && selection.toString()
+      && (isSelectionInSelector(selection, '.source-text') || isSelectionInSelector(selection, '#current-editing-translation-source-text'))) {
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
       setTooltip({ x: rect.left, y: rect.top - 30, text: selection.toString() });
