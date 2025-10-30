@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Nav, Button, Tabs, Tab, Row, Col } from 'react-bootstrap';
+import { Container, Nav, Button, Tabs, Tab, Row, Col, Form, InputGroup, Stack } from 'react-bootstrap';
 import './App.css';
 import SourceEditor from './components/SourceEditor';
 import TranslationEditor from './components/TranslationEditor';
@@ -30,6 +30,7 @@ const App: React.FC = () => {
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
   const [showAddSourceModal, setShowAddSourceModal] = useState(false);
   const [isScreenTooSmall, setIsScreenTooSmall] = useState(window.innerWidth < 800);
+  const [sourceFilter, setSourceFilter] = useState(() => localStorage.getItem('sourceFilter') || '');
   const { theme } = useApp();
 
   useEffect(() => {
@@ -118,6 +119,21 @@ const App: React.FC = () => {
     localStorage.setItem(`delimiters_${newId}`, JSON.stringify(delimiters));
   };
 
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSourceFilter(value);
+    localStorage.setItem('sourceFilter', value);
+  };
+
+  const clearFilter = () => {
+    setSourceFilter('');
+    localStorage.removeItem('sourceFilter');
+  };
+
+  const filteredSources = sources.filter(source => 
+    source.title.toLowerCase().includes(sourceFilter.toLowerCase())
+  );
+
   if (isScreenTooSmall) {
     return <SizeBlocker />;
   }
@@ -126,8 +142,20 @@ const App: React.FC = () => {
     <div className={`d-flex ${sidebarOpen ? 'toggled' : ''}`} id="wrapper">
       <div className="bg-light border-right" id="sidebar-wrapper" style={{ width: sidebarOpen ? sidebarWidth : 0 }}>
         <div className="sidebar-heading">Your Sources</div>
+        <div className="p-2">
+          <Stack direction='horizontal'>
+            <Form.Control 
+              type="text" 
+              placeholder="Filter sources..." 
+              value={sourceFilter} 
+              onChange={handleFilterChange} 
+            />
+            {sourceFilter && <Button variant="danger"  className="mt-1" onClick={clearFilter} id='sidebar-clear-search-button'>X</Button>}
+          </Stack>
+          
+        </div>
         <Nav className="flex-column" navbarScroll>
-          {sources.map(source => (
+          {filteredSources.map(source => (
             <Nav.Link key={source.id} onClick={() => handleSelectSource(source)} className={selectedSource?.id === source.id ? 'bg-info text-bg-info' : ''}>{source.title}</Nav.Link>
           ))}
           <Nav.Link onClick={() => setShowAddSourceModal(true)}>+ Add Source</Nav.Link>
