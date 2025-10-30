@@ -8,6 +8,7 @@ import Settings from './components/Settings';
 import AddSourceModal from './components/AddSourceModal';
 import SizeBlocker from './components/SizeBlocker';
 import { useApp } from './AppContext';
+import Resizer from './components/Resizer';
 
 export interface Source {
   id: string;
@@ -20,6 +21,10 @@ type Mode = 'source' | 'translation' | 'memory' | 'settings';
 
 const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const storedWidth = localStorage.getItem('sidebarWidth');
+    return storedWidth ? parseInt(storedWidth, 10) : 240;
+  });
   const [mode, setMode] = useState<Mode>('source');
   const [sources, setSources] = useState<Source[]>([]);
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
@@ -53,6 +58,17 @@ const App: React.FC = () => {
   }, []);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
+  const handleResize = (delta: number) => {
+    setSidebarWidth(prevWidth => {
+      const newWidth = prevWidth + delta;
+      if (newWidth > 100 && newWidth < 500) { // Min and max width
+        localStorage.setItem('sidebarWidth', String(newWidth));
+        return newWidth;
+      }
+      return prevWidth;
+    });
+  };
 
   const handleSelectSource = (source: Source) => {
     setSelectedSource(source);
@@ -108,7 +124,7 @@ const App: React.FC = () => {
 
   return (
     <div className={`d-flex ${sidebarOpen ? 'toggled' : ''}`} id="wrapper">
-      <div className="bg-light border-right" id="sidebar-wrapper">
+      <div className="bg-light border-right" id="sidebar-wrapper" style={{ width: sidebarOpen ? sidebarWidth : 0 }}>
         <div className="sidebar-heading">Your Sources</div>
         <Nav className="flex-column" navbarScroll>
           {sources.map(source => (
@@ -117,7 +133,7 @@ const App: React.FC = () => {
           <Nav.Link onClick={() => setShowAddSourceModal(true)}>+ Add Source</Nav.Link>
         </Nav>
       </div>
-
+      <Resizer onResize={handleResize} />
       <div id="page-content-wrapper">
         <div className="page-content">
           <Container fluid>
