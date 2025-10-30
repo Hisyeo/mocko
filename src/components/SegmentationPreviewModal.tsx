@@ -34,7 +34,7 @@ const SegmentationPreviewModal: React.FC<SegmentationPreviewModalProps> = ({ sho
       <Modal.Header closeButton>
         <Modal.Title>Segmentation Preview</Modal.Title>
       </Modal.Header>
-      <Modal.Body>
+      <Modal.Body id='segmentation-preview-modal-body'>
         {getHighlightedContent()}
       </Modal.Body>
       <Modal.Footer>
