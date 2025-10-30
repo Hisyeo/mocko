@@ -12,6 +12,51 @@ interface TranslationEditorProps {
   source: Source | null;
 }
 
+/**
+ * Checks if the current user selection is fully contained within
+ * an element matching the provided CSS selector.
+ *
+ * @param selection A window.getSelection() object
+ * @param selector A valid CSS selector string.
+ * @returns `true` if the selection is inside a matching element, otherwise `false`.
+ */
+function isSelectionInSelector(selection: Selection, selector: string): boolean {
+  // 1. Check if a selection exists
+  if (!selection || selection.rangeCount === 0) {
+    return false;
+  }
+
+  // 2. Get the first range of the selection
+  const range = selection.getRangeAt(0);
+  
+  // 3. Find the deepest DOM node that contains the entire selection
+  const commonAncestor = range.commonAncestorContainer;
+
+  // 4. Find the element to start searching from.
+  //    If the common ancestor is a Text node, we need to start
+  //    from its parentElement, as .closest() only exists on Elements.
+  let startingElement: Element | null = null;
+
+  if (commonAncestor.nodeType === Node.ELEMENT_NODE) {
+    // The ancestor is already an element
+    startingElement = commonAncestor as Element;
+  } else {
+    // The ancestor is a Text node (or other), so get its parent
+    startingElement = commonAncestor.parentElement;
+  }
+
+  // 5. If we have a valid starting element, find the closest ancestor
+  //    (or the element itself) that matches the selector.
+  if (startingElement) {
+    const matchingElement = startingElement.closest(selector);
+    
+    // If closest() finds a match, it returns the element. If not, it returns null.
+    return matchingElement !== null;
+  }
+
+  return false;
+}
+
 const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
   const [segments, setSegments] = useState<string[]>([]);
   const [delimiters, setDelimiters] = useState<string[]>([]);
@@ -119,7 +164,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
       return;
     }
     const selection = window.getSelection();
-    if (selection && selection.toString()) {
+    if (selection && selection.toString() && isSelectionInSelector(selection, '.source-text')) {
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
       setTooltip({ x: rect.left, y: rect.top - 30, text: selection.toString() });
@@ -212,7 +257,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
                 </div>
               ) : (
                 <div className="d-flex justify-content-between align-items-center w-100">
-                  <p className="mb-0">
+                  <p className={`mb-0 ${!translations[trimmedSegment] ? 'source-text': ''}`}>
                     {translations[trimmedSegment] || segment}
                     {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiters[index]}</Badge>}
                   </p>
