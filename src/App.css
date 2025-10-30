@@ -73,6 +73,10 @@ html, body, #root {
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
 }
 
+[data-theme="quartz"] #sidebar-wrapper {
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
 
 [data-theme="cyborg"] .cm-editor, [data-theme="darkly"] .cm-editor  {
     color: #212529;
