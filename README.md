@@ -55,6 +55,7 @@ Change to another [bootswatch](https://bootswatch.com) theme or turn off some of
 - [ ] Huge: Add a way to specify the target language and supply ANTLR grammar and hunspell files
 - [ ] Huge: Add a button to each translation segment for pulling up a modal that presents valid translations as parse trees
 - [ ] Add a wiktionary search link and a session setting for whether to open in a modal or in a new tab
+- [ ] Fix for delimiter trimming in the source export output
 
 ## Available Scripts
 
