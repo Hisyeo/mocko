@@ -124,6 +124,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
           minimalSetup,
           spellLinter,
           grammarLinter,
+          EditorView.lineWrapping,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               onChange(update.state.doc.toString());
