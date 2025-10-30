@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Nav, Button, Tabs, Tab, Row, Col, Form, InputGroup, Stack } from 'react-bootstrap';
 import './App.css';
 import SourceEditor from './components/SourceEditor';
@@ -25,7 +25,6 @@ const App: React.FC = () => {
     const storedWidth = localStorage.getItem('sidebarWidth');
     return storedWidth ? parseInt(storedWidth, 10) : 240;
   });
-  const [mode, setMode] = useState<Mode>('source');
   const [sources, setSources] = useState<Source[]>([]);
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
   const [showAddSourceModal, setShowAddSourceModal] = useState(false);
@@ -60,15 +59,30 @@ const App: React.FC = () => {
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
+  // Use a ref to store the "current" width during a drag.
+  // This avoids reading stale state in the onResizeEnd handler.
+  const widthRef = useRef(sidebarWidth);
+
+  // Keep the ref in sync with the state
+  useEffect(() => {
+    widthRef.current = sidebarWidth;
+  }, [sidebarWidth]);
+
   const handleResize = (delta: number) => {
     setSidebarWidth(prevWidth => {
       const newWidth = prevWidth + delta;
       if (newWidth > 100 && newWidth < 500) { // Min and max width
-        localStorage.setItem('sidebarWidth', String(newWidth));
+        // No local storage setting here! too costly
         return newWidth;
       }
       return prevWidth;
     });
+  };
+
+  // This new function saves to localStorage *once* at the end
+  const handleResizeEnd = () => {
+    // We read from the ref, which has the final, up-to-date width
+    localStorage.setItem('sidebarWidth', String(widthRef.current));
   };
 
   const handleSelectSource = (source: Source) => {
@@ -161,7 +175,7 @@ const App: React.FC = () => {
           <Nav.Link onClick={() => setShowAddSourceModal(true)}>+ Add Source</Nav.Link>
         </Nav>
       </div>
-      <Resizer onResize={handleResize} />
+      <Resizer onResize={handleResize} onResizeEnd={handleResizeEnd} />
       <div id="page-content-wrapper">
         <div className="page-content">
           <Container fluid>
