@@ -39,7 +39,7 @@ Change to another [bootswatch](https://bootswatch.com) theme or turn off some of
 
 ## To Do
 
-- [ ] Make sidebar width adjustable
+- [x] Make sidebar width adjustable
 - [ ] Add search box to sidebar for navigating long lists of sources
 - [ ] Add a sort option to sidebar that allows you to organize by alphabetical (source), alphabetical (translation), last updated, or last added
 - [ ] Add a way to pin sources so they show at the top of the source list
