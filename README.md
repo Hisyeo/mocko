@@ -54,6 +54,7 @@ Change to another [bootswatch](https://bootswatch.com) theme or turn off some of
 - [ ] Make the Usage section of the memory card a hyperlink that expands into a full scrollable showcase of each source segment, memory in bold, and the translated segment below (if the memory's translation text is found in the translated segment, it should be in bold as well)
 - [ ] Huge: Add a way to specify the target language and supply ANTLR grammar and hunspell files
 - [ ] Huge: Add a button to each translation segment for pulling up a modal that presents valid translations as parse trees
+- [ ] Add a wiktionary search link and a session setting for whether to open in a modal or in a new tab
 
 ## Available Scripts
 
