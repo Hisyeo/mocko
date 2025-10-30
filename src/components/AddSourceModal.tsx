@@ -61,7 +61,7 @@ const AddSourceModal: React.FC<AddSourceModalProps> = ({ show, onHide, onAddSour
   const isWandDisabled = title !== '' || content !== '';
 
   return (
-    <Modal show={show} onHide={onHide}>
+    <Modal show={show} onHide={onHide} id='add-source-modal'>
       <Modal.Header closeButton>
         <Modal.Title>Add New Source</Modal.Title>
       </Modal.Header>
