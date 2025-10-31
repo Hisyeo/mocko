@@ -13,8 +13,10 @@ interface SourceEditorProps {
 
 const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onDelete, segments, delimiters }) => {
   const [title, setTitle] = useState('');
+  const [filename, setFilename] = useState('');
   const [content, setContent] = useState('');
   const [originalTitle, setOriginalTitle] = useState('');
+  const [originalFilename, setOriginalFilename] = useState('');
   const [originalContent, setOriginalContent] = useState('');
   const [segmentationRule, setSegmentationRule] = useState('\n');
   const [originalSegmentationRule, setOriginalSegmentationRule] = useState('\n');
@@ -31,8 +33,10 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
   useEffect(() => {
     if (source) {
       setTitle(source.title);
+      setFilename(source.filename);
       setContent(source.content);
       setOriginalTitle(source.title);
+      setOriginalFilename(source.filename);
       setOriginalContent(source.content);
       const rule = source.segmentationRule || '\n';
       setSegmentationRule(rule);
@@ -91,15 +95,17 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
 
       localStorage.setItem(`translations_${source.id}`, JSON.stringify(newTranslations));
       
-      onSourceUpdate({ ...source, title, content });
+      onSourceUpdate({ ...source, title, content, filename });
       setOriginalTitle(title);
       setOriginalContent(content);
+      setOriginalFilename(filename);
     }
   };
 
   const handleContentDiscard = () => {
     setTitle(originalTitle);
     setContent(originalContent);
+    setFilename(originalFilename);
   };
 
   const handleSegmentationSave = () => {
@@ -138,7 +144,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${title}_translated.txt`;
+    a.download = `${filename}_translated.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -147,7 +153,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
     if (!source) return;
 
     const mockoData = {
-      source: source,
+      source: { ...source, filename },
       translations: JSON.parse(localStorage.getItem(`translations_${source.id}`) || '{}'),
       memories: JSON.parse(localStorage.getItem(`memories_${source.id}`) || '{}'),
       delimiters: JSON.parse(localStorage.getItem(`delimiters_${source.id}`) || '[]'),
@@ -157,7 +163,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${source.title}.mocko`;
+    a.download = `${filename}.mocko`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -170,7 +176,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
     });
   };
 
-  const isContentChanged = title !== originalTitle || content !== originalContent;
+  const isContentChanged = title !== originalTitle || content !== originalContent || filename !== originalFilename;
 
   if (!source) {
     return <div><p>Please select a source from the sidebar to edit.</p></div>;
@@ -179,7 +185,16 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
   return (
     <div>
       <Form>
-        <Form.Group controlId="sourceTitle">
+        <Form.Group controlId="filename">
+          <Form.Label>Filename</Form.Label>
+          <Form.Control 
+            type="text" 
+            placeholder="Enter filename" 
+            value={filename} 
+            onChange={(e) => setFilename(e.target.value)} 
+          />
+        </Form.Group>
+        <Form.Group controlId="sourceTitle" className="mt-2">
           <Form.Label>Title</Form.Label>
           <Form.Control 
             type="text" 

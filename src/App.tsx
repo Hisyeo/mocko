@@ -9,10 +9,12 @@ import AddSourceModal from './components/AddSourceModal';
 import SizeBlocker from './components/SizeBlocker';
 import { useApp } from './AppContext';
 import Resizer from './components/Resizer';
+import ImportConflictModal from './components/ImportConflictModal';
 
 export interface Source {
   id: string;
   title: string;
+  filename: string;
   content: string;
   segmentationRule?: string;
   modified?: number;
@@ -33,6 +35,7 @@ const App: React.FC = () => {
   const [isScreenTooSmall, setIsScreenTooSmall] = useState(window.innerWidth < 800);
   const [sourceFilter, setSourceFilter] = useState(() => localStorage.getItem('sourceFilter') || '');
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => (localStorage.getItem('sortOrder') as SortOrder) || 'Alphabetical');
+  const [conflictData, setConflictData] = useState<any | null>(null);
   const { theme } = useApp();
 
   const segments = useMemo(() => {
@@ -104,6 +107,7 @@ const App: React.FC = () => {
     const newSource: Source = {
       id: new Date().toISOString(),
       title,
+      filename: title,
       content,
       modified: Date.now(),
     };
@@ -132,16 +136,26 @@ const App: React.FC = () => {
   };
 
   const handleImportMocko = (data: any) => {
+    const existingSource = sources.find(s => s.filename === data.source.filename);
+    if (existingSource) {
+      setConflictData({ ...data, existingSourceId: existingSource.id });
+    } else {
+      finalizeImport(data);
+    }
+  };
+
+  const finalizeImport = (data: any, newFilename?: string) => {
     const { source, translations, memories, delimiters } = data;
     const newId = new Date().toISOString();
-    const newSource = { ...source, id: newId, modified: Date.now() };
+    const newSource = { ...source, id: newId, modified: Date.now(), filename: newFilename || source.filename };
 
-    const updatedSources = [...sources, newSource];
+    const updatedSources = newFilename ? sources.map(s => s.id === data.existingSourceId ? newSource : s) : [...sources, newSource];
     setSources(updatedSources);
     localStorage.setItem('sources', JSON.stringify(updatedSources));
     localStorage.setItem(`translations_${newId}`, JSON.stringify(translations));
     localStorage.setItem(`memories_${newId}`, JSON.stringify(memories));
     localStorage.setItem(`delimiters_${newId}`, JSON.stringify(delimiters));
+    setConflictData(null);
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,7 +175,7 @@ const App: React.FC = () => {
   };
 
   const sortedAndFilteredSources = [...sources]
-    .filter(source => source.title.toLowerCase().includes(sourceFilter.toLowerCase()))
+    .filter(source => (source.filename ?? source.title).toLowerCase().includes(sourceFilter.toLowerCase()))
     .sort((a, b) => {
       switch (sortOrder) {
         case 'Oldest First': return new Date(a.id).getTime() - new Date(b.id).getTime();
@@ -182,8 +196,8 @@ const App: React.FC = () => {
         }
         case 'Alphabetical':
         default: {
-          const cleanA = a.title.replace(/^(the|a|an)\s+/i, '');
-          const cleanB = b.title.replace(/^(the|a|an)\s+/i, '');
+          const cleanA = (a.filename ?? a.title).replace(/^(the|a|an)\s+/i, '');
+          const cleanB = (b.filename ?? b.title).replace(/^(the|a|an)\s+/i, '');
           return cleanA.localeCompare(cleanB);
         }
       }
@@ -232,7 +246,7 @@ const App: React.FC = () => {
         </div>
         <Nav className="flex-column" navbarScroll>
           {sortedAndFilteredSources.map(source => (
-            <Nav.Link key={source.id} onClick={() => handleSelectSource(source)} className={selectedSource?.id === source.id ? 'bg-info text-bg-info' : ''}>{source.title}</Nav.Link>
+            <Nav.Link key={source.id} onClick={() => handleSelectSource(source)} className={selectedSource?.id === source.id ? 'bg-info text-bg-info' : ''}>{source.filename ?? source.title}</Nav.Link>
           ))}
         </Nav>
       </div>
@@ -293,6 +307,16 @@ const App: React.FC = () => {
         onAddSource={handleAddSource} 
         onImport={handleImportMocko}
       />
+      {conflictData && (
+        <ImportConflictModal 
+          show={!!conflictData}
+          onHide={() => setConflictData(null)}
+          onOverwrite={() => finalizeImport(conflictData, conflictData.source.filename)}
+          onRename={(newFilename) => finalizeImport(conflictData, newFilename)}
+          existingFilename={conflictData.source.filename}
+          sources={sources}
+        />
+      )}
     </div>
   );
 }
