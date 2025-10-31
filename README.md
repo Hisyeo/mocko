@@ -38,6 +38,7 @@ Navigating from one translation segment to another should be three keystrokes ba
 Change to another [bootswatch](https://bootswatch.com) theme or turn off some of the translation editor features and these settings will be saved in your session data. You can also backup and restore sessions which will include all of the source files currently in the tool.
 
 ## To Do
+In no particular order.
 
 - [x] Make sidebar width adjustable
 - [x] Add search box to sidebar for navigating long lists of sources
@@ -60,6 +61,9 @@ Change to another [bootswatch](https://bootswatch.com) theme or turn off some of
 - [ ] Perf: Centralize source segmentation, cache result and pass as props to Source/Translation/Memory components
 - [ ] Perf: Use web worker for segmentation and stat calculation
 - [ ] Perf: Make grammarLinter asynchronous
+- [ ] Make the import memories panel collapsible
+- [ ] Huge: Support identifying and checking styling tags
+- [ ] Add segment type dropdown with these options: heading, body, skip
 
 ## Available Scripts
 
