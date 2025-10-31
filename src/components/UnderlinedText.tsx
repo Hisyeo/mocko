@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import Mark from 'mark.js';
+import { useApp } from '../AppContext';
 
 interface UnderlinedTextProps {
   text: string;
@@ -10,6 +11,7 @@ interface UnderlinedTextProps {
 
 const UnderlinedText: React.FC<UnderlinedTextProps> = ({ text, memories, onInsert, onMemoriesNumbered }) => {
   const textRef = useRef<HTMLDivElement>(null);
+  const { autocomplete } = useApp();
 
   useEffect(() => {
     let count = 0;
@@ -25,19 +27,23 @@ const UnderlinedText: React.FC<UnderlinedTextProps> = ({ text, memories, onInser
             each: (el: HTMLElement) => {
               el.setAttribute('title', memories[key]);
               el.onclick = () => onInsert(memories[key]);
-              const numBadge = document.createElement('span');
-              count++;
-              numberedMemories[count] = { source: key, target: memories[key] };
-              numBadge.className = 'badge-sm position-absolute bottom-45 translate-middle rounded-pill bg-danger';
-              numBadge.innerText = `${count}`;
-              el.appendChild(numBadge);
+              if (autocomplete) {
+                count++;
+                numberedMemories[count] = { source: key, target: memories[key] };
+                const numBadge = document.createElement('span');
+                numBadge.className = 'badge-sm position-absolute bottom-45 translate-middle rounded-pill bg-danger';
+                numBadge.innerText = `${count}`;
+                el.appendChild(numBadge);
+              }
             }
           });
         });
-        onMemoriesNumbered(numberedMemories);
+        if (autocomplete) {
+          onMemoriesNumbered(numberedMemories);
+        }
       }});
     }
-  }, [text, memories, onInsert, onMemoriesNumbered]);
+  }, [text, memories, onInsert, onMemoriesNumbered, autocomplete]);
 
   return <span ref={textRef} id='current-editing-translation-source-text'>{text}</span>;
 };
