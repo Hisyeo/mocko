@@ -63,7 +63,9 @@ In no particular order.
 - [ ] Perf: Make grammarLinter asynchronous
 - [ ] Make the import memories panel collapsible
 - [ ] Huge: Support identifying and checking styling tags
-- [ ] Add segment type dropdown with these options: heading, body, skip
+- [ ] Add segment options popover with a type dropdown: heading (sub-option: heading level), body, skip (sub-option: skip delimiters: neither, before, after, both)
+- [ ] Make the heading type segments appear as dropdown options for the sidebar nav
+- [ ] Make the skip type segments be completely skipped from generated output and will skip grammar/spellcheck validation
 
 ## Available Scripts
 
