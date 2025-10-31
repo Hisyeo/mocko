@@ -3,7 +3,7 @@ import { Button, Card, Form, Stack } from 'react-bootstrap';
 import { useApp } from '../AppContext';
 
 const Settings: React.FC = () => {
-  const { theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete } = useApp();
+  const { theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch } = useApp();
 
   const handleBackup = () => {
     const data = JSON.stringify(localStorage);
@@ -89,6 +89,13 @@ const Settings: React.FC = () => {
             checked={autocomplete}
             onChange={(e) => setAutocomplete(e.target.checked)}
           />
+          <Form.Group controlId="wiktionarySearchSelect" className="mt-3">
+            <Form.Label>Wiktionary Search</Form.Label>
+            <Form.Control as="select" value={wiktionarySearch} onChange={(e) => setWiktionarySearch(e.target.value)}>
+              <option value="modal">Modal</option>
+              <option value="new-tab">New Tab</option>
+            </Form.Control>
+          </Form.Group>
         </Card.Body>
       </Card>
       

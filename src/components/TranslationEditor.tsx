@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Form, ListGroup, Button, Badge, Stack } from 'react-bootstrap';
 import Mark from 'mark.js';
-import MemoryTooltip from './MemoryTooltip';
+import SelectionTooltip from './SelectionTooltip';
 import UnderlinedText from './UnderlinedText';
 import { Source } from '../App';
 import SpellCheckEditor from './SpellCheckEditor';
 import { Diagnostic } from '@codemirror/lint';
 import { useApp } from '../AppContext';
+import WiktionaryModal from './WiktionaryModal';
 
 interface TranslationEditorProps {
   source: Source | null;
@@ -32,18 +33,16 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
   const [diagnostics, setDiagnostics] = useState<readonly Diagnostic[]>([]);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const [isAddingMemory, setIsAddingMemory] = useState(false);
+  const [memories, setMemories] = useState<Record<string, string>>({});
   const [translatedTitle, setTranslatedTitle] = useState('');
   const [numberedMemories, setNumberedMemories] = useState<Record<number, { source: string, target: string }>>({});
+  const [showWiktionaryModal, setShowWiktionaryModal] = useState(false);
+  const [wiktionaryTerm, setWiktionaryTerm] = useState('');
+  const [memoryVersion, setMemoryVersion] = useState(0);
   const { grammarCheck, spellCheck } = useApp();
 
   const editorRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-
-  const memories = useMemo(() => {
-    if (!source) return {};
-    const storedMemories = localStorage.getItem(`memories_${source.id}`);
-    return storedMemories ? JSON.parse(storedMemories) : {};
-  }, [source]);
 
   const onMemoriesNumbered = useCallback((newMemories: Record<number, { source: string, target: string }>) => {
     setNumberedMemories(oldMemories => {
@@ -61,6 +60,9 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
 
   useEffect(() => {
     if (source) {
+      const storedMemories = localStorage.getItem(`memories_${source.id}`);
+      setMemories(storedMemories ? JSON.parse(storedMemories) : {});
+
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       if (storedTranslations) {
         const parsedTranslations = JSON.parse(storedTranslations);
@@ -68,7 +70,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
         setTranslatedTitle(parsedTranslations['__title__'] || '');
       }
     }
-  }, [source]);
+  }, [source, memoryVersion]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -162,11 +164,17 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
     if (tooltip && source) {
       const updatedMemories = { ...memories, [tooltip.text]: target };
       localStorage.setItem(`memories_${source.id}`, JSON.stringify(updatedMemories));
+      setMemoryVersion(prev => prev + 1);
       setIsAddingMemory(false);
       setTooltip(null);
       const instance = new Mark(editorRef.current as HTMLElement);
       instance.unmark();
     }
+  };
+
+  const handleWiktionarySearch = (term: string) => {
+    setWiktionaryTerm(term);
+    setShowWiktionaryModal(true);
   };
 
   if (!source) {
@@ -181,15 +189,18 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
   return (
     <div ref={editorRef} onMouseUp={handleMouseUp}>
       {tooltip && (
-        <MemoryTooltip 
+        <SelectionTooltip 
           ref={tooltipRef}
           x={tooltip.x} 
           y={tooltip.y} 
+          text={tooltip.text}
           onAddMemory={handleAddMemory} 
           onSaveMemory={handleSaveMemory}
+          onWiktionarySearch={handleWiktionarySearch}
           isAddingMemory={isAddingMemory}
         />
       )}
+      <WiktionaryModal show={showWiktionaryModal} onHide={() => setShowWiktionaryModal(false)} term={wiktionaryTerm} />
       <h1>{translatedTitle || source.title}</h1>
       <Form.Group controlId="translatedTitle" className="mt-2">
         <Form.Label>Translated Title</Form.Label>

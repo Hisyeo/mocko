@@ -9,6 +9,8 @@ interface AppContextType {
   setSpellCheck: (value: boolean) => void;
   autocomplete: boolean;
   setAutocomplete: (value: boolean) => void;
+  wiktionarySearch: string;
+  setWiktionarySearch: (value: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -18,6 +20,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [grammarCheck, rawSetGrammarCheck] = useState(() => localStorage.getItem('grammarCheck') !== 'true');
   const [spellCheck, rawSetSpellCheck] = useState(() => localStorage.getItem('spellCheck') !== 'true');
   const [autocomplete, rawSetAutocomplete] = useState(() => localStorage.getItem('autocomplete') !== 'true');
+  const [wiktionarySearch, rawSetWiktionarySearch] = useState(() => localStorage.getItem('wiktionarySearch') || 'modal');
 
   const setTheme = (newTheme: string) => {
     rawSetTheme(newTheme);
@@ -39,6 +42,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('autocomplete', String(value));
   };
 
+  const setWiktionarySearch = (value: string) => {
+    rawSetWiktionarySearch(value);
+    localStorage.setItem('wiktionarySearch', value);
+  };
+
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
     if (storedTheme) rawSetTheme(storedTheme);
@@ -51,10 +59,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const storedAutocomplete = localStorage.getItem('autocomplete');
     if (storedAutocomplete) rawSetAutocomplete(storedAutocomplete === 'true');
+
+    const storedWiktionarySearch = localStorage.getItem('wiktionarySearch');
+    if (storedWiktionarySearch) rawSetWiktionarySearch(storedWiktionarySearch);
   }, []);
 
   return (
-    <AppContext.Provider value={{ theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete }}>
+    <AppContext.Provider value={{ theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch }}>
       {children}
     </AppContext.Provider>
   );
