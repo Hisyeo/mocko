@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Container, Nav, Button, Tabs, Tab, Row, Col, Form, InputGroup, Stack } from 'react-bootstrap';
+import { Container, Nav, Button, Tabs, Tab, Row, Col, Form, InputGroup, Stack, Dropdown } from 'react-bootstrap';
 import './App.css';
 import SourceEditor from './components/SourceEditor';
 import TranslationEditor from './components/TranslationEditor';
@@ -15,9 +15,11 @@ export interface Source {
   title: string;
   content: string;
   segmentationRule?: string;
+  modified?: number;
 }
 
 type Mode = 'source' | 'translation' | 'memory' | 'settings';
+type SortOrder = 'Oldest First' | 'Newest First' | 'Most Recently Modified' | 'Least Recently Modified' | 'Longest Source' | 'Shortest Source' | 'Most Translated' | 'Least Translated' | 'Alphabetical';
 
 const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -30,6 +32,7 @@ const App: React.FC = () => {
   const [showAddSourceModal, setShowAddSourceModal] = useState(false);
   const [isScreenTooSmall, setIsScreenTooSmall] = useState(window.innerWidth < 800);
   const [sourceFilter, setSourceFilter] = useState(() => localStorage.getItem('sourceFilter') || '');
+  const [sortOrder, setSortOrder] = useState<SortOrder>(() => (localStorage.getItem('sortOrder') as SortOrder) || 'Alphabetical');
   const { theme } = useApp();
 
   useEffect(() => {
@@ -59,11 +62,8 @@ const App: React.FC = () => {
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  // Use a ref to store the "current" width during a drag.
-  // This avoids reading stale state in the onResizeEnd handler.
   const widthRef = useRef(sidebarWidth);
 
-  // Keep the ref in sync with the state
   useEffect(() => {
     widthRef.current = sidebarWidth;
   }, [sidebarWidth]);
@@ -72,22 +72,18 @@ const App: React.FC = () => {
     setSidebarWidth(prevWidth => {
       const newWidth = prevWidth + delta;
       if (newWidth > 100 && newWidth < 500) { // Min and max width
-        // No local storage setting here! too costly
         return newWidth;
       }
       return prevWidth;
     });
   };
 
-  // This new function saves to localStorage *once* at the end
   const handleResizeEnd = () => {
-    // We read from the ref, which has the final, up-to-date width
     localStorage.setItem('sidebarWidth', String(widthRef.current));
   };
 
   const handleSelectSource = (source: Source) => {
     setSelectedSource(source);
-    // setMode('source');
   }
 
   const handleAddSource = (title: string, content: string) => {
@@ -95,6 +91,7 @@ const App: React.FC = () => {
       id: new Date().toISOString(),
       title,
       content,
+      modified: Date.now(),
     };
     const updatedSources = [...sources, newSource];
     setSources(updatedSources);
@@ -102,9 +99,9 @@ const App: React.FC = () => {
   };
 
   const handleSourceUpdate = (updatedSource: Source) => {
-    const updatedSources = sources.map(s => s.id === updatedSource.id ? updatedSource : s);
+    const updatedSources = sources.map(s => s.id === updatedSource.id ? { ...updatedSource, modified: Date.now() } : s);
     setSources(updatedSources);
-    setSelectedSource(updatedSource);
+    setSelectedSource({ ...updatedSource, modified: Date.now() });
     localStorage.setItem('sources', JSON.stringify(updatedSources));
   };
 
@@ -123,7 +120,7 @@ const App: React.FC = () => {
   const handleImportMocko = (data: any) => {
     const { source, translations, memories, delimiters } = data;
     const newId = new Date().toISOString();
-    const newSource = { ...source, id: newId };
+    const newSource = { ...source, id: newId, modified: Date.now() };
 
     const updatedSources = [...sources, newSource];
     setSources(updatedSources);
@@ -144,9 +141,39 @@ const App: React.FC = () => {
     localStorage.removeItem('sourceFilter');
   };
 
-  const filteredSources = sources.filter(source => 
-    source.title.toLowerCase().includes(sourceFilter.toLowerCase())
-  );
+  const handleSortChange = (order: SortOrder) => {
+    setSortOrder(order);
+    localStorage.setItem('sortOrder', order);
+  };
+
+  const sortedAndFilteredSources = [...sources]
+    .filter(source => source.title.toLowerCase().includes(sourceFilter.toLowerCase()))
+    .sort((a, b) => {
+      switch (sortOrder) {
+        case 'Oldest First': return new Date(a.id).getTime() - new Date(b.id).getTime();
+        case 'Newest First': return new Date(b.id).getTime() - new Date(a.id).getTime();
+        case 'Most Recently Modified': return (b.modified || 0) - (a.modified || 0);
+        case 'Least Recently Modified': return (a.modified || 0) - (b.modified || 0);
+        case 'Longest Source': return b.content.length - a.content.length;
+        case 'Shortest Source': return a.content.length - b.content.length;
+        case 'Most Translated': {
+          const aTranslations = JSON.parse(localStorage.getItem(`translations_${a.id}`) || '{}');
+          const bTranslations = JSON.parse(localStorage.getItem(`translations_${b.id}`) || '{}');
+          return Object.keys(bTranslations).length - Object.keys(aTranslations).length;
+        }
+        case 'Least Translated': {
+          const aTranslations = JSON.parse(localStorage.getItem(`translations_${a.id}`) || '{}');
+          const bTranslations = JSON.parse(localStorage.getItem(`translations_${b.id}`) || '{}');
+          return Object.keys(aTranslations).length - Object.keys(bTranslations).length;
+        }
+        case 'Alphabetical':
+        default: {
+          const cleanA = a.title.replace(/^(the|a|an)\s+/i, '');
+          const cleanB = b.title.replace(/^(the|a|an)\s+/i, '');
+          return cleanA.localeCompare(cleanB);
+        }
+      }
+    });
 
   if (isScreenTooSmall) {
     return <SizeBlocker />;
@@ -158,7 +185,23 @@ const App: React.FC = () => {
         <div className="sidebar-heading">
           <Stack direction='horizontal'>
             <span>Your Sources</span>
-            <Button variant='outline-info' className='ms-auto' onClick={() => setShowAddSourceModal(true)}>+</Button>
+            <Dropdown onSelect={(e) => handleSortChange(e as SortOrder)} className='ms-auto' >
+              <Dropdown.Toggle variant="outline-secondary"  id="dropdown-basic">
+                Sort
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                <Dropdown.Item eventKey="Alphabetical">Alphabetical</Dropdown.Item>
+                <Dropdown.Item eventKey="Oldest First">Oldest First</Dropdown.Item>
+                <Dropdown.Item eventKey="Newest First">Newest First</Dropdown.Item>
+                <Dropdown.Item eventKey="Most Recently Modified">Most Recently Modified</Dropdown.Item>
+                <Dropdown.Item eventKey="Least Recently Modified">Least Recently Modified</Dropdown.Item>
+                <Dropdown.Item eventKey="Longest Source">Longest Source</Dropdown.Item>
+                <Dropdown.Item eventKey="Shortest Source">Shortest Source</Dropdown.Item>
+                <Dropdown.Item eventKey="Most Translated">Most Translated</Dropdown.Item>
+                <Dropdown.Item eventKey="Least Translated">Least Translated</Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+            <Button variant='outline-info' onClick={() => setShowAddSourceModal(true)}>+</Button>
           </Stack>
         </div>
         <div className="p-2">
@@ -174,7 +217,7 @@ const App: React.FC = () => {
           
         </div>
         <Nav className="flex-column" navbarScroll>
-          {filteredSources.map(source => (
+          {sortedAndFilteredSources.map(source => (
             <Nav.Link key={source.id} onClick={() => handleSelectSource(source)} className={selectedSource?.id === source.id ? 'bg-info text-bg-info' : ''}>{source.title}</Nav.Link>
           ))}
         </Nav>
