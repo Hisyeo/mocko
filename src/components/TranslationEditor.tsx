@@ -10,6 +10,8 @@ import { useApp } from '../AppContext';
 
 interface TranslationEditorProps {
   source: Source | null;
+  segments: string[];
+  delimiters: string[];
 }
 
 /**
@@ -57,9 +59,7 @@ function isSelectionInSelector(selection: Selection, selector: string): boolean 
   return false;
 }
 
-const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
-  const [segments, setSegments] = useState<string[]>([]);
-  const [delimiters, setDelimiters] = useState<string[]>([]);
+const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments, delimiters }) => {
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [editingSegment, setEditingSegment] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
@@ -78,14 +78,6 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
     if (source) {
       const storedMemories = localStorage.getItem(`memories_${source.id}`);
       setMemories(storedMemories ? JSON.parse(storedMemories) : {});
-
-      const rule = source.segmentationRule || '\n';
-      const wrappedRule = `(${rule})`;
-      const parts = source.content.split(new RegExp(wrappedRule));
-      setSegments(parts.filter((_, i) => i % 2 === 0));
-      
-      const storedDelimiters = localStorage.getItem(`delimiters_${source.id}`);
-      setDelimiters(storedDelimiters ? JSON.parse(storedDelimiters) : parts.filter((_, i) => i % 2 !== 0));
 
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       if (storedTranslations) {

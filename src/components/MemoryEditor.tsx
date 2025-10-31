@@ -5,6 +5,7 @@ import { Source } from '../App';
 interface MemoryEditorProps {
   source: Source | null;
   allSources: Source[];
+  segments: string[];
 }
 
 interface ImportedMemory {
@@ -12,7 +13,7 @@ interface ImportedMemory {
   sourceTitle: string;
 }
 
-const MemoryEditor: React.FC<MemoryEditorProps> = ({ source, allSources }) => {
+const MemoryEditor: React.FC<MemoryEditorProps> = ({ source, allSources, segments }) => {
   const [memories, setMemories] = useState<Record<string, string>>({});
   const [editingMemory, setEditingMemory] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
@@ -84,7 +85,6 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ source, allSources }) => {
 
   const getMemoryUsage = (memoryText: string) => {
     if (!source) return [];
-    const segments = source.content.split(new RegExp(source.segmentationRule || '\n')).filter(segment => segment.trim() !== '');
     return segments.map((segment, index) => segment.includes(memoryText) ? `Segment ${index + 1}` : null).filter(Boolean);
   };
 

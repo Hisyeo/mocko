@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Container, Nav, Button, Tabs, Tab, Row, Col, Form, InputGroup, Stack, Dropdown } from 'react-bootstrap';
 import './App.css';
 import SourceEditor from './components/SourceEditor';
@@ -34,6 +34,20 @@ const App: React.FC = () => {
   const [sourceFilter, setSourceFilter] = useState(() => localStorage.getItem('sourceFilter') || '');
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => (localStorage.getItem('sortOrder') as SortOrder) || 'Alphabetical');
   const { theme } = useApp();
+
+  const segments = useMemo(() => {
+    if (!selectedSource) return [];
+    const rule = selectedSource.segmentationRule || '\n';
+    const wrappedRule = `(${rule})`;
+    return selectedSource.content.split(new RegExp(wrappedRule)).filter((_, i) => i % 2 === 0);
+  }, [selectedSource]);
+
+  const delimiters = useMemo(() => {
+    if (!selectedSource) return [];
+    const rule = selectedSource.segmentationRule || '\n';
+    const wrappedRule = `(${rule})`;
+    return selectedSource.content.split(new RegExp(wrappedRule)).filter((_, i) => i % 2 !== 0);
+  }, [selectedSource]);
 
   useEffect(() => {
     const themeLink = document.getElementById('theme-link') as HTMLLinkElement;
@@ -249,13 +263,13 @@ const App: React.FC = () => {
               <Row>
                 <Tab.Content>
                   <Tab.Pane eventKey="source">
-                    <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} />
+                    <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} segments={segments} delimiters={delimiters} />
                   </Tab.Pane>
                   <Tab.Pane eventKey="translation">
-                    <TranslationEditor source={selectedSource} />
+                    <TranslationEditor source={selectedSource} segments={segments} delimiters={delimiters} />
                   </Tab.Pane>
                   <Tab.Pane eventKey="memory">
-                    <MemoryEditor source={selectedSource} allSources={sources} />
+                    <MemoryEditor source={selectedSource} allSources={sources} segments={segments} />
                   </Tab.Pane>
                   <Tab.Pane eventKey="settings">
                     <Settings />

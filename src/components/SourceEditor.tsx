@@ -7,9 +7,11 @@ interface SourceEditorProps {
   source: Source | null;
   onSourceUpdate: (updatedSource: Source) => void;
   onDelete: (sourceId: string) => void;
+  segments: string[];
+  delimiters: string[];
 }
 
-const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onDelete }) => {
+const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onDelete, segments, delimiters }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [originalTitle, setOriginalTitle] = useState('');
@@ -39,11 +41,6 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const translations = storedTranslations ? JSON.parse(storedTranslations) : {};
       setTranslatedTitle(translations['__title__'] || '');
-      
-      const wrappedRule = `(${rule})`;
-      const parts = source.content.split(new RegExp(wrappedRule));
-      const segments = parts.filter((_, i) => i % 2 === 0);
-      const delimiters = parts.filter((_, i) => i % 2 !== 0);
 
       const sourceWordCount = countWords(source.content);
       const translatedSegments = Object.keys(translations).filter(key => key !== '__title__');
@@ -72,7 +69,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
       });
       setRenderedContent(reconstructed);
     }
-  }, [source]);
+  }, [source, segments, delimiters]);
 
   const handleContentSave = () => {
     if (source) {
