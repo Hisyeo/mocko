@@ -40,8 +40,8 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
   const { grammarCheck, spellCheck, autocomplete } = useApp();
 
   useEffect(() => {
-    numberedMemoriesRef.current = numberedMemories
-  }, [numberedMemories])
+    numberedMemoriesRef.current = numberedMemories;
+  }, [numberedMemories]);
 
   useEffect(() => {
     if (viewRef.current) return; // Prevent re-initialization
