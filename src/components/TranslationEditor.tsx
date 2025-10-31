@@ -116,6 +116,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
     setEditingSegment(segment.trim());
     setCurrentTranslation(translations[segment.trim()] || '');
     setDiagnostics([]);
+    setNumberedMemories({});
   };
 
   const handleSave = (segment: string) => {

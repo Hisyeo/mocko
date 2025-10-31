@@ -36,7 +36,12 @@ interface SpellCheckEditorProps {
 const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, onDiagnosticsChange, autofocus, numberedMemories }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const numberedMemoriesRef = useRef(numberedMemories);
   const { grammarCheck, spellCheck, autocomplete } = useApp();
+
+  useEffect(() => {
+    numberedMemoriesRef.current = numberedMemories
+  }, [numberedMemories])
 
   useEffect(() => {
     if (viewRef.current) return; // Prevent re-initialization
@@ -49,7 +54,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
           if (memoryTag.text === '!') {
             return {
               from: memoryTag.from,
-              options: Object.entries(numberedMemories).map(([num, mem]) => ({
+              options: Object.entries(numberedMemoriesRef.current).map(([num, mem]) => ({
                 label: `!${num}`,
                 type: 'Memory',
                 detail: mem.target,
@@ -59,7 +64,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
             }
           }
           const num = parseInt(memoryTag.text.substring(1), 10);
-          const memory = numberedMemories[num];
+          const memory = numberedMemoriesRef.current[num];
           if (memory) {
             return {
               from: memoryTag.from,
