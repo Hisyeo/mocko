@@ -68,6 +68,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
   const [isAddingMemory, setIsAddingMemory] = useState(false);
   const [memories, setMemories] = useState<Record<string, string>>({});
   const [translatedTitle, setTranslatedTitle] = useState('');
+  const [numberedMemories, setNumberedMemories] = useState<Record<number, { source: string, target: string }>>({});
   const { grammarCheck, spellCheck } = useApp();
 
   const editorRef = useRef<HTMLDivElement>(null);
@@ -242,13 +243,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source }) => {
             <ListGroup.Item key={index} className="d-flex align-items-center">
               {editingSegment === trimmedSegment ? (
                 <div className="w-100">
-                  <UnderlinedText text={segment} memories={memories} onInsert={handleInsertMemory} />
+                  <UnderlinedText text={segment} memories={memories} onInsert={handleInsertMemory} onMemoriesNumbered={setNumberedMemories} />
                   {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiters[index]}</Badge>}
                   <SpellCheckEditor 
                     value={currentTranslation} 
                     onChange={setCurrentTranslation} 
                     onDiagnosticsChange={setDiagnostics}
                     autofocus={editingSegment === trimmedSegment}
+                    numberedMemories={numberedMemories}
                   />
                   <Stack direction='horizontal' gap={1}>
                     <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(trimmedSegment)} disabled={isLastSegment || hasErrors}>Save & Edit Next</Button>

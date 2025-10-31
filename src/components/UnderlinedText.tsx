@@ -5,12 +5,16 @@ interface UnderlinedTextProps {
   text: string;
   memories: Record<string, string>;
   onInsert: (text: string) => void;
+  onMemoriesNumbered: (memories: Record<number, { source: string, target: string }>) => void;
 }
 
-const UnderlinedText: React.FC<UnderlinedTextProps> = ({ text, memories, onInsert }) => {
+const UnderlinedText: React.FC<UnderlinedTextProps> = ({ text, memories, onInsert, onMemoriesNumbered }) => {
   const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let count = 0;
+    const numberedMemories: Record<number, { source: string, target: string }> = {};
+
     if (textRef.current) {
       const instance = new Mark(textRef.current);
       instance.unmark({ done: () => {
@@ -21,12 +25,19 @@ const UnderlinedText: React.FC<UnderlinedTextProps> = ({ text, memories, onInser
             each: (el: HTMLElement) => {
               el.setAttribute('title', memories[key]);
               el.onclick = () => onInsert(memories[key]);
+              const numBadge = document.createElement('span');
+              count++;
+              numberedMemories[count] = { source: key, target: memories[key] };
+              numBadge.className = 'badge-sm position-absolute bottom-45 translate-middle rounded-pill bg-danger';
+              numBadge.innerText = `${count}`;
+              el.appendChild(numBadge);
             }
           });
         });
+        onMemoriesNumbered(numberedMemories);
       }});
     }
-  }, [text, memories, onInsert]);
+  }, [text, memories, onInsert, onMemoriesNumbered]);
 
   return <span ref={textRef} id='current-editing-translation-source-text'>{text}</span>;
 };

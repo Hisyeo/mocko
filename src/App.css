@@ -172,3 +172,9 @@ html, body, #root {
         content: 'INT'
     }
 }
+
+.cm-completionIcon-Memory {
+    &::after {
+        content: 'MEM'
+    }
+}

@@ -30,9 +30,10 @@ interface SpellCheckEditorProps {
   onChange: (value: string) => void;
   onDiagnosticsChange: (diagnostics: readonly Diagnostic[]) => void;
   autofocus?: boolean;
+  numberedMemories: Record<number, { source: string, target: string }>;
 }
 
-const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, onDiagnosticsChange, autofocus }) => {
+const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, onDiagnosticsChange, autofocus, numberedMemories }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const { grammarCheck, spellCheck, autocomplete } = useApp();
@@ -43,6 +44,35 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
     let isCancelled = false;
 
     const customAutocomplete = (context: CompletionContext, fuse: Fuse<HisyeoFuseResult>) => {
+        const memoryTag = context.matchBefore(/!\d*/);
+        if (memoryTag) {
+          if (memoryTag.text === '!') {
+            return {
+              from: memoryTag.from,
+              options: Object.entries(numberedMemories).map(([num, mem]) => ({
+                label: `!${num}`,
+                type: 'Memory',
+                detail: mem.target,
+                apply: mem.target,
+                info: mem.source,
+              }))
+            }
+          }
+          const num = parseInt(memoryTag.text.substring(1), 10);
+          const memory = numberedMemories[num];
+          if (memory) {
+            return {
+              from: memoryTag.from,
+              options: [{
+                label: `!${num}`,
+                type: 'Memory',
+                detail: memory.target,
+                info: memory.source,
+              }]
+            }
+          }
+        }
+
         const word = context.matchBefore(/[A-ZÔÊÎÛa-zôêîûꞌ']*/);
         if (!word || (word.from === word.to && !context.explicit)) {
           return null;
