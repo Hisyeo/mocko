@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Form, Modal, Stack } from 'react-bootstrap';
+import { Alert, Button, Form, Modal, Stack } from 'react-bootstrap';
 
 import aesopFables from '../vendor/stories/aesopFables.json'
 
@@ -18,6 +18,12 @@ interface AddSourceModalProps {
 const AddSourceModal: React.FC<AddSourceModalProps> = ({ show, onHide, onAddSource, onImport }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [showWarning, setShowWarning] = useState(false);
+
+  useEffect(() => {
+    const wordCount = content.split(/\s+/).filter(Boolean).length;
+    setShowWarning(wordCount > 10000);
+  }, [content]);
 
   const handleAddSource = () => {
     onAddSource(title, content);
@@ -68,7 +74,7 @@ const AddSourceModal: React.FC<AddSourceModalProps> = ({ show, onHide, onAddSour
       <Modal.Body>
         <Form>
           <Form.Group controlId="sourceTitle">
-            <Form.Label>Title</Form.Label>
+            <Form.Label>Filename & Title</Form.Label>
             <Form.Control 
               type="text" 
               placeholder="Enter title" 
@@ -85,6 +91,12 @@ const AddSourceModal: React.FC<AddSourceModalProps> = ({ show, onHide, onAddSour
               value={content} 
               onChange={(e) => setContent(e.target.value)} 
             />
+            {showWarning && <Alert className='mt-2 mb-0' variant='danger'>
+              Consider breaking it into several sources and use the filenames to indicate what part of the
+              text that is contained. You can also use the <em>duplicate</em> button in the Source screen
+              to make a copy and then trim the contents down to whichever part you're on. <strong>If you
+              proceed with utilizing a large source file, you may encounter slowness in the UI.</strong>
+            </Alert>}
           </Form.Group>
         </Form>
       </Modal.Body>
