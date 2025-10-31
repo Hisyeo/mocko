@@ -22,6 +22,7 @@ const UnderlinedText: React.FC<UnderlinedTextProps> = ({ text, memories, onInser
       instance.unmark({ done: () => {
         Object.keys(memories).forEach(key => {
           instance.mark(key, {
+            separateWordSearch: false,
             element: 'span',
             className: 'underline',
             each: (el: HTMLElement) => {
