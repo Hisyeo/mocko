@@ -57,7 +57,7 @@ In no particular order.
 - [ ] Huge: Add a button to each translation segment for pulling up a modal that presents valid translations as parse trees
 - [ ] Add a wiktionary search link and a session setting for whether to open in a modal or in a new tab
 - [ ] Fix for delimiter trimming in the source export output
-- [ ] ~~Perf: Implement virtualization in TranslationEditor~~ Tried to implement this but requires complicated row height calculation
+- [ ] ~~Perf: Implement virtualization in TranslationEditor~~ Tried to implement this but requires complicated row height calculation and breaks autocomplete
 - [x] Perf: Centralize source segmentation, cache result and pass as props to Source/Translation/Memory components
 - [ ] Perf: Use web worker for segmentation and stat calculation
 - [ ] Perf: Make grammarLinter asynchronous
