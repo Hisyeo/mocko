@@ -46,7 +46,7 @@ In no particular order.
 - [ ] Add a way to pin sources so they show at the top of the source list
 - [ ] Allow selection of grammar top-rule on a session-level, source-level, and segment-level (each layer superseding the previous)
 - [x] Make memory dropdown only show up when source text is highlighted
-- [ ] Add keyboard-based approach to add memories into text editor (using a number badge on each memory in the current segment)
+- [x] Add keyboard-based approach to add memories into text editor (using a number badge on each memory in the current segment)
 - [ ] Add more statistics
 - [ ] Add session setting for controlling whether Hîsyêô text content is converted to the abugida or syllabary (in the UI and export functions)
 - [ ] Add UI natlang translations (include other conlangs and Hîsyêô!)
