@@ -105,7 +105,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
             const parserListener = new HisyeoErrorListener();
             parser.removeErrorListeners();
             parser.addErrorListener(parserListener);
-            parser.document();
+            parser.sentencesStrict();
     
             [...lexerListener.errors, ...parserListener.errors].forEach(err => {
                 const firstSpacePostCol = text.indexOf(' ', err.column)

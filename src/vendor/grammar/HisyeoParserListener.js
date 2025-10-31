@@ -5,12 +5,30 @@ import antlr4 from 'antlr4';
 // This class defines a complete listener for a parse tree produced by HisyeoParser.
 export default class HisyeoParserListener extends antlr4.tree.ParseTreeListener {
 
-	// Enter a parse tree produced by HisyeoParser#document.
-	enterDocument(ctx) {
+	// Enter a parse tree produced by HisyeoParser#sentencesStrict.
+	enterSentencesStrict(ctx) {
 	}
 
-	// Exit a parse tree produced by HisyeoParser#document.
-	exitDocument(ctx) {
+	// Exit a parse tree produced by HisyeoParser#sentencesStrict.
+	exitSentencesStrict(ctx) {
+	}
+
+
+	// Enter a parse tree produced by HisyeoParser#sentenceStrict.
+	enterSentenceStrict(ctx) {
+	}
+
+	// Exit a parse tree produced by HisyeoParser#sentenceStrict.
+	exitSentenceStrict(ctx) {
+	}
+
+
+	// Enter a parse tree produced by HisyeoParser#nounPhraseStrict.
+	enterNounPhraseStrict(ctx) {
+	}
+
+	// Exit a parse tree produced by HisyeoParser#nounPhraseStrict.
+	exitNounPhraseStrict(ctx) {
 	}
 
 
