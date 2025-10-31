@@ -60,7 +60,6 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
   }, []);
 
   useEffect(() => {
-    console.log('TranslationEditor::useEffect(() => {...}, [source])')
     if (source) {
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       if (storedTranslations) {

@@ -135,6 +135,18 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDuplicateSource = (source: Source) => {
+    const newSource: Source = {
+      ...source,
+      id: new Date().toISOString(),
+      filename: `${source.filename} (Copy)`,
+      modified: Date.now(),
+    };
+    const updatedSources = [...sources, newSource];
+    setSources(updatedSources);
+    localStorage.setItem('sources', JSON.stringify(updatedSources));
+  };
+
   const handleImportMocko = (data: any) => {
     const existingSource = sources.find(s => s.filename === data.source.filename);
     if (existingSource) {
@@ -277,7 +289,7 @@ const App: React.FC = () => {
               <Row>
                 <Tab.Content>
                   <Tab.Pane eventKey="source">
-                    <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} segments={segments} delimiters={delimiters} />
+                    <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} segments={segments} delimiters={delimiters} />
                   </Tab.Pane>
                   <Tab.Pane eventKey="translation">
                     <TranslationEditor source={selectedSource} segments={segments} delimiters={delimiters} />

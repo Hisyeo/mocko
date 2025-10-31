@@ -7,11 +7,12 @@ interface SourceEditorProps {
   source: Source | null;
   onSourceUpdate: (updatedSource: Source) => void;
   onDelete: (sourceId: string) => void;
+  onDuplicate: (source: Source) => void;
   segments: string[];
   delimiters: string[];
 }
 
-const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onDelete, segments, delimiters }) => {
+const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onDelete, onDuplicate, segments, delimiters }) => {
   const [title, setTitle] = useState('');
   const [filename, setFilename] = useState('');
   const [content, setContent] = useState('');
@@ -139,6 +140,12 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
     }
   };
 
+  const handleDuplicate = () => {
+    if (source) {
+      onDuplicate(source);
+    }
+  };
+
   const handleExport = () => {
     const blob = new Blob([renderedContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -216,7 +223,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
         <Stack direction='horizontal' gap={3}>
           <Button variant="primary" onClick={handleContentSave} className="mt-2" disabled={!isContentChanged}>Save</Button>
           <Button variant="secondary" onClick={handleContentDiscard} className="mt-2 ml-2" disabled={!isContentChanged}>Discard Changes</Button>
-          <Button variant="danger" onClick={handleDelete} className="mt-2 ml-2 ms-auto">Delete</Button>
+          <Button variant="info" onClick={handleDuplicate} className="mt-2 ml-2 ms-auto">Duplicate</Button>
+          <Button variant="danger" onClick={handleDelete} className="mt-2 ml-2">Delete</Button>
         </Stack>
       </Form>
 
