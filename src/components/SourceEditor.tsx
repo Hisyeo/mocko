@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Form, Alert, Card, Collapse, Stack, Spinner, FormControlProps } from 'react-bootstrap';
+import React, { useState, useEffect, useTransition } from 'react';
+import { Button, Form, Alert, Card, Collapse, Stack, Spinner } from 'react-bootstrap';
 import SegmentationPreviewModal from './SegmentationPreviewModal';
 import { Source } from '../App';
 import { useApp } from '../AppContext';
@@ -28,6 +28,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
   const [showRenPreview, setShowRenPreview] = useState(false);
   const [translatedTitle, setTranslatedTitle] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isExecutingSegmentation, setIsExecutingSegmentation] = useState(false);
+  const [isPreviewingSegmentation, startTransition] = useTransition();
   const [defaultGrammarRule, setDefaultGrammarRule] = useState('');
   const { grammarCheck } = useApp();
 
@@ -51,11 +53,13 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
 
       const worker = new Worker(process.env.PUBLIC_URL + '/worker.js');
       worker.onmessage = (e) => {
-        setStats(e.data.stats);
-        setRenderedContent(e.data.renderedContent);
-        setIsLoading(false);
+        if (e.data.task === 'stats') {
+          setStats(e.data.stats);
+          setRenderedContent(e.data.renderedContent);
+          setIsLoading(false);
+        }
       };
-      worker.postMessage({ content: source.content, segmentationRule: rule, translations });
+      worker.postMessage({ task: 'stats', content: source.content, segmentationRule: rule, translations });
     }
   }, [source]);
 
@@ -101,26 +105,22 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
 
   const handleSegmentationSave = () => {
     if (source) {
-      const wrappedRule = `(${segmentationRule})`;
-      const parts = content.split(new RegExp(wrappedRule));
-      const newSegments = parts.filter((_, i) => i % 2 === 0).map(s => s.trim()).filter(Boolean);
-      const newDelimiters = parts.filter((_, i) => i % 2 !== 0);
-      localStorage.setItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
-
+      setIsExecutingSegmentation(true);
+      const worker = new Worker(process.env.PUBLIC_URL + '/worker.js');
+      worker.onmessage = (e) => {
+        if (e.data.task === 'segment') {
+          const { newDelimiters, newTranslations } = e.data;
+          localStorage.setItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
+          localStorage.setItem(`translations_${source.id}`, JSON.stringify(newTranslations));
+          onSourceUpdate({ ...source, segmentationRule });
+          setOriginalSegmentationRule(segmentationRule);
+          setShowSegPreview(false);
+          setIsExecutingSegmentation(false);
+        }
+      };
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const oldTranslations = storedTranslations ? JSON.parse(storedTranslations) : {};
-      const newTranslations: Record<string, any> = {};
-
-      newSegments.forEach(newSegment => {
-        if (oldTranslations[newSegment]) {
-          newTranslations[newSegment] = oldTranslations[newSegment];
-        }
-      });
-
-      localStorage.setItem(`translations_${source.id}`, JSON.stringify(newTranslations));
-      onSourceUpdate({ ...source, segmentationRule });
-      setOriginalSegmentationRule(segmentationRule);
-      setShowSegPreview(false);
+      worker.postMessage({ task: 'segment', content, segmentationRule, oldTranslations });
     }
   };
 
@@ -246,7 +246,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
                 type="text" 
                 placeholder="Enter regex" 
                 value={segmentationRule} 
-                onChange={(e) => setSegmentationRule(e.target.value)}
+                onChange={(e) => { const val = e.target.value; startTransition(() => { setSegmentationRule(val) }) }}
                 list='defaultSegmentationRules'
               />
             </Form.Group>
@@ -256,7 +256,12 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
               <option value='\.|;'/>
           <option value={"[\\.:;?][\\s\"']*|,\\s*\""}/>
             </datalist>
-            <Button variant="info" onClick={() => setShowSegPreview(true)} className="mt-2">Preview</Button>
+            <Stack direction="horizontal" gap={2}>
+              <Button variant="info" onClick={() => setShowSegPreview(true)} className="mt-2" disabled={isExecutingSegmentation || isPreviewingSegmentation}>
+                Preview
+              </Button>
+              {(isExecutingSegmentation || isPreviewingSegmentation) && <Spinner animation="border" size="sm" className="mt-2" />}
+            </Stack>
           </div>
 
           <div className="mt-4">
