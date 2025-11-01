@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Form, ListGroup, Button, Badge, Stack, Dropdown, InputGroup, Breadcrumb, Alert } from 'react-bootstrap';
+import { Form, ListGroup, Button, Badge, Stack, Dropdown, InputGroup } from 'react-bootstrap';
 import Mark from 'mark.js';
 import SelectionTooltip from './SelectionTooltip';
 import UnderlinedText from './UnderlinedText';
@@ -9,11 +9,13 @@ import { Diagnostic } from '@codemirror/lint';
 import { useApp } from '../AppContext';
 import WiktionaryModal from './WiktionaryModal';
 import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
+import SplitSourceModal from './SplitSourceModal';
 
 interface TranslationEditorProps {
   source: Source | null;
   segments: string[];
   delimiters: string[];
+  onSplit: (source: Source, splitIndex: number) => void;
 }
 
 function isSelectionInSelector(selection: Selection, selector: string): boolean {
@@ -27,7 +29,7 @@ function isSelectionInSelector(selection: Selection, selector: string): boolean 
   return false;
 }
 
-const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments, delimiters }) => {
+const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments, delimiters, onSplit }) => {
   const [translations, setTranslations] = useState<Record<string, any>>({});
   const [editingSegment, setEditingSegment] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
@@ -44,6 +46,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
   const [segmentGrammarRule, setSegmentGrammarRule] = useState('');
   const [goToSegment, setGoToSegment] = useState('');
   const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
+  const [showSplitModal, setShowSplitModal] = useState(false);
+  const [splitIndex, setSplitIndex] = useState<number | null>(null);
   const { grammarCheck, spellCheck, defaultGrammarRule } = useApp();
 
   const editorRef = useRef<HTMLDivElement>(null);
@@ -261,6 +265,19 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
     navigateToSegment(targetIndex);
   };
 
+  const handleShowSplitModal = (index: number) => {
+    setSplitIndex(index);
+    setShowSplitModal(true);
+  };
+
+  const handleExecuteSplit = () => {
+    if (source && splitIndex !== null) {
+      onSplit(source, splitIndex);
+      setShowSplitModal(false);
+      setSplitIndex(null);
+    }
+  };
+
   if (!source) {
     return <div>Please select a source from the sidebar to start translating.</div>;
   }
@@ -284,6 +301,17 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
         />
       )}
       <WiktionaryModal show={showWiktionaryModal} onHide={() => setShowWiktionaryModal(false)} term={wiktionaryTerm} />
+      {source && splitIndex !== null && (
+        <SplitSourceModal 
+          show={showSplitModal}
+          onHide={() => setShowSplitModal(false)}
+          onExecute={handleExecuteSplit}
+          source={source}
+          splitIndex={splitIndex}
+          segments={segments}
+          delimiters={delimiters}
+        />
+      )}
       <div className="d-flex justify-content-between align-items-center">
         <h1>{translatedTitle || source.title}</h1>
         <Stack direction="horizontal" gap={2}>
@@ -359,7 +387,10 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
                       {translationText || segment}
                       {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiters[index]}</Badge>}
                     </p>
-                    <Button variant="link" onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
+                    <Stack direction='horizontal'>
+                      <Button variant="link" onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
+                      <Button variant="link" onClick={() => handleShowSplitModal(index)} style={{textDecoration: 'none'}}>✂️</Button>
+                    </Stack>
                   </div>
                 )}
               
