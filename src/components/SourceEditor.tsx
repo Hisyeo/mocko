@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Form, Alert, Card, Collapse, Stack } from 'react-bootstrap';
+import { Button, Form, Alert, Card, Collapse, Stack, Spinner } from 'react-bootstrap';
 import SegmentationPreviewModal from './SegmentationPreviewModal';
 import { Source } from '../App';
 
@@ -26,13 +26,11 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
   const [renderedContent, setRenderedContent] = useState('');
   const [showRenPreview, setShowRenPreview] = useState(false);
   const [translatedTitle, setTranslatedTitle] = useState('');
-
-  const countWords = (text: string) => {
-    return text.split(/\s+/).filter(word => word !== '').length;
-  };
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (source) {
+      setIsLoading(true);
       setTitle(source.title);
       setFilename(source.filename);
       setContent(source.content);
@@ -47,34 +45,15 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
       const translations = storedTranslations ? JSON.parse(storedTranslations) : {};
       setTranslatedTitle(translations['__title__'] || '');
 
-      const sourceWordCount = countWords(source.content);
-      const translatedSegments = Object.keys(translations).filter(key => key !== '__title__');
-      const translatedWordCount = translatedSegments.reduce((acc, key) => acc + countWords(translations[key]), 0);
-      const numSegments = segments.filter(seg => seg.trim() !== '').length;
-      const avgSourceWords = numSegments > 0 ? (sourceWordCount / numSegments).toFixed(2) : 0;
-      const numTranslatedSegments = translatedSegments.length;
-      const avgTranslatedWords = numTranslatedSegments > 0 ? (translatedWordCount / numTranslatedSegments).toFixed(2) : 0;
-
-      setStats({
-        sourceWordCount,
-        translatedWordCount,
-        numSegments,
-        avgSourceWords,
-        numTranslatedSegments,
-        avgTranslatedWords,
-      });
-
-      // Reconstruct translated content for preview
-      let reconstructed = '';
-      segments.forEach((seg, i) => {
-        reconstructed += translations[seg.trim()] || seg;
-        if (delimiters[i]) {
-          reconstructed += delimiters[i];
-        }
-      });
-      setRenderedContent(reconstructed);
+      const worker = new Worker(process.env.PUBLIC_URL + '/worker.js');
+      worker.onmessage = (e) => {
+        setStats(e.data.stats);
+        setRenderedContent(e.data.renderedContent);
+        setIsLoading(false);
+      };
+      worker.postMessage({ content: source.content, segmentationRule: rule, translations });
     }
-  }, [source, segments, delimiters]);
+  }, [source]);
 
   const handleContentSave = () => {
     if (source) {
@@ -191,108 +170,116 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
 
   return (
     <div>
-      <Form>
-        <Form.Group controlId="filename">
-          <Form.Label>Filename</Form.Label>
-          <Form.Control 
-            type="text" 
-            placeholder="Enter filename" 
-            value={filename} 
-            onChange={(e) => setFilename(e.target.value)} 
-          />
-        </Form.Group>
-        <Form.Group controlId="sourceTitle" className="mt-2">
-          <Form.Label>Title</Form.Label>
-          <Form.Control 
-            type="text" 
-            placeholder="Enter title" 
-            value={title} 
-            onChange={(e) => setTitle(e.target.value)} 
-          />
-        </Form.Group>
-        <Form.Group controlId="sourceContent" className="mt-2">
-          <Form.Label>Content</Form.Label>
-          <Form.Control 
-            as="textarea" 
-            rows={10} 
-            placeholder="Enter content" 
-            value={content} 
-            onChange={(e) => setContent(e.target.value)} 
-          />
-        </Form.Group>
-        <Stack direction='horizontal' gap={3}>
-          <Button variant="primary" onClick={handleContentSave} className="mt-2" disabled={!isContentChanged}>Save</Button>
-          <Button variant="secondary" onClick={handleContentDiscard} className="mt-2 ml-2" disabled={!isContentChanged}>Discard Changes</Button>
-          <Button variant="info" onClick={handleDuplicate} className="mt-2 ml-2 ms-auto">Duplicate</Button>
-          <Button variant="danger" onClick={handleDelete} className="mt-2 ml-2">Delete</Button>
-        </Stack>
-      </Form>
+      {isLoading ? (
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      ) : (
+        <>
+          <Form>
+            <Form.Group controlId="filename">
+              <Form.Label>Filename</Form.Label>
+              <Form.Control 
+                type="text" 
+                placeholder="Enter filename" 
+                value={filename} 
+                onChange={(e) => setFilename(e.target.value)} 
+              />
+            </Form.Group>
+            <Form.Group controlId="sourceTitle" className="mt-2">
+              <Form.Label>Title</Form.Label>
+              <Form.Control 
+                type="text" 
+                placeholder="Enter title" 
+                value={title} 
+                onChange={(e) => setTitle(e.target.value)} 
+              />
+            </Form.Group>
+            <Form.Group controlId="sourceContent" className="mt-2">
+              <Form.Label>Content</Form.Label>
+              <Form.Control 
+                as="textarea" 
+                rows={10} 
+                placeholder="Enter content" 
+                value={content} 
+                onChange={(e) => setContent(e.target.value)} 
+              />
+            </Form.Group>
+            <Stack direction='horizontal' gap={3}>
+              <Button variant="primary" onClick={handleContentSave} className="mt-2" disabled={!isContentChanged}>Save</Button>
+              <Button variant="secondary" onClick={handleContentDiscard} className="mt-2 ml-2" disabled={!isContentChanged}>Discard Changes</Button>
+              <Button variant="info" onClick={handleDuplicate} className="mt-2 ml-2 ms-auto">Duplicate</Button>
+              <Button variant="danger" onClick={handleDelete} className="mt-2 ml-2">Delete</Button>
+            </Stack>
+          </Form>
 
-      <div className="mt-4">
-        <h2>Segmentation</h2>
-        <Alert variant="warning">
-          Changing segmentation rules will erase existing translations unless there is a segment with an exactly matching source text.
-        </Alert>
-        <Form.Group controlId="segmentationRule" className="mt-2">
-          <Form.Label>Regular Expression</Form.Label>
-          <Form.Control 
-            type="text" 
-            placeholder="Enter regex" 
-            value={segmentationRule} 
-            onChange={(e) => setSegmentationRule(e.target.value)}
-            list='defaultSegmentationRules'
-          />
-        </Form.Group>
-        <datalist id='defaultSegmentationRules'>
-          <option value='\n'/>
-          <option value='\. '/>
-          <option value='\.|;'/>
+          <div className="mt-4">
+            <h2>Segmentation</h2>
+            <Alert variant="warning">
+              Changing segmentation rules will erase existing translations unless there is a segment with an exactly matching source text.
+            </Alert>
+            <Form.Group controlId="segmentationRule" className="mt-2">
+              <Form.Label>Regular Expression</Form.Label>
+              <Form.Control 
+                type="text" 
+                placeholder="Enter regex" 
+                value={segmentationRule} 
+                onChange={(e) => setSegmentationRule(e.target.value)}
+                list='defaultSegmentationRules'
+              />
+            </Form.Group>
+            <datalist id='defaultSegmentationRules'>
+              <option value='\n'/>
+              <option value='\. '/>
+              <option value='\.|;'/>
           <option value={"[\\.:;?][\\s\"']*|,\\s*\""}/>
-        </datalist>
-        <Button variant="info" onClick={() => setShowSegPreview(true)} className="mt-2">Preview</Button>
-      </div>
+            </datalist>
+            <Button variant="info" onClick={() => setShowSegPreview(true)} className="mt-2">Preview</Button>
+          </div>
 
-      <div className="mt-4">
-        <h2>Export</h2>
-        <Stack direction='horizontal' gap={3}>
-          <Button variant="primary" onClick={handleExport}>Export to TXT</Button>
-          <Button variant="success" onClick={handleExportMocko}>Export to MOCKO</Button>
-          <Button variant="secondary" onClick={handleCopy}>Copy to Clipboard</Button>
-          <Button variant="info" onClick={() => setShowRenPreview(!showRenPreview)} className="ms-auto" active={showRenPreview}>Preview</Button>
-        </Stack>
-        <br/>
-        <Collapse in={showRenPreview}>
-          <Card>
-            <Card.Title id='RenPreviewCollapseCardTitle'>{translatedTitle || title}</Card.Title>
-            <Card.Body>
-                  <div dangerouslySetInnerHTML={{ __html: renderedContent.replace(/\n/g, '<br />') }} />
-            </Card.Body>
-          </Card>
-        </Collapse>
-      </div>
+          <div className="mt-4">
+            <h2>Export</h2>
+            <Stack direction='horizontal' gap={3}>
+              <Button variant="primary" onClick={handleExport}>Export to TXT</Button>
+              <Button variant="success" onClick={handleExportMocko}>Export to MOCKO</Button>
+              <Button variant="secondary" onClick={handleCopy}>Copy to Clipboard</Button>
+              <Button variant="info" onClick={() => setShowRenPreview(!showRenPreview)} className="ms-auto" active={showRenPreview}>Preview</Button>
+            </Stack>
+            <br/>
+            <Collapse in={showRenPreview}>
+              <Card>
+                <Card.Title id='RenPreviewCollapseCardTitle'>{translatedTitle || title}</Card.Title>
+                <Card.Body>
+                      <div dangerouslySetInnerHTML={{ __html: renderedContent.replace(/\n/g, '<br />') }} />
+                </Card.Body>
+              </Card>
+            </Collapse>
+          </div>
 
-      <div className="mt-4">
-        <h2>Source Stats</h2>
-        <Card>
-          <Card.Body>
-            <p>Words in source: {stats.sourceWordCount}</p>
-            <p>Words in translation: {stats.translatedWordCount}</p>
-            <p>Number of segments: {stats.numSegments}</p>
-            <p>Average source words per segment: {stats.avgSourceWords}</p>
-            <p>Completed translation segments: {stats.numTranslatedSegments}</p>
-            <p>Average translation words per completed segment: {stats.avgTranslatedWords}</p>
-          </Card.Body>
-        </Card>
-      </div>
+          <div className="mt-4">
+            <h2>Source Stats</h2>
+            <Card>
+              <Card.Body>
+                <p>Words in source: {stats.sourceWordCount}</p>
+                <p>Words in translation: {stats.translatedWordCount}</p>
+                <p>Number of segments: {stats.numSegments}</p>
+                <p>Average source words per segment: {stats.avgSourceWords}</p>
+                <p>Completed translation segments: {stats.numTranslatedSegments}</p>
+                <p>Average translation words per completed segment: {stats.avgTranslatedWords}</p>
+              </Card.Body>
+            </Card>
+          </div>
 
-      <SegmentationPreviewModal 
-        show={showSegPreview} 
-        onHide={() => setShowSegPreview(false)} 
-        content={content} 
-        rule={segmentationRule} 
-        originalRule={originalSegmentationRule}
-        onExecute={handleSegmentationSave}
-      />
+          <SegmentationPreviewModal 
+            show={showSegPreview} 
+            onHide={() => setShowSegPreview(false)} 
+            content={content} 
+            rule={segmentationRule} 
+            originalRule={originalSegmentationRule}
+            onExecute={handleSegmentationSave}
+          />
+        </>
+      )}
     </div>
   );
 }

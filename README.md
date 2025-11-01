@@ -59,7 +59,7 @@ In no particular order.
 - [ ] Fix for delimiter trimming in the source export output
 - [ ] ~~Perf: Implement virtualization in TranslationEditor~~ Tried to implement this but requires complicated row height calculation and breaks autocomplete
 - [x] Perf: Centralize source segmentation, cache result and pass as props to Source/Translation/Memory components
-- [ ] Perf: Use web worker for segmentation and stat calculation
+- [x] Perf: Use web worker for segmentation and stat calculation
 - [ ] Perf: Make grammarLinter asynchronous
 - [ ] Make the import memories panel collapsible
 - [ ] Huge: Support identifying and checking styling tags
