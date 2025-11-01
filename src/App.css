@@ -184,3 +184,18 @@ html, body, #root {
         content: 'MEM'
     }
 }
+
+.highlight-scroll {
+  animation: highlight-outline-animation 1.5s ease-out;
+}
+
+@keyframes highlight-outline-animation {
+  0% {
+    outline: 2px solid #0dcaf0; /* Bootstrap's info color */
+    outline-offset: -2px;
+  }
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: -2px;
+  }
+}

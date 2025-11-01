@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Form, ListGroup, Button, Badge, Stack, Dropdown } from 'react-bootstrap';
+import { Form, ListGroup, Button, Badge, Stack, Dropdown, InputGroup } from 'react-bootstrap';
 import Mark from 'mark.js';
 import SelectionTooltip from './SelectionTooltip';
 import UnderlinedText from './UnderlinedText';
@@ -42,10 +42,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
   const [memoryVersion, setMemoryVersion] = useState(0);
   const [visibleSegmentCount, setVisibleSegmentCount] = useState(50);
   const [segmentGrammarRule, setSegmentGrammarRule] = useState('');
+  const [goToSegment, setGoToSegment] = useState('');
+  const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
   const { grammarCheck, spellCheck, defaultGrammarRule } = useApp();
 
   const editorRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+
+  const validSegments = useMemo(() => segments.map(s => s.trim()).filter(Boolean), [segments]);
 
   const { ref: sentinelRef, isIntersecting } = useIntersectionObserver({ threshold: 0.1 });
 
@@ -54,6 +58,20 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
       setVisibleSegmentCount(prevCount => prevCount + 50);
     }
   }, [isIntersecting]);
+
+  useEffect(() => {
+    if (scrollToIndex !== null) {
+      const element = document.getElementById(`segment-item-${scrollToIndex}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add('highlight-scroll');
+        setTimeout(() => {
+          element.classList.remove('highlight-scroll');
+        }, 1500);
+      }
+      setScrollToIndex(null);
+    }
+  }, [scrollToIndex, visibleSegmentCount]);
 
   const onMemoriesNumbered = useCallback((newMemories: Record<number, { source: string, target: string }>) => {
     setNumberedMemories(oldMemories => {
@@ -80,6 +98,10 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
         setTranslations(parsedTranslations);
         setTranslatedTitle(parsedTranslations['__title__'] || '');
       }
+    } else {
+      setTranslations({});
+      setTranslatedTitle('');
+      setVisibleSegmentCount(50);
     }
   }, [source, memoryVersion]);
 
@@ -146,7 +168,6 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
       localStorage.setItem(`translations_${source.id}`, JSON.stringify(updatedTranslations));
     }
 
-    const validSegments = segments.map(s => s.trim()).filter(Boolean);
     const currentIndex = validSegments.indexOf(currentSegmentTrimmed);
 
     if (currentIndex < validSegments.length - 1) {
@@ -209,11 +230,41 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
     setShowWiktionaryModal(true);
   };
 
+  const navigateToSegment = (index: number) => {
+    if (index >= 0 && index < validSegments.length) {
+      if (index >= visibleSegmentCount) {
+        setVisibleSegmentCount(index + 50);
+      }
+      setScrollToIndex(index);
+    }
+  };
+
+  const handleGoToIncomplete = () => {
+    const nextIncompleteIndex = validSegments.findIndex(seg => {
+      const translationData = translations[seg];
+      const text = (typeof translationData === 'object' && translationData !== null) ? translationData.text : translationData;
+      return !text;
+    });
+    if (nextIncompleteIndex !== -1) {
+      navigateToSegment(nextIncompleteIndex);
+    } else {
+      alert('All segments are complete!');
+    }
+  };
+
+  const handleGoToEnd = () => {
+    navigateToSegment(validSegments.length - 1);
+  };
+
+  const handleGoToSegment = () => {
+    const targetIndex = parseInt(goToSegment, 10) - 1;
+    navigateToSegment(targetIndex);
+  };
+
   if (!source) {
     return <div>Please select a source from the sidebar to start translating.</div>;
   }
 
-  const validSegments = segments.map(s => s.trim()).filter(Boolean);
   const grammarErrors = diagnostics.filter(d => d.severity === 'info');
   const spellingErrors = diagnostics.filter(d => d.severity === 'warning');
   const hasErrors = (grammarCheck && grammarErrors.length > 0) || (spellCheck && spellingErrors.length > 0);
@@ -233,7 +284,23 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
         />
       )}
       <WiktionaryModal show={showWiktionaryModal} onHide={() => setShowWiktionaryModal(false)} term={wiktionaryTerm} />
-      <h1>{translatedTitle || source.title}</h1>
+      <div className="d-flex justify-content-between align-items-center">
+        <h1>{translatedTitle || source.title}</h1>
+        <Stack direction="horizontal" gap={2}>
+          <InputGroup size="sm">
+            <Button variant="outline-info" onClick={handleGoToIncomplete}>Go To Incomplete</Button>
+            <Button variant="outline-danger" onClick={handleGoToEnd}>Go To End</Button>
+            <Form.Control
+              type="number"
+              value={goToSegment}
+              onChange={(e) => setGoToSegment(e.target.value)}
+              style={{ maxWidth: '80px' }}
+            />
+            <InputGroup.Text>/ {validSegments.length}</InputGroup.Text>
+            <Button variant="outline-dark" onClick={handleGoToSegment}>Go</Button>
+          </InputGroup>
+        </Stack>
+      </div>
       <Form.Group controlId="translatedTitle" className="mt-2">
         <Form.Label>Translated Title</Form.Label>
         <Form.Control 
@@ -246,17 +313,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
       </Form.Group>
       
       <ListGroup className="mt-4">
-        {segments.slice(0, visibleSegmentCount).map((segment, index) => {
-            const trimmedSegment = segment.trim();
-            if (!trimmedSegment) return null;
-
-            const isLastSegment = validSegments.indexOf(trimmedSegment) === validSegments.length - 1;
-            const translationData = translations[trimmedSegment];
+        {validSegments.slice(0, visibleSegmentCount).map((segment, index) => {
+            const isLastSegment = index === validSegments.length - 1;
+            const translationData = translations[segment];
             const translationText = typeof translationData === 'object' && translationData !== null ? translationData.text : translationData;
 
             return (
-              <ListGroup.Item key={index} className="d-flex align-items-center">
-                {editingSegment === trimmedSegment ? (
+              <ListGroup.Item key={index} id={`segment-item-${index}`} className="d-flex align-items-center">
+                {editingSegment === segment ? (
                   <div className="w-100">
                     <UnderlinedText text={segment} memories={memories} onInsert={handleInsertMemory} onMemoriesNumbered={onMemoriesNumbered} />
                     {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiters[index]}</Badge>}
@@ -264,13 +328,13 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
                       value={currentTranslation} 
                       onChange={setCurrentTranslation} 
                       onDiagnosticsChange={setDiagnostics}
-                      autofocus={editingSegment === trimmedSegment}
+                      autofocus={editingSegment === segment}
                       numberedMemories={numberedMemories}
                       grammarRule={segmentGrammarRule || source.defaultGrammarRule || defaultGrammarRule}
                     />
                     <Stack direction='horizontal' gap={1}>
-                      <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(trimmedSegment)} disabled={isLastSegment || hasErrors}>Save & Edit Next</Button>
-                      <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(trimmedSegment)} disabled={hasErrors}>Save</Button>
+                      <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(segment)} disabled={isLastSegment || hasErrors}>Save & Edit Next</Button>
+                      <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(segment)} disabled={hasErrors}>Save</Button>
                       <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
                       {grammarCheck && (
                         <Dropdown onSelect={(e) => setSegmentGrammarRule(e || '')} className='ms-auto'>
@@ -278,10 +342,10 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
                             Grammar
                           </Dropdown.Toggle>
                           <Dropdown.Menu>
-                            <Dropdown.Item active={segmentGrammarRule == ''} eventKey="">-</Dropdown.Item>
-                            <Dropdown.Item active={segmentGrammarRule == 'Sentences'} eventKey="Sentences">Sentences</Dropdown.Item>
-                            <Dropdown.Item active={segmentGrammarRule == 'Constituents'} eventKey="Constituents">Constituents</Dropdown.Item>
-                            <Dropdown.Item active={segmentGrammarRule == 'Phrases'} eventKey="Phrases">Phrases</Dropdown.Item>
+                            <Dropdown.Item active={segmentGrammarRule === ''} eventKey="">Default</Dropdown.Item>
+                            <Dropdown.Item active={segmentGrammarRule === 'Sentences'} eventKey="Sentences">Sentences</Dropdown.Item>
+                            <Dropdown.Item active={segmentGrammarRule === 'Constituents'} eventKey="Constituents">Constituents</Dropdown.Item>
+                            <Dropdown.Item active={segmentGrammarRule === 'Phrases'} eventKey="Phrases">Phrases</Dropdown.Item>
                           </Dropdown.Menu>
                         </Dropdown>
                       )}
@@ -293,7 +357,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
                       {translationText || segment}
                       {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiters[index]}</Badge>}
                     </p>
-                    <Button variant="link" onClick={() => handleEdit(trimmedSegment)} style={{textDecoration: 'none'}}>✏️</Button>
+                    <Button variant="link" onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
                   </div>
                 )}
               
