@@ -262,8 +262,8 @@ const App: React.FC = () => {
     .filter(source => (source.filename ?? source.title).toLowerCase().includes(sourceFilter.toLowerCase()))
     .sort((a, b) => {
       switch (sortOrder) {
-        case 'Oldest First': return new Date(a.id.replace(/-part\d+/,'')).getTime() - new Date(b.id.replace(/-part\d+/,'')).getTime();
-        case 'Newest First': return new Date(b.id.replace(/-part\d+/,'')).getTime() - new Date(a.id.replace(/-part\d+/,'')).getTime();
+        case 'Oldest First': return new Date(a.id.replace(/-part\d+$/,'')).getTime() - new Date(b.id.replace(/-part\d+/,'')).getTime();
+        case 'Newest First': return new Date(b.id.replace(/-part\d+$/,'')).getTime() - new Date(a.id.replace(/-part\d+/,'')).getTime();
         case 'Most Recently Modified': return (b.modified || 0) - (a.modified || 0);
         case 'Least Recently Modified': return (a.modified || 0) - (b.modified || 0);
         case 'Longest Source': return b.content.length - a.content.length;
