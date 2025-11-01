@@ -157,6 +157,68 @@ const App: React.FC = () => {
     localStorage.setItem('sources', JSON.stringify(updatedSources));
   };
 
+  const handleSplitSource = (originalSource: Source, splitIndex: number) => {
+    const rule = originalSource.segmentationRule || '\n';
+    const wrappedRule = `(${rule})`;
+    const allSegments = originalSource.content.split(new RegExp(wrappedRule));
+    
+    let content1 = '';
+    let content2 = '';
+
+    let segCounter = 0;
+    for(let i = 0; i < allSegments.length; i++) {
+      const isDelimiter = i % 2 !== 0;
+      if (isDelimiter) {
+        if (segCounter < splitIndex) {
+          content1 += allSegments[i];
+        } else {
+          content2 += allSegments[i];
+        }
+      } else {
+        if (segCounter < splitIndex) {
+          content1 += allSegments[i];
+        } else {
+          content2 += allSegments[i];
+        }
+        segCounter++;
+      }
+    }
+
+    const originalFilename = originalSource.filename ?? originalSource.title
+    const baseFilename = originalFilename.replace(/ - Part \d+$/, '');
+    const partRegex = / - Part (\d+)$/;
+    const match = originalFilename.match(partRegex);
+    const startPart = match ? parseInt(match[1], 10) : 1;
+
+    const source1: Source = {
+      ...originalSource,
+      id: new Date().toISOString() + '-part1',
+      title: `${originalSource.title} - Part ${startPart}`,
+      filename: `${baseFilename} - Part ${startPart}`,
+      content: content1,
+      modified: Date.now(),
+    };
+
+    const source2: Source = {
+      ...originalSource,
+      id: new Date().toISOString() + '-part2',
+      title: `${originalSource.title} - Part ${startPart + 1}`,
+      filename: `${baseFilename} - Part ${startPart + 1}`,
+      content: content2,
+      modified: Date.now(),
+    };
+
+    const updatedSources = [...sources.filter(s => s.id !== originalSource.id), source1, source2];
+    setSources(updatedSources);
+    localStorage.setItem('sources', JSON.stringify(updatedSources));
+
+    localStorage.removeItem(`translations_${originalSource.id}`);
+    localStorage.removeItem(`memories_${originalSource.id}`);
+    localStorage.removeItem(`delimiters_${originalSource.id}`);
+
+    setSelectedSource(source2);
+  };
+
   const handleImportMocko = (data: any) => {
     const existingSource = sources.find(s => s.filename === data.source.filename);
     if (existingSource) {
@@ -302,7 +364,7 @@ const App: React.FC = () => {
                     <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} segments={segments} delimiters={delimiters} />
                   </Tab.Pane>
                   <Tab.Pane eventKey="translation">
-                    <TranslationEditor source={selectedSource} segments={segments} delimiters={delimiters} />
+                    <TranslationEditor source={selectedSource} segments={segments} delimiters={delimiters} onSplit={handleSplitSource} />
                   </Tab.Pane>
                   <Tab.Pane eventKey="memory">
                     <MemoryEditor source={selectedSource} allSources={sources} segments={segments} />
