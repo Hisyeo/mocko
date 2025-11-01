@@ -216,7 +216,7 @@ const App: React.FC = () => {
     localStorage.removeItem(`memories_${originalSource.id}`);
     localStorage.removeItem(`delimiters_${originalSource.id}`);
 
-    setSelectedSource(source1);
+    setSelectedSource(source2);
   };
 
   const handleImportMocko = (data: any) => {
