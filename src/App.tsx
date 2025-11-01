@@ -193,7 +193,7 @@ const App: React.FC = () => {
     const source1: Source = {
       ...originalSource,
       id: new Date().toISOString() + '-part1',
-      title: `${originalSource.title} - Part ${startPart}`,
+      title: originalSource.title,
       filename: `${baseFilename} - Part ${startPart}`,
       content: content1,
       modified: Date.now(),
@@ -202,7 +202,7 @@ const App: React.FC = () => {
     const source2: Source = {
       ...originalSource,
       id: new Date().toISOString() + '-part2',
-      title: `${originalSource.title} - Part ${startPart + 1}`,
+      title: originalSource.title,
       filename: `${baseFilename} - Part ${startPart + 1}`,
       content: content2,
       modified: Date.now(),
@@ -262,8 +262,8 @@ const App: React.FC = () => {
     .filter(source => (source.filename ?? source.title).toLowerCase().includes(sourceFilter.toLowerCase()))
     .sort((a, b) => {
       switch (sortOrder) {
-        case 'Oldest First': return new Date(a.id).getTime() - new Date(b.id).getTime();
-        case 'Newest First': return new Date(b.id).getTime() - new Date(a.id).getTime();
+        case 'Oldest First': return new Date(a.id.replace(/-part\d+/,'')).getTime() - new Date(b.id.replace(/-part\d+/,'')).getTime();
+        case 'Newest First': return new Date(b.id.replace(/-part\d+/,'')).getTime() - new Date(a.id.replace(/-part\d+/,'')).getTime();
         case 'Most Recently Modified': return (b.modified || 0) - (a.modified || 0);
         case 'Least Recently Modified': return (a.modified || 0) - (b.modified || 0);
         case 'Longest Source': return b.content.length - a.content.length;
