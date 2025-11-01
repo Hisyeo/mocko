@@ -69,6 +69,7 @@ In no particular order.
 - [ ] Export to markdown and possibly other formats
 - [ ] Notes per segment for when you want to share something to readers about how you translated (placed into the export as a reference and addendum)
 - [ ] Comments per segment for when you want to scratch down a thought or share a detail to a co-translator
+- [ ] Add a bookmark button that allows you to name the bookmarked segment and navigate to it from a dropdown of all bookmarks
 
 ## Development & Scripts
 
