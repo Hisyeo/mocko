@@ -16,9 +16,10 @@ const SplitSourceModal: React.FC<SplitSourceModalProps> = ({ show, onHide, onExe
   if (!source) return null;
 
   const getNewFilenames = () => {
-    const baseFilename = source.filename.replace(/ - Part \d+$/, '');
+    const filename = source.filename ?? source.title
+    const baseFilename = filename.replace(/ - Part \d+$/, '');
     const partRegex = / - Part (\d+)$/;
-    const match = source.filename.match(partRegex);
+    const match = filename.match(partRegex);
     const startPart = match ? parseInt(match[1], 10) : 1;
 
     return {
@@ -30,7 +31,6 @@ const SplitSourceModal: React.FC<SplitSourceModalProps> = ({ show, onHide, onExe
   const getSnippets = () => {
     let content1 = '';
     let content2 = '';
-    let currentIndex = 0;
 
     segments.forEach((seg, i) => {
       if (i < splitIndex) {

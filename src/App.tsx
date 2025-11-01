@@ -184,9 +184,10 @@ const App: React.FC = () => {
       }
     }
 
-    const baseFilename = originalSource.filename.replace(/ - Part \d+$/, '');
+    const originalFilename = originalSource.filename ?? originalSource.title
+    const baseFilename = originalFilename.replace(/ - Part \d+$/, '');
     const partRegex = / - Part (\d+)$/;
-    const match = originalSource.filename.match(partRegex);
+    const match = originalFilename.match(partRegex);
     const startPart = match ? parseInt(match[1], 10) : 1;
 
     const source1: Source = {
