@@ -55,7 +55,7 @@ In no particular order.
 - [ ] Make the Usage section of the memory card a hyperlink that expands into a full scrollable showcase of each source segment, memory in bold, and the translated segment below (if the memory's translation text is found in the translated segment, it should be in bold as well)
 - [ ] Huge: Add a way to specify the target language and supply ANTLR grammar and hunspell files
 - [ ] Huge: Add a button to each translation segment for pulling up a modal that presents valid translations as parse trees
-- [ ] Add a wiktionary search link and a session setting for whether to open in a modal or in a new tab
+- [x] Add a wiktionary search link and a session setting for whether to open in a modal or in a new tab
 - [ ] Fix for delimiter trimming in the source export output
 - [ ] ~~Perf: Implement virtualization in TranslationEditor~~ Tried to implement this but requires complicated row height calculation and breaks autocomplete
 - [x] Perf: Centralize source segmentation, cache result and pass as props to Source/Translation/Memory components
