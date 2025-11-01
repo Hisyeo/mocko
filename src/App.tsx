@@ -17,6 +17,7 @@ export interface Source {
   filename: string;
   content: string;
   segmentationRule?: string;
+  defaultGrammarRule?: string;
   modified?: number;
 }
 

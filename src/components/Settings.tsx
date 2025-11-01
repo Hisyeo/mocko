@@ -3,7 +3,7 @@ import { Button, Card, Form, Stack } from 'react-bootstrap';
 import { useApp } from '../AppContext';
 
 const Settings: React.FC = () => {
-  const { theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch } = useApp();
+  const { theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch, defaultGrammarRule, setDefaultGrammarRule } = useApp();
 
   const handleBackup = () => {
     const data = JSON.stringify(localStorage);
@@ -70,13 +70,6 @@ const Settings: React.FC = () => {
         <Card.Body>
           <Form.Check 
             type="switch"
-            id="grammar-check-switch"
-            label="Grammar Checking"
-            checked={grammarCheck}
-            onChange={(e) => setGrammarCheck(e.target.checked)}
-          />
-          <Form.Check 
-            type="switch"
             id="spell-check-switch"
             label="Spell Checking"
             checked={spellCheck}
@@ -96,6 +89,24 @@ const Settings: React.FC = () => {
               <option value="new-tab">New Tab</option>
             </Form.Control>
           </Form.Group>
+          <hr />
+          <Form.Check 
+            type="switch"
+            id="grammar-check-switch"
+            label="Grammar Checking"
+            checked={grammarCheck}
+            onChange={(e) => setGrammarCheck(e.target.checked)}
+          />
+          {grammarCheck && (
+            <Form.Group controlId="defaultGrammarRuleSelect" className="mt-3">
+              <Form.Label>Default Grammar Rule</Form.Label>
+              <Form.Control as="select" value={defaultGrammarRule} onChange={(e) => setDefaultGrammarRule(e.target.value)}>
+                <option value="Sentences">Sentences</option>
+                <option value="Constituents">Constituents</option>
+                <option value="Phrases">Phrases</option>
+              </Form.Control>
+            </Form.Group>
+          )}
         </Card.Body>
       </Card>
       

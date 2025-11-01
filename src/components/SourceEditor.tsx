@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Form, Alert, Card, Collapse, Stack, Spinner } from 'react-bootstrap';
+import { Button, Form, Alert, Card, Collapse, Stack, Spinner, FormControlProps } from 'react-bootstrap';
 import SegmentationPreviewModal from './SegmentationPreviewModal';
 import { Source } from '../App';
+import { useApp } from '../AppContext';
 
 interface SourceEditorProps {
   source: Source | null;
@@ -27,6 +28,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
   const [showRenPreview, setShowRenPreview] = useState(false);
   const [translatedTitle, setTranslatedTitle] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [defaultGrammarRule, setDefaultGrammarRule] = useState('');
+  const { grammarCheck } = useApp();
 
   useEffect(() => {
     if (source) {
@@ -40,6 +43,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
       const rule = source.segmentationRule || '\n';
       setSegmentationRule(rule);
       setOriginalSegmentationRule(rule);
+      setDefaultGrammarRule(source.defaultGrammarRule || '');
 
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const translations = storedTranslations ? JSON.parse(storedTranslations) : {};
@@ -55,6 +59,13 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
     }
   }, [source]);
 
+  const handleDefaultSegmentRuleChange : React.ChangeEventHandler<HTMLInputElement> = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (typeof event.target.value == 'string' && source?.id) {
+      setDefaultGrammarRule(event.target.value)
+      onSourceUpdate({ ...source, title, content, filename , defaultGrammarRule: event.target.value });
+    }
+  }
+
   const handleContentSave = () => {
     if (source) {
       const wrappedRule = `(${segmentationRule})`;
@@ -65,7 +76,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
 
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const oldTranslations = storedTranslations ? JSON.parse(storedTranslations) : {};
-      const newTranslations: Record<string, string> = {};
+      const newTranslations: Record<string, any> = {};
 
       newSegments.forEach(newSegment => {
         if (oldTranslations[newSegment]) {
@@ -75,7 +86,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
 
       localStorage.setItem(`translations_${source.id}`, JSON.stringify(newTranslations));
       
-      onSourceUpdate({ ...source, title, content, filename });
+      onSourceUpdate({ ...source, title, content, filename, defaultGrammarRule });
       setOriginalTitle(title);
       setOriginalContent(content);
       setOriginalFilename(filename);
@@ -98,7 +109,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
 
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const oldTranslations = storedTranslations ? JSON.parse(storedTranslations) : {};
-      const newTranslations: Record<string, string> = {};
+      const newTranslations: Record<string, any> = {};
 
       newSegments.forEach(newSegment => {
         if (oldTranslations[newSegment]) {
@@ -139,7 +150,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
     if (!source) return;
 
     const mockoData = {
-      source: { ...source, filename },
+      source: { ...source, filename, defaultGrammarRule },
       translations: JSON.parse(localStorage.getItem(`translations_${source.id}`) || '{}'),
       memories: JSON.parse(localStorage.getItem(`memories_${source.id}`) || '{}'),
       delimiters: JSON.parse(localStorage.getItem(`delimiters_${source.id}`) || '[]'),
@@ -215,11 +226,22 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
 
           <div className="mt-4">
             <h2>Segmentation</h2>
-            <Alert variant="warning">
-              Changing segmentation rules will erase existing translations unless there is a segment with an exactly matching source text.
-            </Alert>
+            {grammarCheck && (
+              <Form.Group controlId="defaultGrammarRuleSelect" className="mt-3">
+                <Form.Label>Default Segment Grammar Rule</Form.Label>
+                <Form.Control as="select" value={defaultGrammarRule} onChange={handleDefaultSegmentRuleChange}>
+                  <option value="">-</option>
+                  <option value="Sentences">Sentences</option>
+                  <option value="Constituents">Constituents</option>
+                  <option value="Phrases">Phrases</option>
+                </Form.Control>
+              </Form.Group>
+            )}
             <Form.Group controlId="segmentationRule" className="mt-2">
               <Form.Label>Regular Expression</Form.Label>
+              <Alert variant="warning">
+                Changing the segmentation regular expression will erase existing translations unless there is a segment with an exactly matching source text.
+              </Alert>
               <Form.Control 
                 type="text" 
                 placeholder="Enter regex" 

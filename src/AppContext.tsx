@@ -11,6 +11,8 @@ interface AppContextType {
   setAutocomplete: (value: boolean) => void;
   wiktionarySearch: string;
   setWiktionarySearch: (value: string) => void;
+  defaultGrammarRule: string;
+  setDefaultGrammarRule: (value: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -21,6 +23,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [spellCheck, rawSetSpellCheck] = useState(() => localStorage.getItem('spellCheck') !== 'true');
   const [autocomplete, rawSetAutocomplete] = useState(() => localStorage.getItem('autocomplete') !== 'true');
   const [wiktionarySearch, rawSetWiktionarySearch] = useState(() => localStorage.getItem('wiktionarySearch') || 'modal');
+  const [defaultGrammarRule, rawSetDefaultGrammarRule] = useState(() => localStorage.getItem('defaultGrammarRule') || 'Sentences');
 
   const setTheme = (newTheme: string) => {
     rawSetTheme(newTheme);
@@ -47,6 +50,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('wiktionarySearch', value);
   };
 
+  const setDefaultGrammarRule = (value: string) => {
+    rawSetDefaultGrammarRule(value);
+    localStorage.setItem('defaultGrammarRule', value);
+  };
+
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
     if (storedTheme) rawSetTheme(storedTheme);
@@ -62,10 +70,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const storedWiktionarySearch = localStorage.getItem('wiktionarySearch');
     if (storedWiktionarySearch) rawSetWiktionarySearch(storedWiktionarySearch);
+
+    const storedDefaultGrammarRule = localStorage.getItem('defaultGrammarRule');
+    if (storedDefaultGrammarRule) rawSetDefaultGrammarRule(storedDefaultGrammarRule);
   }, []);
 
   return (
-    <AppContext.Provider value={{ theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch }}>
+    <AppContext.Provider value={{ theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch, defaultGrammarRule, setDefaultGrammarRule }}>
       {children}
     </AppContext.Provider>
   );

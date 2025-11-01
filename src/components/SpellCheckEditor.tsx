@@ -31,9 +31,10 @@ interface SpellCheckEditorProps {
   onDiagnosticsChange: (diagnostics: readonly Diagnostic[]) => void;
   autofocus?: boolean;
   numberedMemories: Record<number, { source: string, target: string }>;
+  grammarRule: string;
 }
 
-const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, onDiagnosticsChange, autofocus, numberedMemories }) => {
+const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, onDiagnosticsChange, autofocus, numberedMemories, grammarRule }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const numberedMemoriesRef = useRef(numberedMemories);
@@ -44,8 +45,6 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
   }, [numberedMemories]);
 
   useEffect(() => {
-    if (viewRef.current) return; // Prevent re-initialization
-
     let isCancelled = false;
 
     const customAutocomplete = (context: CompletionContext, fuse: Fuse<HisyeoFuseResult>) => {
@@ -130,7 +129,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
             if (!grammarCheck) return [];
             const diagnostics: Diagnostic[] = [];
             const text = view.state.doc.toString();
-            const chars = new InputStream(`${text}.`); // Adding a period so we can use the EOF docuemnt rule
+            const chars = new InputStream(text); // Adding a period so we can use the EOF docuemnt rule
             const lexer = new HisyeoLexer(chars);
             const lexerListener = new HisyeoErrorListener();
             lexer.removeErrorListeners();
@@ -140,7 +139,19 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
             const parserListener = new HisyeoErrorListener();
             parser.removeErrorListeners();
             parser.addErrorListener(parserListener);
-            parser.sentencesStrict();
+            switch (grammarRule) {
+              case 'Sentences':
+                parser.sentencesStrict();
+                break;
+              case 'Constituents':
+                parser.sentenceStrict();
+                break;
+              case 'Phrases':
+                parser.nounPhraseStrict();
+                break;
+              default:
+                break;
+            }
     
             [...lexerListener.errors, ...parserListener.errors].forEach(err => {
                 const firstSpacePostCol = text.indexOf(' ', err.column)
@@ -199,7 +210,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
         viewRef.current = null;
       }
     };
-  }, [autofocus, onChange, onDiagnosticsChange, grammarCheck, spellCheck, autocomplete]);
+  }, [autofocus, onChange, onDiagnosticsChange, grammarCheck, spellCheck, autocomplete, grammarRule]);
 
   useEffect(() => {
     if (viewRef.current && value !== viewRef.current.state.doc.toString()) {

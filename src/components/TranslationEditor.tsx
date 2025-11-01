@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Form, ListGroup, Button, Badge, Stack } from 'react-bootstrap';
+import { Form, ListGroup, Button, Badge, Stack, Dropdown } from 'react-bootstrap';
 import Mark from 'mark.js';
 import SelectionTooltip from './SelectionTooltip';
 import UnderlinedText from './UnderlinedText';
@@ -28,7 +28,7 @@ function isSelectionInSelector(selection: Selection, selector: string): boolean 
 }
 
 const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments, delimiters }) => {
-  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [translations, setTranslations] = useState<Record<string, any>>({});
   const [editingSegment, setEditingSegment] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
   const [diagnostics, setDiagnostics] = useState<readonly Diagnostic[]>([]);
@@ -41,7 +41,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
   const [wiktionaryTerm, setWiktionaryTerm] = useState('');
   const [memoryVersion, setMemoryVersion] = useState(0);
   const [visibleSegmentCount, setVisibleSegmentCount] = useState(50);
-  const { grammarCheck, spellCheck } = useApp();
+  const [segmentGrammarRule, setSegmentGrammarRule] = useState('');
+  const { grammarCheck, spellCheck, defaultGrammarRule } = useApp();
 
   const editorRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -99,15 +100,30 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
   }, [tooltipRef, isAddingMemory]);
 
   const handleEdit = (segment: string) => {
-    setEditingSegment(segment.trim());
-    setCurrentTranslation(translations[segment.trim()] || '');
+    const trimmedSegment = segment.trim();
+    setEditingSegment(trimmedSegment);
+    const translationData = translations[trimmedSegment];
+    if (typeof translationData === 'object' && translationData !== null) {
+      setCurrentTranslation(translationData.text || '');
+      setSegmentGrammarRule(translationData.grammarRule || '');
+    } else {
+      setCurrentTranslation(translationData || '');
+      setSegmentGrammarRule('');
+    }
     setDiagnostics([]);
     setNumberedMemories({});
   };
 
   const handleSave = (segment: string) => {
     if (hasErrors) return;
-    const updatedTranslations = { ...translations, [segment.trim()]: currentTranslation };
+    const trimmedSegment = segment.trim();
+    const updatedTranslations = { 
+      ...translations, 
+      [trimmedSegment]: { 
+        text: currentTranslation, 
+        grammarRule: segmentGrammarRule 
+      } 
+    };
     setTranslations(updatedTranslations);
     if (source) {
       localStorage.setItem(`translations_${source.id}`, JSON.stringify(updatedTranslations));
@@ -118,7 +134,13 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
   const handleSaveAndEditNext = (currentSegmentTrimmed: string) => {
     if (hasErrors) return;
 
-    const updatedTranslations = { ...translations, [currentSegmentTrimmed]: currentTranslation };
+    const updatedTranslations = { 
+      ...translations, 
+      [currentSegmentTrimmed]: { 
+        text: currentTranslation, 
+        grammarRule: segmentGrammarRule 
+      } 
+    };
     setTranslations(updatedTranslations);
     if (source) {
       localStorage.setItem(`translations_${source.id}`, JSON.stringify(updatedTranslations));
@@ -229,6 +251,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
             if (!trimmedSegment) return null;
 
             const isLastSegment = validSegments.indexOf(trimmedSegment) === validSegments.length - 1;
+            const translationData = translations[trimmedSegment];
+            const translationText = typeof translationData === 'object' && translationData !== null ? translationData.text : translationData;
 
             return (
               <ListGroup.Item key={index} className="d-flex align-items-center">
@@ -242,17 +266,31 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
                       onDiagnosticsChange={setDiagnostics}
                       autofocus={editingSegment === trimmedSegment}
                       numberedMemories={numberedMemories}
+                      grammarRule={segmentGrammarRule || source.defaultGrammarRule || defaultGrammarRule}
                     />
                     <Stack direction='horizontal' gap={1}>
                       <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(trimmedSegment)} disabled={isLastSegment || hasErrors}>Save & Edit Next</Button>
                       <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(trimmedSegment)} disabled={hasErrors}>Save</Button>
                       <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
+                      {grammarCheck && (
+                        <Dropdown onSelect={(e) => setSegmentGrammarRule(e || '')} className='ms-auto'>
+                          <Dropdown.Toggle variant="info" size="sm" className="mt-2 ml-2">
+                            Grammar
+                          </Dropdown.Toggle>
+                          <Dropdown.Menu>
+                            <Dropdown.Item active={segmentGrammarRule == ''} eventKey="">-</Dropdown.Item>
+                            <Dropdown.Item active={segmentGrammarRule == 'Sentences'} eventKey="Sentences">Sentences</Dropdown.Item>
+                            <Dropdown.Item active={segmentGrammarRule == 'Constituents'} eventKey="Constituents">Constituents</Dropdown.Item>
+                            <Dropdown.Item active={segmentGrammarRule == 'Phrases'} eventKey="Phrases">Phrases</Dropdown.Item>
+                          </Dropdown.Menu>
+                        </Dropdown>
+                      )}
                     </Stack>
                   </div>
                 ) : (
                   <div className="d-flex justify-content-between align-items-center w-100">
-                    <p className={`mb-0 ${!translations[trimmedSegment] ? 'source-text': ''}`}>
-                      {translations[trimmedSegment] || segment}
+                    <p className={`mb-0 ${!translationText ? 'source-text': ''}`}>
+                      {translationText || segment}
                       {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiters[index]}</Badge>}
                     </p>
                     <Button variant="link" onClick={() => handleEdit(trimmedSegment)} style={{textDecoration: 'none'}}>✏️</Button>
