@@ -111,11 +111,13 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (isAddingMemory) return;
       if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
         setTooltip(null);
-        const instance = new Mark(editorRef.current as HTMLElement);
-        instance.unmark();
+        if (isAddingMemory) {
+          setIsAddingMemory(false);
+          const instance = new Mark(editorRef.current as HTMLElement);
+          instance.unmark();
+        }
       }
     }
 
