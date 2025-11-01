@@ -11,7 +11,7 @@ const Settings: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'cat-app-backup.json';
+    a.download = 'yon-mocko-backup.json';
     a.click();
     URL.revokeObjectURL(url);
   };
