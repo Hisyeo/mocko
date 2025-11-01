@@ -58,6 +58,7 @@ In no particular order.
 - [x] Add a wiktionary search link and a session setting for whether to open in a modal or in a new tab
 - [ ] Fix for delimiter trimming in the source export output
 - [ ] ~~Perf: Implement virtualization in TranslationEditor~~ Tried to implement this but requires complicated row height calculation and breaks autocomplete
+- [x] Implement infinite loading pattern instead of virtualization
 - [x] Perf: Centralize source segmentation, cache result and pass as props to Source/Translation/Memory components
 - [x] Perf: Use web worker for segmentation and stat calculation
 - [ ] Perf: Make grammarLinter asynchronous

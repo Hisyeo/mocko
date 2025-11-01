@@ -8,6 +8,7 @@ import SpellCheckEditor from './SpellCheckEditor';
 import { Diagnostic } from '@codemirror/lint';
 import { useApp } from '../AppContext';
 import WiktionaryModal from './WiktionaryModal';
+import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 
 interface TranslationEditorProps {
   source: Source | null;
@@ -39,10 +40,19 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
   const [showWiktionaryModal, setShowWiktionaryModal] = useState(false);
   const [wiktionaryTerm, setWiktionaryTerm] = useState('');
   const [memoryVersion, setMemoryVersion] = useState(0);
+  const [visibleSegmentCount, setVisibleSegmentCount] = useState(50);
   const { grammarCheck, spellCheck } = useApp();
 
   const editorRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+
+  const { ref: sentinelRef, isIntersecting } = useIntersectionObserver({ threshold: 0.1 });
+
+  useEffect(() => {
+    if (isIntersecting) {
+      setVisibleSegmentCount(prevCount => prevCount + 50);
+    }
+  }, [isIntersecting]);
 
   const onMemoriesNumbered = useCallback((newMemories: Record<number, { source: string, target: string }>) => {
     setNumberedMemories(oldMemories => {
@@ -214,7 +224,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
       </Form.Group>
       
       <ListGroup className="mt-4">
-        {segments.map((segment, index) => {
+        {segments.slice(0, visibleSegmentCount).map((segment, index) => {
             const trimmedSegment = segment.trim();
             if (!trimmedSegment) return null;
 
@@ -253,6 +263,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
             )
         })}
       </ListGroup>
+      <div ref={sentinelRef} />
     </div>
   );
 }
