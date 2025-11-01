@@ -160,29 +160,11 @@ const App: React.FC = () => {
   const handleSplitSource = (originalSource: Source, splitIndex: number) => {
     const rule = originalSource.segmentationRule || '\n';
     const wrappedRule = `(${rule})`;
-    const allSegments = originalSource.content.split(new RegExp(wrappedRule));
+    const allSegmentsAndDelimiters = originalSource.content.split(new RegExp(wrappedRule));
     
-    let content1 = '';
-    let content2 = '';
-
-    let segCounter = 0;
-    for(let i = 0; i < allSegments.length; i++) {
-      const isDelimiter = i % 2 !== 0;
-      if (isDelimiter) {
-        if (segCounter < splitIndex) {
-          content1 += allSegments[i];
-        } else {
-          content2 += allSegments[i];
-        }
-      } else {
-        if (segCounter < splitIndex) {
-          content1 += allSegments[i];
-        } else {
-          content2 += allSegments[i];
-        }
-        segCounter++;
-      }
-    }
+    const slicePoint = splitIndex * 2;
+    const content1 = allSegmentsAndDelimiters.slice(0, slicePoint).join('');
+    const content2 = allSegmentsAndDelimiters.slice(slicePoint).join('');
 
     const originalFilename = originalSource.filename ?? originalSource.title
     const baseFilename = originalFilename.replace(/ - Part \d+$/, '');
