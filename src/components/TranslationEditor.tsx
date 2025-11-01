@@ -291,12 +291,13 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
             <Button variant="outline-info" onClick={handleGoToIncomplete}>Go To Incomplete</Button>
             <Button variant="outline-danger" onClick={handleGoToEnd}>Go To End</Button>
             <Form.Control
+              id='go-to-segment-number-input'
               type="number"
               value={goToSegment}
               onChange={(e) => setGoToSegment(e.target.value)}
               style={{ maxWidth: '80px' }}
             />
-            <InputGroup.Text>/ {validSegments.length}</InputGroup.Text>
+            <InputGroup.Text id='go-to-segment-number-length'>/ {validSegments.length}</InputGroup.Text>
             <Button variant="outline-dark" onClick={handleGoToSegment}>Go</Button>
           </InputGroup>
         </Stack>

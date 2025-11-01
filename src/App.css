@@ -73,6 +73,14 @@ html, body, #root {
   margin-top: 3px !important;
 }
 
+[data-theme="brite"] #go-to-segment-number-input {
+  margin-top: 0.25em;
+}
+
+[data-theme="brite"] #go-to-segment-number-length {
+  margin-top: 0.25em;
+}
+
 [data-theme="quartz"] select option {
   color: black;
 }
