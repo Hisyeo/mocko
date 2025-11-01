@@ -132,7 +132,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ source, allSources, segment
                     type="checkbox"
                     key={s.id}
                     id={s.id}
-                    label={s.title}
+                    label={s.filename ?? s.title}
                     checked={importSourceIds.includes(s.id)}
                     onChange={handleCheckboxChange}
                   />
