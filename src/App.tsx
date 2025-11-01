@@ -78,6 +78,15 @@ const App: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const baseTitle = "yôn Mocko";
+    if (selectedSource && selectedSource.filename) {
+      document.title = `${selectedSource.filename} - ${baseTitle}`;
+    } else {
+      document.title = baseTitle;
+    }
+  }, [selectedSource]);
+
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   const widthRef = useRef(sidebarWidth);
