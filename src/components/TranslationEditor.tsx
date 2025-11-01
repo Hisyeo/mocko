@@ -388,8 +388,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
                       {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiters[index]}</Badge>}
                     </p>
                     <Stack direction='horizontal'>
-                      <Button variant="link" onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
-                      <Button variant="link" onClick={() => handleShowSplitModal(index)} style={{textDecoration: 'none'}} disabled={index===0}>✂️</Button>
+                      <Button variant="link" title='Edit segment' onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
+                      <Button variant="link" title='Split source' onClick={() => handleShowSplitModal(index)} style={{textDecoration: 'none'}} disabled={index===0}>✂️</Button>
                     </Stack>
                   </div>
                 )}
