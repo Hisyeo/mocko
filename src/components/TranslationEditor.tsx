@@ -346,13 +346,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
             const isLastSegment = index === validSegments.length - 1;
             const translationData = translations[segment];
             const translationText = typeof translationData === 'object' && translationData !== null ? translationData.text : translationData;
+            const delimiter = delimiters[index]?.replaceAll('\n', '⏎')
 
             return (
               <ListGroup.Item key={index} id={`segment-item-${index}`} className="d-flex align-items-center">
                 {editingSegment === segment ? (
                   <div className="w-100">
                     <UnderlinedText text={segment} memories={memories} onInsert={handleInsertMemory} onMemoriesNumbered={onMemoriesNumbered} />
-                    {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiters[index]}</Badge>}
+                    {delimiter && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiter}</Badge>}
                     <SpellCheckEditor 
                       value={currentTranslation} 
                       onChange={setCurrentTranslation} 
@@ -365,7 +366,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
                       <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(segment)} disabled={isLastSegment || hasErrors}>Save & Edit Next</Button>
                       <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(segment)} disabled={hasErrors}>Save</Button>
                       <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
-                      <Form.Label column className='mt-2'>{'\u00A0'}<small>Segment #{index+1}</small></Form.Label>
+                      <Form.Label column className='mt-2'>{' '}<small>Segment #{index+1}</small></Form.Label>
                       {grammarCheck && (
                         <Dropdown onSelect={(e) => setSegmentGrammarRule(e || '')} className='ms-auto'>
                           <Dropdown.Toggle variant="info" size="sm" className="mt-2 ml-2">
@@ -385,7 +386,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
                   <div className="d-flex justify-content-between align-items-center w-100">
                     <p className={`mb-0 ${!translationText ? 'source-text': ''}`}>
                       {translationText || segment}
-                      {delimiters[index] && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiters[index]}</Badge>}
+                      {delimiter && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiter}</Badge>}
                     </p>
                     <Stack direction='horizontal'>
                       <Button variant="link" title='Edit segment' onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
