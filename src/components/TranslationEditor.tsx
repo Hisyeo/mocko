@@ -389,7 +389,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
                     </p>
                     <Stack direction='horizontal'>
                       <Button variant="link" onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
-                      <Button variant="link" onClick={() => handleShowSplitModal(index)} style={{textDecoration: 'none'}}>✂️</Button>
+                      <Button variant="link" onClick={() => handleShowSplitModal(index+1)} style={{textDecoration: 'none'}}>✂️</Button>
                     </Stack>
                   </div>
                 )}
