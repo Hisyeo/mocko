@@ -1,6 +1,6 @@
 # yôn Mocko
 
-A CAT (computer-assisted translation) tool that works locally (no accounts). This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A CAT (computer-assisted translation) tool that works locally (no accounts). 
 
 ## Functionality
 
@@ -43,13 +43,12 @@ In no particular order.
 - [x] Make sidebar width adjustable
 - [x] Add search box to sidebar for navigating long lists of sources
 - [x] Add a sort option to sidebar that allows you to organize by alphabetical (source), alphabetical (translation), last updated, or last added
-- [ ] Add a way to pin sources so they show at the top of the source list
 - [x] Allow selection of grammar top-rule on a session-level, source-level, and segment-level (each layer superseding the previous)
 - [x] Make memory dropdown only show up when source text is highlighted
 - [x] Add keyboard-based approach to add memories into text editor (using a number badge on each memory in the current segment)
 - [ ] Add more statistics
 - [ ] Add session setting for controlling whether Hîsyêô text content is converted to the abugida or syllabary (in the UI and export functions)
-- [ ] Add UI natlang translations (include other conlangs and Hîsyêô!)
+- [ ] Huge: Add UI natlang translations (include other conlangs and Hîsyêô!)
 - [ ] Huge: Possibly add more file import types for ODT, DOCX, PDF, or EPUB
 - [ ] Store update timestamp for each source in session and add an update session option in settings that allows users to import a session json file and any duplicate entries will be either overwritten or skipped (user-selectable)
 - [ ] Make the Usage section of the memory card a hyperlink that expands into a full scrollable showcase of each source segment, memory in bold, and the translated segment below (if the memory's translation text is found in the translated segment, it should be in bold as well)
@@ -68,9 +67,9 @@ In no particular order.
 - [ ] Make the heading type segments appear as dropdown options for the sidebar nav
 - [ ] Make the skip type segments be completely skipped from generated output and will skip grammar/spellcheck validation
 
-## Available Scripts
+## Development & Scripts
 
-In the project directory, you can run:
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app). In the project directory, you can run:
 
 ### `npm start`
 
