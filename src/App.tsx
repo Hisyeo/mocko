@@ -165,7 +165,6 @@ const App: React.FC = () => {
     let content1 = '';
     let content2 = '';
 
-    const validSegs = allSegments.filter((_, i) => i % 2 === 0);
     let segCounter = 0;
     for(let i = 0; i < allSegments.length; i++) {
       const isDelimiter = i % 2 !== 0;
@@ -208,12 +207,15 @@ const App: React.FC = () => {
       modified: Date.now(),
     };
 
-    const updatedSources = sources.filter(s => s.id !== originalSource.id);
-    updatedSources.push(source1, source2);
+    const updatedSources = [...sources.filter(s => s.id !== originalSource.id), source1, source2];
     setSources(updatedSources);
     localStorage.setItem('sources', JSON.stringify(updatedSources));
-    handleDeleteSource(originalSource.id);
-    setSelectedSource(source2);
+
+    localStorage.removeItem(`translations_${originalSource.id}`);
+    localStorage.removeItem(`memories_${originalSource.id}`);
+    localStorage.removeItem(`delimiters_${originalSource.id}`);
+
+    setSelectedSource(source1);
   };
 
   const handleImportMocko = (data: any) => {
