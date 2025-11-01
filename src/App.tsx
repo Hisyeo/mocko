@@ -28,7 +28,7 @@ const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const storedWidth = localStorage.getItem('sidebarWidth');
-    return storedWidth ? parseInt(storedWidth, 10) : 240;
+    return storedWidth ? parseInt(storedWidth, 10) : 300;
   });
   const [sources, setSources] = useState<Source[]>([]);
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
@@ -224,7 +224,7 @@ const App: React.FC = () => {
     <div className={`d-flex ${sidebarOpen ? 'toggled' : ''}`} id="wrapper">
       <div className="bg-light border-right" id="sidebar-wrapper" style={{ width: sidebarOpen ? sidebarWidth : 0 }}>
         <div className="sidebar-heading">
-          <Stack direction='horizontal'>
+          <Stack direction='horizontal' gap={1}>
             <span>Your Sources</span>
             <Dropdown onSelect={(e) => handleSortChange(e as SortOrder)} className='ms-auto' >
               <Dropdown.Toggle variant="outline-secondary"  id="dropdown-basic">
