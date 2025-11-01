@@ -160,29 +160,11 @@ const App: React.FC = () => {
   const handleSplitSource = (originalSource: Source, splitIndex: number) => {
     const rule = originalSource.segmentationRule || '\n';
     const wrappedRule = `(${rule})`;
-    const allSegments = originalSource.content.split(new RegExp(wrappedRule));
+    const allSegmentsAndDelimiters = originalSource.content.split(new RegExp(wrappedRule));
     
-    let content1 = '';
-    let content2 = '';
-
-    let segCounter = 0;
-    for(let i = 0; i < allSegments.length; i++) {
-      const isDelimiter = i % 2 !== 0;
-      if (isDelimiter) {
-        if (segCounter < splitIndex) {
-          content1 += allSegments[i];
-        } else {
-          content2 += allSegments[i];
-        }
-      } else {
-        if (segCounter < splitIndex) {
-          content1 += allSegments[i];
-        } else {
-          content2 += allSegments[i];
-        }
-        segCounter++;
-      }
-    }
+    const slicePoint = splitIndex * 2;
+    const content1 = allSegmentsAndDelimiters.slice(0, slicePoint).join('');
+    const content2 = allSegmentsAndDelimiters.slice(slicePoint).join('');
 
     const originalFilename = originalSource.filename ?? originalSource.title
     const baseFilename = originalFilename.replace(/ - Part \d+$/, '');
@@ -193,7 +175,7 @@ const App: React.FC = () => {
     const source1: Source = {
       ...originalSource,
       id: new Date().toISOString() + '-part1',
-      title: `${originalSource.title} - Part ${startPart}`,
+      title: originalSource.title,
       filename: `${baseFilename} - Part ${startPart}`,
       content: content1,
       modified: Date.now(),
@@ -202,7 +184,7 @@ const App: React.FC = () => {
     const source2: Source = {
       ...originalSource,
       id: new Date().toISOString() + '-part2',
-      title: `${originalSource.title} - Part ${startPart + 1}`,
+      title: originalSource.title,
       filename: `${baseFilename} - Part ${startPart + 1}`,
       content: content2,
       modified: Date.now(),
@@ -262,8 +244,8 @@ const App: React.FC = () => {
     .filter(source => (source.filename ?? source.title).toLowerCase().includes(sourceFilter.toLowerCase()))
     .sort((a, b) => {
       switch (sortOrder) {
-        case 'Oldest First': return new Date(a.id).getTime() - new Date(b.id).getTime();
-        case 'Newest First': return new Date(b.id).getTime() - new Date(a.id).getTime();
+        case 'Oldest First': return new Date(a.id.replace(/-part\d+$/,'')).getTime() - new Date(b.id.replace(/-part\d+/,'')).getTime();
+        case 'Newest First': return new Date(b.id.replace(/-part\d+$/,'')).getTime() - new Date(a.id.replace(/-part\d+/,'')).getTime();
         case 'Most Recently Modified': return (b.modified || 0) - (a.modified || 0);
         case 'Least Recently Modified': return (a.modified || 0) - (b.modified || 0);
         case 'Longest Source': return b.content.length - a.content.length;
