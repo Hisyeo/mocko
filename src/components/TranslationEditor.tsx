@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Form, ListGroup, Button, Badge, Stack, Dropdown, InputGroup } from 'react-bootstrap';
+import { Form, ListGroup, Button, Badge, Stack, Dropdown, InputGroup, Breadcrumb, Alert } from 'react-bootstrap';
 import Mark from 'mark.js';
 import SelectionTooltip from './SelectionTooltip';
 import UnderlinedText from './UnderlinedText';
@@ -336,6 +336,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
                       <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(segment)} disabled={isLastSegment || hasErrors}>Save & Edit Next</Button>
                       <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(segment)} disabled={hasErrors}>Save</Button>
                       <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
+                      <Form.Label column className='mt-2'>{'\u00A0'}<small>Segment #{index+1}</small></Form.Label>
                       {grammarCheck && (
                         <Dropdown onSelect={(e) => setSegmentGrammarRule(e || '')} className='ms-auto'>
                           <Dropdown.Toggle variant="info" size="sm" className="mt-2 ml-2">
