@@ -61,7 +61,7 @@ In no particular order.
 - [x] Perf: Centralize source segmentation, cache result and pass as props to Source/Translation/Memory components
 - [x] Perf: Use web worker for segmentation and stat calculation
 - [ ] Perf: Make grammarLinter asynchronous
-- [ ] Make the import memories panel collapsible
+- [x] Make the import memories panel collapsible
 - [ ] Huge: Support identifying and checking styling tags
 - [ ] Add segment options popover with a type dropdown: heading (sub-option: heading level), body, skip (sub-option: skip delimiters: neither, before, after, both)
 - [ ] Make the heading type segments appear as dropdown options for the sidebar nav

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Button, Card } from 'react-bootstrap';
+import { Form, Button, Card, Collapse } from 'react-bootstrap';
 import { Source } from '../App';
 
 interface MemoryEditorProps {
@@ -19,6 +19,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ source, allSources, segment
   const [currentTranslation, setCurrentTranslation] = useState('');
   const [importedMemories, setImportedMemories] = useState<Record<string, ImportedMemory>>({});
   const [importSourceIds, setImportSourceIds] = useState<string[]>([]);
+  const [showImportPanel, setShowImportPanel] = useState(false);
 
   useEffect(() => {
     if (source) {
@@ -112,24 +113,35 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ source, allSources, segment
     <div>
       <h1>{source.title}</h1>
       
-      <Card className="mt-4">
-        <Card.Body>
-          <Card.Title>Import Memories</Card.Title>
-          <Form.Group controlId="importSelect">
-            <Form.Label>Select sources to import memories from. Memories will only be displayed if there is a segment that contains the source text of the memory.</Form.Label>
-            {allSources.filter(s => s.id !== source.id).map(s => (
-              <Form.Check 
-                type="checkbox"
-                key={s.id}
-                id={s.id}
-                label={s.title}
-                checked={importSourceIds.includes(s.id)}
-                onChange={handleCheckboxChange}
-              />
-            ))}
-          </Form.Group>
-        </Card.Body>
-      </Card>
+      <Button 
+        onClick={() => setShowImportPanel(!showImportPanel)}
+        aria-controls="import-memories-panel"
+        aria-expanded={showImportPanel}
+        className="mt-4"
+      >
+        Import Memories
+      </Button>
+      <Collapse in={showImportPanel}>
+        <div id="import-memories-panel">
+          <Card className="mt-2">
+            <Card.Body>
+              <Form.Group controlId="importSelect">
+                <Form.Label>Select sources to import memories from. Memories will only be displayed if there is a segment that contains the source text of the memory.</Form.Label>
+                {allSources.filter(s => s.id !== source.id).map(s => (
+                  <Form.Check 
+                    type="checkbox"
+                    key={s.id}
+                    id={s.id}
+                    label={s.title}
+                    checked={importSourceIds.includes(s.id)}
+                    onChange={handleCheckboxChange}
+                  />
+                ))}
+              </Form.Group>
+            </Card.Body>
+          </Card>
+        </div>
+      </Collapse>
 
       <div className="mt-4">
         {Object.entries(finalMemories).map(([sourceText, mem]) => (
