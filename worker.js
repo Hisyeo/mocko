@@ -41,15 +41,41 @@ self.onmessage = (e) => {
     const avgTranslatedWords = numTranslatedSegments > 0 ? (translatedWordCount / numTranslatedSegments).toFixed(2) : 0;
 
     let reconstructed = '';
+    const notes = [];
+    let noteCounter = 1;
+
     segments.forEach((seg, i) => {
       const trimmedSeg = seg.trim();
+      if (!trimmedSeg) return;
+
       const translationData = translations[trimmedSeg];
-      const translationText = (typeof translationData === 'object' && translationData !== null) ? translationData.text : translationData;
-      reconstructed += translationText || seg;
+      let translationText = seg;
+      let noteAppended = false;
+
+      if (translationData) {
+        if (typeof translationData === 'object' && translationData !== null) {
+          translationText = translationData.text || seg;
+          if (translationData.note) {
+            translationText += ` [${noteCounter}]`;
+            notes.push(`${noteCounter}. ${translationData.note}`);
+            noteCounter++;
+            noteAppended = true;
+          }
+        } else {
+          translationText = translationData;
+        }
+      }
+      
+      reconstructed += translationText;
+
       if (delimiters[i]) {
         reconstructed += delimiters[i];
       }
     });
+
+    if (notes.length > 0) {
+      reconstructed += '\n\n---\n\nNotes\n\n' + notes.join('\n');
+    }
 
     self.postMessage({
       task: 'stats',
