@@ -6,6 +6,7 @@ import { useApp } from '../AppContext';
 
 interface SourceEditorProps {
   source: Source | null;
+  allSources: Source[];
   onSourceUpdate: (updatedSource: Source) => void;
   onDelete: (sourceId: string) => void;
   onDuplicate: (source: Source) => void;
@@ -13,9 +14,10 @@ interface SourceEditorProps {
   delimiters: string[];
 }
 
-const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onDelete, onDuplicate, segments, delimiters }) => {
+const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourceUpdate, onDelete, onDuplicate, segments, delimiters }) => {
   const [title, setTitle] = useState('');
   const [filename, setFilename] = useState('');
+  const [filenameError, setFilenameError] = useState<string | null>(null);
   const [content, setContent] = useState('');
   const [originalTitle, setOriginalTitle] = useState('');
   const [originalFilename, setOriginalFilename] = useState('');
@@ -38,6 +40,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
       setIsLoading(true);
       setTitle(source.title);
       setFilename(source.filename);
+      setFilenameError(null);
       setContent(source.content);
       setOriginalTitle(source.title);
       setOriginalFilename(source.filename);
@@ -72,6 +75,12 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
 
   const handleContentSave = () => {
     if (source) {
+      const isDuplicate = allSources.some(s => s.id !== source.id && s.filename === filename);
+      if (isDuplicate) {
+        setFilenameError('A source with this filename already exists.');
+        return;
+      }
+
       const wrappedRule = `(${segmentationRule})`;
       const parts = content.split(new RegExp(wrappedRule));
       const newSegments = parts.filter((_, i) => i % 2 === 0).map(s => s.trim()).filter(Boolean);
@@ -101,6 +110,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
     setTitle(originalTitle);
     setContent(originalContent);
     setFilename(originalFilename);
+    setFilenameError(null);
   };
 
   const handleSegmentationSave = () => {
@@ -187,15 +197,19 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, onSourceUpdate, onD
         </Spinner>
       ) : (
         <>
-          <Form>
+          <Form noValidate>
             <Form.Group controlId="filename">
               <Form.Label>Filename</Form.Label>
               <Form.Control 
                 type="text" 
                 placeholder="Enter filename" 
                 value={filename} 
-                onChange={(e) => setFilename(e.target.value)} 
+                onChange={(e) => { setFilename(e.target.value); setFilenameError(null); }} 
+                isInvalid={!!filenameError}
               />
+              <Form.Control.Feedback type="invalid">
+                {filenameError}
+              </Form.Control.Feedback>
             </Form.Group>
             <Form.Group controlId="sourceTitle" className="mt-2">
               <Form.Label>Title</Form.Label>

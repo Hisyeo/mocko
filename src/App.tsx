@@ -343,7 +343,7 @@ const App: React.FC = () => {
               <Row>
                 <Tab.Content>
                   <Tab.Pane eventKey="source">
-                    <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} segments={segments} delimiters={delimiters} />
+                    <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} segments={segments} delimiters={delimiters} allSources={sources} />
                   </Tab.Pane>
                   <Tab.Pane eventKey="translation">
                     <TranslationEditor source={selectedSource} segments={segments} delimiters={delimiters} onSplit={handleSplitSource} />
