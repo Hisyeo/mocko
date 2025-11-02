@@ -215,7 +215,7 @@ const App: React.FC = () => {
     const newId = new Date().toISOString();
     const newSource = { ...source, id: newId, modified: Date.now(), filename: newFilename || source.filename };
 
-    const updatedSources = newFilename ? sources.map(s => s.id === data.existingSourceId ? newSource : s) : [...sources, newSource];
+    const updatedSources = newFilename ? [...sources, newSource] : sources.map(s => s.id === data.existingSourceId ? newSource : s);
     setSources(updatedSources);
     localStorage.setItem('sources', JSON.stringify(updatedSources));
     localStorage.setItem(`translations_${newId}`, JSON.stringify(translations));
@@ -377,7 +377,7 @@ const App: React.FC = () => {
         <ImportConflictModal 
           show={!!conflictData}
           onHide={() => setConflictData(null)}
-          onOverwrite={() => finalizeImport(conflictData, conflictData.source.filename)}
+          onOverwrite={() => finalizeImport(conflictData)}
           onRename={(newFilename) => finalizeImport(conflictData, newFilename)}
           existingFilename={conflictData.source.filename}
           sources={sources}
