@@ -9,17 +9,17 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, rawSetTheme] = useState(() => {
-    const storedTheme = localStorage.getItem('theme');
+    const storedTheme = localStorage.getItem('yon-mocko-theme');
     return storedTheme || 'brite'; // default theme
   });
 
   const setTheme = (newTheme: string) => {
     rawSetTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
+    localStorage.setItem('yon-mocko-theme', newTheme);
   };
 
   useEffect(() => {
-    const storedTheme = localStorage.getItem('theme');
+    const storedTheme = localStorage.getItem('yon-mocko-theme');
     if (storedTheme) {
       rawSetTheme(storedTheme);
     }

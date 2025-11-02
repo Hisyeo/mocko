@@ -18,7 +18,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, rawSetTheme] = useState(() => localStorage.getItem('theme') || 'brite');
+  const [theme, rawSetTheme] = useState(() => localStorage.getItem('yon-mocko-theme') || 'brite');
   const [grammarCheck, rawSetGrammarCheck] = useState(() => localStorage.getItem('grammarCheck') !== 'true');
   const [spellCheck, rawSetSpellCheck] = useState(() => localStorage.getItem('spellCheck') !== 'true');
   const [autocomplete, rawSetAutocomplete] = useState(() => localStorage.getItem('autocomplete') !== 'true');
@@ -27,7 +27,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setTheme = (newTheme: string) => {
     rawSetTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
+    localStorage.setItem('yon-mocko-theme', newTheme);
   };
 
   const setGrammarCheck = (value: boolean) => {
@@ -56,7 +56,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   useEffect(() => {
-    const storedTheme = localStorage.getItem('theme');
+    const storedTheme = localStorage.getItem('yon-mocko-theme');
     if (storedTheme) rawSetTheme(storedTheme);
 
     const storedGrammarCheck = localStorage.getItem('grammarCheck');
