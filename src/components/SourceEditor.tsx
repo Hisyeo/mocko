@@ -12,9 +12,10 @@ interface SourceEditorProps {
   onDuplicate: (source: Source) => void;
   segments: string[];
   delimiters: string[];
+  translationsVersion: number;
 }
 
-const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourceUpdate, onDelete, onDuplicate, segments, delimiters }) => {
+const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourceUpdate, onDelete, onDuplicate, segments, delimiters, translationsVersion }) => {
   const [title, setTitle] = useState('');
   const [filename, setFilename] = useState('');
   const [filenameError, setFilenameError] = useState<string | null>(null);
@@ -64,7 +65,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
       };
       worker.postMessage({ task: 'stats', content: source.content, segmentationRule: rule, translations });
     }
-  }, [source]);
+  }, [source, translationsVersion]);
 
   const handleDefaultSegmentRuleChange : React.ChangeEventHandler<HTMLInputElement> = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (typeof event.target.value == 'string' && source?.id) {

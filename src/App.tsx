@@ -37,6 +37,7 @@ const App: React.FC = () => {
   const [sourceFilter, setSourceFilter] = useState(() => localStorage.getItem('sourceFilter') || '');
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => (localStorage.getItem('sortOrder') as SortOrder) || 'Alphabetical');
   const [conflictData, setConflictData] = useState<any | null>(null);
+  const [translationsVersion, setTranslationsVersion] = useState(0);
   const { theme } = useApp();
 
   const segments = useMemo(() => {
@@ -240,6 +241,10 @@ const App: React.FC = () => {
     localStorage.setItem('sortOrder', order);
   };
 
+  const handleTranslationsUpdate = () => {
+    setTranslationsVersion(v => v + 1);
+  };
+
   const sortedAndFilteredSources = [...sources]
     .filter(source => (source.filename ?? source.title).toLowerCase().includes(sourceFilter.toLowerCase()))
     .sort((a, b) => {
@@ -343,10 +348,10 @@ const App: React.FC = () => {
               <Row>
                 <Tab.Content>
                   <Tab.Pane eventKey="source">
-                    <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} segments={segments} delimiters={delimiters} allSources={sources} />
+                    <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} segments={segments} delimiters={delimiters} allSources={sources} translationsVersion={translationsVersion} />
                   </Tab.Pane>
                   <Tab.Pane eventKey="translation">
-                    <TranslationEditor source={selectedSource} segments={segments} delimiters={delimiters} onSplit={handleSplitSource} />
+                    <TranslationEditor source={selectedSource} segments={segments} delimiters={delimiters} onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} />
                   </Tab.Pane>
                   <Tab.Pane eventKey="memory">
                     <MemoryEditor source={selectedSource} allSources={sources} segments={segments} />

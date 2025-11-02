@@ -16,6 +16,7 @@ interface TranslationEditorProps {
   segments: string[];
   delimiters: string[];
   onSplit: (source: Source, splitIndex: number) => void;
+  onTranslationsUpdate: () => void;
 }
 
 function isSelectionInSelector(selection: Selection, selector: string): boolean {
@@ -29,7 +30,7 @@ function isSelectionInSelector(selection: Selection, selector: string): boolean 
   return false;
 }
 
-const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments, delimiters, onSplit }) => {
+const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments, delimiters, onSplit, onTranslationsUpdate }) => {
   const [translations, setTranslations] = useState<Record<string, any>>({});
   const [editingSegment, setEditingSegment] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
@@ -159,6 +160,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
     setTranslations(updatedTranslations);
     if (source) {
       localStorage.setItem(`translations_${source.id}`, JSON.stringify(updatedTranslations));
+      onTranslationsUpdate();
     }
     setEditingSegment(null);
   };
@@ -177,6 +179,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
     setTranslations(updatedTranslations);
     if (source) {
       localStorage.setItem(`translations_${source.id}`, JSON.stringify(updatedTranslations));
+      onTranslationsUpdate();
     }
 
     const currentIndex = validSegments.indexOf(currentSegmentTrimmed);
@@ -198,11 +201,12 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
     setTranslations(updatedTranslations);
     if (source) {
       localStorage.setItem(`translations_${source.id}`, JSON.stringify(updatedTranslations));
+      onTranslationsUpdate();
     }
   };
 
   const handleMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+    if (tooltipRef.current && tooltipRef.current.contains(event.target as Node)) {
       return;
     }
     const selection = window.getSelection();
