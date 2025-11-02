@@ -206,7 +206,7 @@ const App: React.FC = () => {
     if (existingSource) {
       setConflictData({ ...data, existingSourceId: existingSource.id });
     } else {
-      finalizeImport(data);
+      finalizeImport(data, data.source.filename);
     }
   };
 
