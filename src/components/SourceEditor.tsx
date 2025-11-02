@@ -24,6 +24,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
   const [originalFilename, setOriginalFilename] = useState('');
   const [originalContent, setOriginalContent] = useState('');
   const [segmentationRule, setSegmentationRule] = useState('\n');
+  const [segmentationRuleError, setSegmentationRuleError] = useState<string | null>(null);
   const [originalSegmentationRule, setOriginalSegmentationRule] = useState('\n');
   const [showSegPreview, setShowSegPreview] = useState(false);
   const [stats, setStats] = useState<Record<string, number | string>>({});
@@ -35,6 +36,17 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
   const [isPreviewingSegmentation, startTransition] = useTransition();
   const [defaultGrammarRule, setDefaultGrammarRule] = useState('');
   const { grammarCheck } = useApp();
+
+  const validateRegex = (rule: string) => {
+    try {
+      new RegExp(rule);
+      setSegmentationRuleError(null);
+      return true;
+    } catch (e: any) {
+      setSegmentationRuleError(e.message);
+      return false;
+    }
+  };
 
   useEffect(() => {
     if (source) {
@@ -50,6 +62,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
       setSegmentationRule(rule);
       setOriginalSegmentationRule(rule);
       setDefaultGrammarRule(source.defaultGrammarRule || '');
+      validateRegex(rule); // Validate initial rule
 
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const translations = storedTranslations ? JSON.parse(storedTranslations) : {};
@@ -79,6 +92,10 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
       const isDuplicate = allSources.some(s => s.id !== source.id && s.filename === filename);
       if (isDuplicate) {
         setFilenameError('A source with this filename already exists.');
+        return;
+      }
+
+      if (!validateRegex(segmentationRule)) {
         return;
       }
 
@@ -112,10 +129,12 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
     setContent(originalContent);
     setFilename(originalFilename);
     setFilenameError(null);
+    setSegmentationRule(originalSegmentationRule);
+    setSegmentationRuleError(null);
   };
 
   const handleSegmentationSave = () => {
-    if (source) {
+    if (source && validateRegex(segmentationRule)) {
       setIsExecutingSegmentation(true);
       const worker = new Worker(process.env.PUBLIC_URL + '/worker.js');
       worker.onmessage = (e) => {
@@ -232,7 +251,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
               />
             </Form.Group>
             <Stack direction='horizontal' gap={3}>
-              <Button variant="primary" onClick={handleContentSave} className="mt-2" disabled={!isContentChanged}>Save</Button>
+              <Button variant="primary" onClick={handleContentSave} className="mt-2" disabled={!isContentChanged || !!filenameError || !!segmentationRuleError}>Save</Button>
               <Button variant="secondary" onClick={handleContentDiscard} className="mt-2 ml-2" disabled={!isContentChanged}>Discard Changes</Button>
               <Button variant="info" onClick={handleDuplicate} className="mt-2 ml-2 ms-auto">Duplicate</Button>
               <Button variant="danger" onClick={handleDelete} className="mt-2 ml-2">Delete</Button>
@@ -261,9 +280,19 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
                 type="text" 
                 placeholder="Enter regex" 
                 value={segmentationRule} 
-                onChange={(e) => { const val = e.target.value; startTransition(() => { setSegmentationRule(val) }) }}
+                onChange={(e) => { 
+                  const val = e.target.value; 
+                  startTransition(() => { 
+                    setSegmentationRule(val);
+                    validateRegex(val);
+                  });
+                }} 
+                isInvalid={!!segmentationRuleError}
                 list='defaultSegmentationRules'
               />
+              <Form.Control.Feedback type="invalid">
+                {segmentationRuleError}
+              </Form.Control.Feedback>
             </Form.Group>
             <datalist id='defaultSegmentationRules'>
               <option value='\n'/>
@@ -272,7 +301,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
           <option value={"[\\.:;?][\\s\"']*|,\\s*\""}/>
             </datalist>
             <Stack direction="horizontal" gap={2}>
-              <Button variant="info" onClick={() => setShowSegPreview(true)} className="mt-2" disabled={isExecutingSegmentation || isPreviewingSegmentation}>
+              <Button variant="info" onClick={() => setShowSegPreview(true)} className="mt-2" disabled={isExecutingSegmentation || isPreviewingSegmentation || !!segmentationRuleError}>
                 Preview
               </Button>
               {(isExecutingSegmentation || isPreviewingSegmentation) && <Spinner animation="border" size="sm" className="mt-2" />}

@@ -38,8 +38,9 @@ const SegmentationPreviewModal: React.FC<SegmentationPreviewModalProps> = ({ sho
         {getHighlightedContent()}
       </Modal.Body>
       <Modal.Footer>
+        {rule === originalRule && <span>No rule change</span>}
         <Button variant="secondary" onClick={onHide}>Close</Button>
-        <Button variant="danger" onClick={onExecute} disabled={rule === originalRule}>Execute</Button>
+        {rule !== originalRule && <Button variant="danger" onClick={onExecute}>Execute</Button>}
       </Modal.Footer>
     </Modal>
   );
