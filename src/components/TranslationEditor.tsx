@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Form, ListGroup, Button, Badge, Stack, Dropdown, InputGroup } from 'react-bootstrap';
+import { Form, ListGroup, Button, Badge, Stack, Dropdown, InputGroup, OverlayTrigger, Popover } from 'react-bootstrap';
 import Mark from 'mark.js';
 import SelectionTooltip from './SelectionTooltip';
 import UnderlinedText from './UnderlinedText';
@@ -33,6 +33,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
   const [translations, setTranslations] = useState<Record<string, any>>({});
   const [editingSegment, setEditingSegment] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
+  const [currentNote, setCurrentNote] = useState('');
   const [diagnostics, setDiagnostics] = useState<readonly Diagnostic[]>([]);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const [isAddingMemory, setIsAddingMemory] = useState(false);
@@ -134,9 +135,11 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
     if (typeof translationData === 'object' && translationData !== null) {
       setCurrentTranslation(translationData.text || '');
       setSegmentGrammarRule(translationData.grammarRule || '');
+      setCurrentNote(translationData.note || '');
     } else {
       setCurrentTranslation(translationData || '');
       setSegmentGrammarRule('');
+      setCurrentNote('');
     }
     setDiagnostics([]);
     setNumberedMemories({});
@@ -149,7 +152,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
       ...translations, 
       [trimmedSegment]: { 
         text: currentTranslation, 
-        grammarRule: segmentGrammarRule 
+        grammarRule: segmentGrammarRule, 
+        note: currentNote 
       } 
     };
     setTranslations(updatedTranslations);
@@ -166,7 +170,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
       ...translations, 
       [currentSegmentTrimmed]: { 
         text: currentTranslation, 
-        grammarRule: segmentGrammarRule 
+        grammarRule: segmentGrammarRule, 
+        note: currentNote 
       } 
     };
     setTranslations(updatedTranslations);
@@ -197,7 +202,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
   };
 
   const handleMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (tooltipRef.current && tooltipRef.current.contains(event.target as Node)) {
+    if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
       return;
     }
     const selection = window.getSelection();
@@ -288,6 +293,20 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
   const spellingErrors = diagnostics.filter(d => d.severity === 'warning');
   const hasErrors = (grammarCheck && grammarErrors.length > 0) || (spellCheck && spellingErrors.length > 0);
 
+  const notePopover = (
+    <Popover id="popover-basic">
+      <Popover.Header as="h3">Segment Note</Popover.Header>
+      <Popover.Body>
+        <Form.Control
+          as="textarea"
+          rows={3}
+          value={currentNote}
+          onChange={(e) => setCurrentNote(e.target.value)}
+        />
+      </Popover.Body>
+    </Popover>
+  );
+
   return (
     <div ref={editorRef} onMouseUp={handleMouseUp}>
       {tooltip && (
@@ -348,6 +367,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
             const isLastSegment = index === validSegments.length - 1;
             const translationData = translations[segment];
             const translationText = typeof translationData === 'object' && translationData !== null ? translationData.text : translationData;
+            const noteText = typeof translationData === 'object' && translationData !== null ? translationData.note : null;
             const delimiter = delimiters[index]?.replaceAll('\n', '⏎')
 
             return (
@@ -369,6 +389,9 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
                       <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(segment)} disabled={hasErrors}>Save</Button>
                       <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
                       <Form.Label column className='mt-2'>{' '}<small>Segment #{index+1}</small></Form.Label>
+                      <OverlayTrigger trigger="click" placement="top" overlay={notePopover} rootClose>
+                        <Button variant={currentNote ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2">Note</Button>
+                      </OverlayTrigger>
                       {grammarCheck && (
                         <Dropdown onSelect={(e) => setSegmentGrammarRule(e || '')} className='ms-auto'>
                           <Dropdown.Toggle variant="info" size="sm" className="mt-2 ml-2">
@@ -388,9 +411,10 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
                   <div className="d-flex justify-content-between align-items-center w-100">
                     <p className={`mb-0 ${!translationText ? 'source-text': ''}`}>
                       {translationText || segment}
-                      {delimiter && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiter}</Badge>}
+                      {delimiter && <Badge title='Delimiter' bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiter}</Badge>}
                     </p>
                     <Stack direction='horizontal'>
+                      {noteText && <span title={`Note: ${noteText}`} style={{ paddingRight: '1em' }}>🗒️</span>}
                       <Button variant="link" title='Edit segment' onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
                       <Button variant="link" title='Split source' onClick={() => handleShowSplitModal(index)} style={{textDecoration: 'none'}} disabled={index===0}>✂️</Button>
                     </Stack>
