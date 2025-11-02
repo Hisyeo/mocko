@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/mocko/static/css/main.11d8425b.css",
-    "main.js": "/mocko/static/js/main.732eeae8.js",
+    "main.js": "/mocko/static/js/main.58ed480e.js",
     "static/js/453.eafe52bd.chunk.js": "/mocko/static/js/453.eafe52bd.chunk.js",
     "index.html": "/mocko/index.html",
     "main.11d8425b.css.map": "/mocko/static/css/main.11d8425b.css.map",
-    "main.732eeae8.js.map": "/mocko/static/js/main.732eeae8.js.map",
+    "main.58ed480e.js.map": "/mocko/static/js/main.58ed480e.js.map",
     "453.eafe52bd.chunk.js.map": "/mocko/static/js/453.eafe52bd.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.11d8425b.css",
-    "static/js/main.732eeae8.js"
+    "static/js/main.58ed480e.js"
   ]
 }
