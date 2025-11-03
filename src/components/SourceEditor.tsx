@@ -3,19 +3,18 @@ import { Button, Form, Alert, Card, Collapse, Stack, Spinner } from 'react-boots
 import SegmentationPreviewModal from './SegmentationPreviewModal';
 import { Source } from '../App';
 import { useApp } from '../AppContext';
+import { useSource } from '../SourceContext';
 
 interface SourceEditorProps {
-  source: Source | null;
   allSources: Source[];
   onSourceUpdate: (updatedSource: Source) => void;
   onDelete: (sourceId: string) => void;
   onDuplicate: (source: Source) => void;
-  segments: string[];
-  delimiters: string[];
   translationsVersion: number;
 }
 
-const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourceUpdate, onDelete, onDuplicate, segments, delimiters, translationsVersion }) => {
+const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate, onDelete, onDuplicate, translationsVersion }) => {
+  const { source } = useSource();
   const [title, setTitle] = useState('');
   const [filename, setFilename] = useState('');
   const [filenameError, setFilenameError] = useState<string | null>(null);

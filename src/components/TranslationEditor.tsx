@@ -7,14 +7,12 @@ import { Source } from '../App';
 import SpellCheckEditor from './SpellCheckEditor';
 import { Diagnostic } from '@codemirror/lint';
 import { useApp } from '../AppContext';
+import { useSource } from '../SourceContext';
 import WiktionaryModal from './WiktionaryModal';
 import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import SplitSourceModal from './SplitSourceModal';
 
 interface TranslationEditorProps {
-  source: Source | null;
-  segments: string[];
-  delimiters: string[];
   onSplit: (source: Source, splitIndex: number) => void;
   onTranslationsUpdate: () => void;
 }
@@ -30,7 +28,8 @@ function isSelectionInSelector(selection: Selection, selector: string): boolean 
   return false;
 }
 
-const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments, delimiters, onSplit, onTranslationsUpdate }) => {
+const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTranslationsUpdate }) => {
+  const { source, segments, delimiters } = useSource();
   const [translations, setTranslations] = useState<Record<string, any>>({});
   const [editingSegment, setEditingSegment] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
@@ -425,7 +424,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ source, segments,
                   </div>
                 ) : (
                   <div className="d-flex justify-content-between align-items-center w-100">
-                    <p className={`mb-0 ${!translationText ? 'source-text': ''}`}>
+                    <p className={`mb-0 ${!translationText ? 'source-text': ''}`}> 
                       {translationText || segment}
                       {delimiter && <Badge title='Delimiter' bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiter}</Badge>}
                     </p>

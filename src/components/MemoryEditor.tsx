@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Form, Button, Card, Collapse } from 'react-bootstrap';
 import { Source } from '../App';
 import { useApp } from '../AppContext';
+import { useSource } from '../SourceContext';
 
 interface MemoryEditorProps {
-  source: Source | null;
   allSources: Source[];
-  segments: string[];
 }
 
 interface ImportedMemory {
@@ -14,7 +13,8 @@ interface ImportedMemory {
   sourceTitle: string;
 }
 
-const MemoryEditor: React.FC<MemoryEditorProps> = ({ source, allSources, segments }) => {
+const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
+  const { source, segments } = useSource();
   const [memories, setMemories] = useState<Record<string, string>>({});
   const [editingMemory, setEditingMemory] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');

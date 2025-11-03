@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Nav, Button, Tabs, Tab, Row, Col, Form, InputGroup, Stack, Dropdown } from 'react-bootstrap';
 import './App.css';
 import SourceEditor from './components/SourceEditor';
@@ -8,6 +8,7 @@ import Settings from './components/Settings';
 import AddSourceModal from './components/AddSourceModal';
 import SizeBlocker from './components/SizeBlocker';
 import { useApp } from './AppContext';
+import { SourceProvider } from './SourceContext';
 import Resizer from './components/Resizer';
 import ImportConflictModal from './components/ImportConflictModal';
 import QuotaExceededModal from './components/QuotaExceededModal';
@@ -22,7 +23,6 @@ export interface Source {
   modified?: number;
 }
 
-type Mode = 'source' | 'translation' | 'memory' | 'settings';
 type SortOrder = 'Oldest First' | 'Newest First' | 'Most Recently Modified' | 'Least Recently Modified' | 'Longest Source' | 'Shortest Source' | 'Most Translated' | 'Least Translated' | 'Alphabetical';
 
 const App: React.FC = () => {
@@ -52,20 +52,6 @@ const App: React.FC = () => {
       }
     }
   };
-
-  const segments = useMemo(() => {
-    if (!selectedSource) return [];
-    const rule = selectedSource.segmentationRule || '\n';
-    const wrappedRule = `(${rule})`;
-    return selectedSource.content.split(new RegExp(wrappedRule)).filter((_, i) => i % 2 === 0);
-  }, [selectedSource]);
-
-  const delimiters = useMemo(() => {
-    if (!selectedSource) return [];
-    const rule = selectedSource.segmentationRule || '\n';
-    const wrappedRule = `(${rule})`;
-    return selectedSource.content.split(new RegExp(wrappedRule)).filter((_, i) => i % 2 !== 0);
-  }, [selectedSource]);
 
   useEffect(() => {
     const themeLink = document.getElementById('theme-link') as HTMLLinkElement;
@@ -360,15 +346,17 @@ const App: React.FC = () => {
               </Row>
               <Row>
                 <Tab.Content>
-                  <Tab.Pane eventKey="source">
-                    <SourceEditor source={selectedSource} onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} segments={segments} delimiters={delimiters} allSources={sources} translationsVersion={translationsVersion} />
-                  </Tab.Pane>
-                  <Tab.Pane eventKey="translation">
-                    <TranslationEditor source={selectedSource} segments={segments} delimiters={delimiters} onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} />
-                  </Tab.Pane>
-                  <Tab.Pane eventKey="memory">
-                    <MemoryEditor source={selectedSource} allSources={sources} segments={segments} />
-                  </Tab.Pane>
+                  <SourceProvider source={selectedSource}>
+                    <Tab.Pane eventKey="source">
+                      <SourceEditor onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} allSources={sources} translationsVersion={translationsVersion} />
+                    </Tab.Pane>
+                    <Tab.Pane eventKey="translation">
+                      <TranslationEditor onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} />
+                    </Tab.Pane>
+                    <Tab.Pane eventKey="memory">
+                      <MemoryEditor allSources={sources} />
+                    </Tab.Pane>
+                  </SourceProvider>
                   <Tab.Pane eventKey="settings">
                     <Settings />
                   </Tab.Pane>
