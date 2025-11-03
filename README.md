@@ -55,7 +55,7 @@ In no particular order.
 - [ ] Huge: Add a way to specify the target language and supply ANTLR grammar and hunspell files
 - [ ] Huge: Add a button to each translation segment for pulling up a modal that presents valid translations as parse trees
 - [x] Add a wiktionary search link and a session setting for whether to open in a modal or in a new tab
-- [ ] Fix for delimiter trimming in the source export output
+- [ ] ~~Fix for delimiter trimming in the source export output~~ No issue found, need to capture spaces within the segmentation rule
 - [ ] ~~Perf: Implement virtualization in TranslationEditor~~ Tried to implement this but requires complicated row height calculation and breaks autocomplete
 - [x] Implement infinite loading pattern instead of virtualization
 - [x] Perf: Centralize source segmentation, cache result and pass as props to Source/Translation/Memory components
