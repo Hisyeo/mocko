@@ -33,7 +33,6 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
   const [translatedTitle, setTranslatedTitle] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isExecutingSegmentation, setIsExecutingSegmentation] = useState(false);
-  const [isPreviewingSegmentation, startTransition] = useTransition();
   const [defaultGrammarRule, setDefaultGrammarRule] = useState('');
   const { grammarCheck, setShowQuotaError } = useApp();
 
@@ -319,10 +318,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
                 value={segmentationRule} 
                 onChange={(e) => { 
                   const val = e.target.value; 
-                  startTransition(() => { 
-                    setSegmentationRule(val);
-                    validateRegex(val);
-                  });
+                  setSegmentationRule(val);
+                  validateRegex(val);
                 }} 
                 isInvalid={!!segmentationRuleError}
                 list='defaultSegmentationRules'
@@ -338,10 +335,10 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
           <option value={"[\\.:;?][\\s\"']*|,\\s*\""}/>
             </datalist>
             <Stack direction="horizontal" gap={2}>
-              <Button variant="info" onClick={() => setShowSegPreview(true)} className="mt-2" disabled={isExecutingSegmentation || isPreviewingSegmentation || !!segmentationRuleError}>
+              <Button variant="info" onClick={() => setShowSegPreview(true)} className="mt-2" disabled={isExecutingSegmentation || !!segmentationRuleError}>
                 Preview
               </Button>
-              {(isExecutingSegmentation || isPreviewingSegmentation) && <Spinner animation="border" size="sm" className="mt-2" />}
+              {isExecutingSegmentation && <Spinner animation="border" size="sm" className="mt-2" />}
             </Stack>
           </div>
 
