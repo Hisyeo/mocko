@@ -39,7 +39,7 @@ const App: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => (localStorage.getItem('sortOrder') as SortOrder) || 'Alphabetical');
   const [conflictData, setConflictData] = useState<any | null>(null);
   const [translationsVersion, setTranslationsVersion] = useState(0);
-  const { theme, showQuotaError, setShowQuotaError, handleSetItem } = useApp();
+  const { theme, showQuotaError, setShowQuotaError, handleSetItem, updateStorageVersion } = useApp();
 
   useEffect(() => {
     const themeLink = document.getElementById('theme-link') as HTMLLinkElement;
@@ -130,6 +130,7 @@ const App: React.FC = () => {
       localStorage.removeItem(`translations_${sourceId}`);
       localStorage.removeItem(`memories_${sourceId}`);
       localStorage.removeItem(`delimiters_${sourceId}`);
+      updateStorageVersion();
       if (selectedSource?.id === sourceId) {
         setSelectedSource(null);
       }
@@ -188,6 +189,7 @@ const App: React.FC = () => {
       localStorage.removeItem(`translations_${originalSource.id}`);
       localStorage.removeItem(`memories_${originalSource.id}`);
       localStorage.removeItem(`delimiters_${originalSource.id}`);
+      updateStorageVersion();
       setSelectedSource(source2);
     }
   };
@@ -230,6 +232,7 @@ const App: React.FC = () => {
   const clearFilter = () => {
     setSourceFilter('');
     localStorage.removeItem('sourceFilter');
+    updateStorageVersion();
   };
 
   const handleSortChange = (order: SortOrder) => {
@@ -240,6 +243,7 @@ const App: React.FC = () => {
 
   const handleTranslationsUpdate = () => {
     setTranslationsVersion(v => v + 1);
+    updateStorageVersion();
   };
 
   const sortedAndFilteredSources = [...sources]

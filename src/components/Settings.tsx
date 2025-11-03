@@ -9,7 +9,8 @@ const Settings: React.FC = () => {
     spellCheck, setSpellCheck, 
     autocomplete, setAutocomplete, 
     wiktionarySearch, setWiktionarySearch, 
-    defaultGrammarRule, setDefaultGrammarRule 
+    defaultGrammarRule, setDefaultGrammarRule,
+    storageVersion, updateStorageVersion
   } = useApp();
   const [storageUsage, setStorageUsage] = useState({ used: 0, percentage: 0 });
 
@@ -30,7 +31,7 @@ const Settings: React.FC = () => {
     const total = 5 * 1024 * 1024; // 5MB quota
     const percentage = (used / total) * 100;
     setStorageUsage({ used, percentage });
-  }, []);
+  }, [storageVersion]);
 
   const handleBackup = () => {
     const data = JSON.stringify(localStorage);

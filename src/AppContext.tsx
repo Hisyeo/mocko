@@ -16,6 +16,8 @@ interface AppContextType {
   showQuotaError: boolean;
   setShowQuotaError: (show: boolean) => void;
   handleSetItem: (key: string, value: string) => boolean;
+  storageVersion: number;
+  updateStorageVersion: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -28,10 +30,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [wiktionarySearch, rawSetWiktionarySearch] = useState(() => localStorage.getItem('wiktionarySearch') || 'modal');
   const [defaultGrammarRule, rawSetDefaultGrammarRule] = useState(() => localStorage.getItem('defaultGrammarRule') || 'Constituents');
   const [showQuotaError, setShowQuotaError] = useState(false);
+  const [storageVersion, setStorageVersion] = useState(0);
+
+  const updateStorageVersion = () => setStorageVersion(v => v + 1);
 
   const handleSetItem = (key: string, value: string): boolean => {
     try {
       localStorage.setItem(key, value);
+      updateStorageVersion();
       return true;
     } catch (e: any) {
       if (e.name === 'QuotaExceededError') {
@@ -108,7 +114,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       wiktionarySearch, setWiktionarySearch, 
       defaultGrammarRule, setDefaultGrammarRule,
       showQuotaError, setShowQuotaError,
-      handleSetItem
+      handleSetItem,
+      storageVersion,
+      updateStorageVersion
     }}>
       {children}
     </AppContext.Provider>
