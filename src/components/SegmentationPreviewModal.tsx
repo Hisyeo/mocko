@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 
 interface SegmentationPreviewModalProps {
@@ -11,7 +11,9 @@ interface SegmentationPreviewModalProps {
 }
 
 const SegmentationPreviewModal: React.FC<SegmentationPreviewModalProps> = ({ show, onHide, content, rule, originalRule, onExecute }) => {
-  const getHighlightedContent = () => {
+  const highlightedContent = useMemo(() => {
+    if (!show) return null; // Don't compute if not shown
+
     try {
       const regex = new RegExp(rule, 'g');
       const segments = content.split(regex);
@@ -27,7 +29,7 @@ const SegmentationPreviewModal: React.FC<SegmentationPreviewModalProps> = ({ sho
     } catch (error) {
       return <div className="alert alert-danger">Invalid regular expression.</div>;
     }
-  };
+  }, [content, rule, show]);
 
   return (
     <Modal show={show} onHide={onHide} size="lg">
@@ -35,7 +37,7 @@ const SegmentationPreviewModal: React.FC<SegmentationPreviewModalProps> = ({ sho
         <Modal.Title>Segmentation Preview</Modal.Title>
       </Modal.Header>
       <Modal.Body id='segmentation-preview-modal-body'>
-        {getHighlightedContent()}
+        {highlightedContent}
       </Modal.Body>
       <Modal.Footer>
         {rule === originalRule && <span>No rule change</span>}
