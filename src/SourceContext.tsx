@@ -1,43 +1,53 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { Source } from './App';
+import { useApp } from './AppContext';
+import pako from 'pako';
 
 interface SourceContextType {
   source: Source | null;
   segments: string[];
   delimiters: string[];
+  decompressedContent: string;
 }
 
 const SourceContext = createContext<SourceContextType | undefined>(undefined);
 
-export const SourceProvider: React.FC<{ children: React.ReactNode, source: Source | null }> = ({ children, source }) => {
-  const segments = useMemo(() => {
-    if (!source) return [];
-    const rule = source.segmentationRule || '\n';
-    const wrappedRule = `(${rule})`;
-    try {
-      new RegExp(wrappedRule);
-      return source.content.split(new RegExp(wrappedRule)).filter((_, i) => i % 2 === 0);
-    } catch (e) {
-      console.error("Invalid segmentation regex:", e);
-      return [source.content]; // Return unsplit content on error
-    }
-  }, [source]);
+export const SourceProvider: React.FC<{ source: Source | null, children: React.ReactNode }> = ({ source, children }) => {
+  const { setError } = useApp();
 
-  const delimiters = useMemo(() => {
-    if (!source) return [];
+  const decompressedContent = useMemo(() => {
+    if (!source) return '';
+    if (source.compression) {
+      try {
+        const binaryString = atob(source.content)
+        const bytes = Uint8Array.from(binaryString, c => c.charCodeAt(0))
+        return pako.inflate(bytes, { to: 'string' });
+      } catch (err: any) {
+        setError({ title: 'Decompression Error', message: `Failed to decompress source content: ${err.message}` });
+        return source.content; // Return raw content on error
+      }
+    }
+    return source.content;
+  }, [source, setError]);
+
+  const { segments, delimiters } = useMemo(() => {
+    if (!source) return { segments: [], delimiters: [] };
     const rule = source.segmentationRule || '\n';
     const wrappedRule = `(${rule})`;
     try {
-      new RegExp(wrappedRule);
-      return source.content.split(new RegExp(wrappedRule)).filter((_, i) => i % 2 !== 0);
+      const regex = new RegExp(wrappedRule, 'g');
+      const parts = decompressedContent.split(regex);
+      const segments = parts.filter((_, i) => i % 2 === 0);
+      const delimiters = parts.filter((_, i) => i % 2 !== 0);
+      return { segments, delimiters };
     } catch (e) {
-      console.error("Invalid segmentation regex:", e);
-      return []; // Return no delimiters on error
+      // Invalid regex, return content as a single segment
+      return { segments: [decompressedContent], delimiters: [] };
     }
-  }, [source]);
+  }, [source, decompressedContent]);
 
   return (
-    <SourceContext.Provider value={{ source, segments, delimiters }}>
+    <SourceContext.Provider value={{ source, segments, delimiters, decompressedContent }}>
       {children}
     </SourceContext.Provider>
   );

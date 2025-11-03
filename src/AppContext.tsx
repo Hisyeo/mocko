@@ -13,11 +13,15 @@ interface AppContextType {
   setWiktionarySearch: (value: string) => void;
   defaultGrammarRule: string;
   setDefaultGrammarRule: (value: string) => void;
-  showQuotaError: boolean;
-  setShowQuotaError: (show: boolean) => void;
+  error: { title: string; message: React.ReactNode } | null;
+  setError: (error: { title: string; message: React.ReactNode } | null) => void;
   handleSetItem: (key: string, value: string) => boolean;
   storageVersion: number;
   updateStorageVersion: () => void;
+  defaultCompression: boolean;
+  setDefaultCompression: (value: boolean) => void;
+  defaultCompressionLevel: number;
+  setDefaultCompressionLevel: (value: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -29,8 +33,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [autocomplete, rawSetAutocomplete] = useState(() => localStorage.getItem('autocomplete') !== 'true');
   const [wiktionarySearch, rawSetWiktionarySearch] = useState(() => localStorage.getItem('wiktionarySearch') || 'modal');
   const [defaultGrammarRule, rawSetDefaultGrammarRule] = useState(() => localStorage.getItem('defaultGrammarRule') || 'Constituents');
-  const [showQuotaError, setShowQuotaError] = useState(false);
+  const [error, setError] = useState<{ title: string; message: React.ReactNode } | null>(null);
   const [storageVersion, setStorageVersion] = useState(0);
+  const [defaultCompression, rawSetDefaultCompression] = useState(() => localStorage.getItem('defaultCompression') === 'true');
+  const [defaultCompressionLevel, rawSetDefaultCompressionLevel] = useState(() => parseInt(localStorage.getItem('defaultCompressionLevel') || '1', 10));
 
   const updateStorageVersion = () => setStorageVersion(v => v + 1);
 
@@ -41,9 +47,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return true;
     } catch (e: any) {
       if (e.name === 'QuotaExceededError') {
-        setShowQuotaError(true);
+        setError({ title: 'Storage Quota Exceeded', message: 'Your browser\'s local storage is full. Please clear some space or export and delete some sources to continue.' });
         return false;
       } else {
+        setError({ title: 'Storage Error', message: `An unexpected error occurred while saving data: ${e.message}` });
         throw e;
       }
     }
@@ -85,24 +92,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const setDefaultCompression = (value: boolean) => {
+    if (handleSetItem('defaultCompression', String(value))) {
+      rawSetDefaultCompression(value);
+    }
+  };
+
+  const setDefaultCompressionLevel = (value: number) => {
+    if (handleSetItem('defaultCompressionLevel', String(value))) {
+      rawSetDefaultCompressionLevel(value);
+    }
+  };
+
   useEffect(() => {
-    const storedTheme = localStorage.getItem('yon-mocko-theme');
-    if (storedTheme) rawSetTheme(storedTheme);
-
-    const storedGrammarCheck = localStorage.getItem('grammarCheck');
-    if (storedGrammarCheck) rawSetGrammarCheck(storedGrammarCheck === 'true');
-
-    const storedSpellCheck = localStorage.getItem('spellCheck');
-    if (storedSpellCheck) rawSetSpellCheck(storedSpellCheck === 'true');
-
-    const storedAutocomplete = localStorage.getItem('autocomplete');
-    if (storedAutocomplete) rawSetAutocomplete(storedAutocomplete === 'true');
-
-    const storedWiktionarySearch = localStorage.getItem('wiktionarySearch');
-    if (storedWiktionarySearch) rawSetWiktionarySearch(storedWiktionarySearch);
-
-    const storedDefaultGrammarRule = localStorage.getItem('defaultGrammarRule');
-    if (storedDefaultGrammarRule) rawSetDefaultGrammarRule(storedDefaultGrammarRule);
+    updateStorageVersion(); // Initial calculation
   }, []);
 
   return (
@@ -113,10 +116,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       autocomplete, setAutocomplete, 
       wiktionarySearch, setWiktionarySearch, 
       defaultGrammarRule, setDefaultGrammarRule,
-      showQuotaError, setShowQuotaError,
+      error, setError,
       handleSetItem,
       storageVersion,
-      updateStorageVersion
+      updateStorageVersion,
+      defaultCompression,
+      setDefaultCompression,
+      defaultCompressionLevel,
+      setDefaultCompressionLevel
     }}>
       {children}
     </AppContext.Provider>

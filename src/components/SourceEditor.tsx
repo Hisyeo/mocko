@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Form, Alert, Card, Collapse, Stack, Spinner } from 'react-bootstrap';
 import SegmentationPreviewModal from './SegmentationPreviewModal';
 import { Source } from '../App';
 import { useApp } from '../AppContext';
 import { useSource } from '../SourceContext';
+import pako from 'pako';
 
 interface SourceEditorProps {
   allSources: Source[];
@@ -14,7 +15,9 @@ interface SourceEditorProps {
 }
 
 const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate, onDelete, onDuplicate, translationsVersion }) => {
-  const { source } = useSource();
+  const { source, decompressedContent } = useSource();
+  const { grammarCheck, handleSetItem, setError } = useApp();
+
   const [title, setTitle] = useState('');
   const [filename, setFilename] = useState('');
   const [filenameError, setFilenameError] = useState<string | null>(null);
@@ -34,7 +37,11 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
   const [isLoading, setIsLoading] = useState(false);
   const [isExecutingSegmentation, setIsExecutingSegmentation] = useState(false);
   const [defaultGrammarRule, setDefaultGrammarRule] = useState('');
-  const { grammarCheck, handleSetItem } = useApp();
+  const [isCompressed, setIsCompressed] = useState(false);
+  type CompressionLevel = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | undefined
+  const [compressionLevel, setCompressionLevel] = useState<CompressionLevel>(1);
+  const [originalCompression, setOriginalCompression] = useState(false);
+  const [originalCompressionLevel, setOriginalCompressionLevel] = useState(1);
 
   const calculateSourceSize = (sourceId: string) => {
     let total = 0;
@@ -77,16 +84,23 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
       setTitle(source.title);
       setFilename(source.filename);
       setFilenameError(null);
-      setContent(source.content);
+      setContent(decompressedContent);
       setOriginalTitle(source.title);
       setOriginalFilename(source.filename);
-      setOriginalContent(source.content);
+      setOriginalContent(decompressedContent);
       const rule = source.segmentationRule || '\n';
       setSegmentationRule(rule);
       setOriginalSegmentationRule(rule);
       setDefaultGrammarRule(source.defaultGrammarRule || '');
       validateRegex(rule);
       setSourceSize(calculateSourceSize(source.id));
+      
+      const compression = source.compression || false;
+      const level = source.compressionLevel === undefined ? 1 : source.compressionLevel;
+      setIsCompressed(compression);
+      setCompressionLevel(level as CompressionLevel);
+      setOriginalCompression(compression);
+      setOriginalCompressionLevel(level);
 
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const translations = storedTranslations ? JSON.parse(storedTranslations) : {};
@@ -100,9 +114,9 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
           setIsLoading(false);
         }
       };
-      worker.postMessage({ task: 'stats', content: source.content, segmentationRule: rule, translations });
+      worker.postMessage({ task: 'stats', content: decompressedContent, segmentationRule: rule, translations });
     }
-  }, [source, translationsVersion]);
+  }, [source, translationsVersion, decompressedContent]);
 
   const handleDefaultSegmentRuleChange : React.ChangeEventHandler<HTMLInputElement> = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (typeof event.target.value == 'string' && source?.id) {
@@ -123,31 +137,32 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
         return;
       }
 
-      const wrappedRule = `(${segmentationRule})`;
-      const parts = content.split(new RegExp(wrappedRule));
-      const newSegments = parts.filter((_, i) => i % 2 === 0).map(s => s.trim()).filter(Boolean);
-      const newDelimiters = parts.filter((_, i) => i % 2 !== 0);
-      
-      const storedTranslations = localStorage.getItem(`translations_${source.id}`);
-      const oldTranslations = storedTranslations ? JSON.parse(storedTranslations) : {};
-      const newTranslations: Record<string, any> = {};
-
-      newSegments.forEach(newSegment => {
-        if (oldTranslations[newSegment]) {
-          newTranslations[newSegment] = oldTranslations[newSegment];
+      let finalContent = content;
+      if (isCompressed) {
+        try {
+          finalContent = btoa(String.fromCharCode(...pako.deflate(content, { level: compressionLevel })));
+        } catch (err: any) {
+          setError({ title: 'Compression Error', message: `Failed to compress content: ${err.message}` });
+          return; // Abort save
         }
-      });
-
-      let success = true;
-      success = success && handleSetItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
-      success = success && handleSetItem(`translations_${source.id}`, JSON.stringify(newTranslations));
-
-      if (success) {
-        onSourceUpdate({ ...source, title, content, filename, defaultGrammarRule });
-        setOriginalTitle(title);
-        setOriginalContent(content);
-        setOriginalFilename(filename);
       }
+
+      const updatedSource: Source = {
+        ...source,
+        title,
+        filename,
+        content: finalContent,
+        defaultGrammarRule,
+        compression: isCompressed,
+        compressionLevel
+      };
+
+      onSourceUpdate(updatedSource);
+      setOriginalTitle(title);
+      setOriginalContent(content);
+      setOriginalFilename(filename);
+      setOriginalCompression(isCompressed);
+      setOriginalCompressionLevel(compressionLevel as number);
     }
   };
 
@@ -158,6 +173,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
     setFilenameError(null);
     setSegmentationRule(originalSegmentationRule);
     setSegmentationRuleError(null);
+    setIsCompressed(originalCompression);
+    setCompressionLevel(originalCompressionLevel as CompressionLevel);
   };
 
   const handleSegmentationSave = () => {
@@ -181,7 +198,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
       };
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const oldTranslations = storedTranslations ? JSON.parse(storedTranslations) : {};
-      worker.postMessage({ task: 'segment', content, segmentationRule, oldTranslations });
+      worker.postMessage({ task: 'segment', content: decompressedContent, segmentationRule, oldTranslations });
     }
   };
 
@@ -211,7 +228,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
     if (!source) return;
 
     const mockoData = {
-      source: { ...source, filename, defaultGrammarRule },
+      source: { ...source, filename, defaultGrammarRule, compression: isCompressed, compressionLevel },
       translations: JSON.parse(localStorage.getItem(`translations_${source.id}`) || '{}'),
       memories: JSON.parse(localStorage.getItem(`memories_${source.id}`) || '{}'),
       delimiters: JSON.parse(localStorage.getItem(`delimiters_${source.id}`) || '[]'),
@@ -234,7 +251,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
     });
   };
 
-  const isContentChanged = title !== originalTitle || content !== originalContent || filename !== originalFilename;
+  const isContentChanged = title !== originalTitle || content !== originalContent || filename !== originalFilename || isCompressed !== originalCompression || compressionLevel !== originalCompressionLevel;
 
   if (!source) {
     return <div><p>Please select a source from the sidebar to edit.</p></div>;
@@ -289,6 +306,29 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
             </Stack>
           </Form>
 
+          <Card className="mt-4">
+            <Card.Header>Compression</Card.Header>
+            <Card.Body>
+              <Form.Check
+                type="switch"
+                id="compression-switch"
+                label="Compress source content"
+                checked={isCompressed}
+                onChange={(e) => setIsCompressed(e.target.checked)}
+              />
+              <Form.Group controlId="compressionLevel" className="mt-3">
+                <Form.Label>Compression Level: {compressionLevel}</Form.Label>
+                <Form.Range 
+                  min="0" 
+                  max="9" 
+                  step="1" 
+                  value={compressionLevel} 
+                  onChange={(e) => setCompressionLevel(parseInt(e.target.value, 10) as CompressionLevel)} 
+                />
+              </Form.Group>
+            </Card.Body>
+          </Card>
+
           <div className="mt-4">
             <h2>Segmentation</h2>
             {grammarCheck && (
@@ -311,7 +351,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
                 type="text" 
                 placeholder="Enter regex" 
                 value={segmentationRule} 
-                onChange={(e) => {
+                onChange={(e) => { 
                   const val = e.target.value;
                   setSegmentationRule(val);
                   validateRegex(val);

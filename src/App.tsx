@@ -11,7 +11,7 @@ import { useApp } from './AppContext';
 import { SourceProvider } from './SourceContext';
 import Resizer from './components/Resizer';
 import ImportConflictModal from './components/ImportConflictModal';
-import QuotaExceededModal from './components/QuotaExceededModal';
+import ErrorModal from './components/ErrorModal';
 
 export interface Source {
   id: string;
@@ -21,6 +21,8 @@ export interface Source {
   segmentationRule?: string;
   defaultGrammarRule?: string;
   modified?: number;
+  compression?: boolean;
+  compressionLevel?: number;
 }
 
 type SortOrder = 'Oldest First' | 'Newest First' | 'Most Recently Modified' | 'Least Recently Modified' | 'Longest Source' | 'Shortest Source' | 'Most Translated' | 'Least Translated' | 'Alphabetical';
@@ -39,7 +41,10 @@ const App: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => (localStorage.getItem('sortOrder') as SortOrder) || 'Alphabetical');
   const [conflictData, setConflictData] = useState<any | null>(null);
   const [translationsVersion, setTranslationsVersion] = useState(0);
-  const { theme, showQuotaError, setShowQuotaError, handleSetItem, updateStorageVersion } = useApp();
+  const { 
+    theme, error, setError, handleSetItem, updateStorageVersion, 
+    defaultCompression, defaultCompressionLevel 
+  } = useApp();
 
   useEffect(() => {
     const themeLink = document.getElementById('theme-link') as HTMLLinkElement;
@@ -108,6 +113,8 @@ const App: React.FC = () => {
       filename: title,
       content,
       modified: Date.now(),
+      compression: defaultCompression,
+      compressionLevel: defaultCompressionLevel
     };
     const updatedSources = [...sources, newSource];
     if (handleSetItem('sources', JSON.stringify(updatedSources))) {
@@ -391,7 +398,14 @@ const App: React.FC = () => {
           sources={sources}
         />
       )}
-      <QuotaExceededModal show={showQuotaError} onHide={() => setShowQuotaError(false)} />
+      {error && (
+        <ErrorModal 
+          show={!!error}
+          onHide={() => setError(null)}
+          title={error.title}
+          message={error.message}
+        />
+      )}
     </div>
   );
 }
