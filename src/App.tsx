@@ -39,19 +39,7 @@ const App: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => (localStorage.getItem('sortOrder') as SortOrder) || 'Alphabetical');
   const [conflictData, setConflictData] = useState<any | null>(null);
   const [translationsVersion, setTranslationsVersion] = useState(0);
-  const { theme, showQuotaError, setShowQuotaError } = useApp();
-
-  const handleSetItem = (key: string, value: string) => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (e: any) {
-      if (e.name === 'QuotaExceededError') {
-        setShowQuotaError(true);
-      } else {
-        throw e;
-      }
-    }
-  };
+  const { theme, showQuotaError, setShowQuotaError, handleSetItem } = useApp();
 
   useEffect(() => {
     const themeLink = document.getElementById('theme-link') as HTMLLinkElement;
@@ -122,26 +110,29 @@ const App: React.FC = () => {
       modified: Date.now(),
     };
     const updatedSources = [...sources, newSource];
-    setSources(updatedSources);
-    handleSetItem('sources', JSON.stringify(updatedSources));
+    if (handleSetItem('sources', JSON.stringify(updatedSources))) {
+      setSources(updatedSources);
+    }
   };
 
   const handleSourceUpdate = (updatedSource: Source) => {
     const updatedSources = sources.map(s => s.id === updatedSource.id ? { ...updatedSource, modified: Date.now() } : s);
-    setSources(updatedSources);
-    setSelectedSource({ ...updatedSource, modified: Date.now() });
-    handleSetItem('sources', JSON.stringify(updatedSources));
+    if (handleSetItem('sources', JSON.stringify(updatedSources))) {
+      setSources(updatedSources);
+      setSelectedSource({ ...updatedSource, modified: Date.now() });
+    }
   };
 
   const handleDeleteSource = (sourceId: string) => {
     const updatedSources = sources.filter(s => s.id !== sourceId);
-    setSources(updatedSources);
-    handleSetItem('sources', JSON.stringify(updatedSources));
-    localStorage.removeItem(`translations_${sourceId}`);
-    localStorage.removeItem(`memories_${sourceId}`);
-    localStorage.removeItem(`delimiters_${sourceId}`);
-    if (selectedSource?.id === sourceId) {
-      setSelectedSource(null);
+    if (handleSetItem('sources', JSON.stringify(updatedSources))) {
+      setSources(updatedSources);
+      localStorage.removeItem(`translations_${sourceId}`);
+      localStorage.removeItem(`memories_${sourceId}`);
+      localStorage.removeItem(`delimiters_${sourceId}`);
+      if (selectedSource?.id === sourceId) {
+        setSelectedSource(null);
+      }
     }
   };
 
@@ -153,8 +144,9 @@ const App: React.FC = () => {
       modified: Date.now(),
     };
     const updatedSources = [...sources, newSource];
-    setSources(updatedSources);
-    handleSetItem('sources', JSON.stringify(updatedSources));
+    if (handleSetItem('sources', JSON.stringify(updatedSources))) {
+      setSources(updatedSources);
+    }
   };
 
   const handleSplitSource = (originalSource: Source, splitIndex: number) => {
@@ -191,14 +183,13 @@ const App: React.FC = () => {
     };
 
     const updatedSources = [...sources.filter(s => s.id !== originalSource.id), source1, source2];
-    setSources(updatedSources);
-    handleSetItem('sources', JSON.stringify(updatedSources));
-
-    localStorage.removeItem(`translations_${originalSource.id}`);
-    localStorage.removeItem(`memories_${originalSource.id}`);
-    localStorage.removeItem(`delimiters_${originalSource.id}`);
-
-    setSelectedSource(source2);
+    if (handleSetItem('sources', JSON.stringify(updatedSources))) {
+      setSources(updatedSources);
+      localStorage.removeItem(`translations_${originalSource.id}`);
+      localStorage.removeItem(`memories_${originalSource.id}`);
+      localStorage.removeItem(`delimiters_${originalSource.id}`);
+      setSelectedSource(source2);
+    }
   };
 
   const handleImportMocko = (data: any) => {
@@ -216,18 +207,24 @@ const App: React.FC = () => {
     const newSource = { ...source, id: newId, modified: Date.now(), filename: newFilename || source.filename };
 
     const updatedSources = newFilename ? [...sources, newSource] : sources.map(s => s.id === data.existingSourceId ? newSource : s);
-    setSources(updatedSources);
-    handleSetItem('sources', JSON.stringify(updatedSources));
-    handleSetItem(`translations_${newId}`, JSON.stringify(translations));
-    handleSetItem(`memories_${newId}`, JSON.stringify(memories));
-    handleSetItem(`delimiters_${newId}`, JSON.stringify(delimiters));
-    setConflictData(null);
+    
+    let success = true;
+    success = success && handleSetItem('sources', JSON.stringify(updatedSources));
+    success = success && handleSetItem(`translations_${newId}`, JSON.stringify(translations));
+    success = success && handleSetItem(`memories_${newId}`, JSON.stringify(memories));
+    success = success && handleSetItem(`delimiters_${newId}`, JSON.stringify(delimiters));
+
+    if (success) {
+      setSources(updatedSources);
+      setConflictData(null);
+    }
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setSourceFilter(value);
-    handleSetItem('sourceFilter', value);
+    if(handleSetItem('sourceFilter', value)) {
+      setSourceFilter(value);
+    }
   };
 
   const clearFilter = () => {
@@ -236,8 +233,9 @@ const App: React.FC = () => {
   };
 
   const handleSortChange = (order: SortOrder) => {
-    setSortOrder(order);
-    handleSetItem('sortOrder', order);
+    if(handleSetItem('sortOrder', order)) {
+      setSortOrder(order);
+    }
   };
 
   const handleTranslationsUpdate = () => {

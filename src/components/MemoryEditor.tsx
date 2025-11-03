@@ -21,19 +21,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
   const [importedMemories, setImportedMemories] = useState<Record<string, ImportedMemory>>({});
   const [importSourceIds, setImportSourceIds] = useState<string[]>([]);
   const [showImportPanel, setShowImportPanel] = useState(false);
-  const { setShowQuotaError } = useApp();
-
-  const handleSetItem = (key: string, value: string) => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (e: any) {
-      if (e.name === 'QuotaExceededError') {
-        setShowQuotaError(true);
-      } else {
-        throw e;
-      }
-    }
-  };
+  const { handleSetItem } = useApp();
 
   useEffect(() => {
     if (source) {
@@ -76,9 +64,10 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
   const handleSave = (sourceText: string) => {
     if (source) {
       const updatedMemories = { ...memories, [sourceText]: currentTranslation };
-      setMemories(updatedMemories);
-      handleSetItem(`memories_${source.id}`, JSON.stringify(updatedMemories));
-      setEditingMemory(null);
+      if (handleSetItem(`memories_${source.id}`, JSON.stringify(updatedMemories))) {
+        setMemories(updatedMemories);
+        setEditingMemory(null);
+      }
     }
   };
 
@@ -86,8 +75,9 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
     if (source) {
       const updatedMemories = { ...memories };
       delete updatedMemories[sourceText];
-      setMemories(updatedMemories);
-      handleSetItem(`memories_${source.id}`, JSON.stringify(updatedMemories));
+      if (handleSetItem(`memories_${source.id}`, JSON.stringify(updatedMemories))) {
+        setMemories(updatedMemories);
+      }
     }
   };
 

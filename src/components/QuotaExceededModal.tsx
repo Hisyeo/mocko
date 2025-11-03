@@ -14,7 +14,7 @@ const QuotaExceededModal: React.FC<QuotaExceededModalProps> = ({ show, onHide })
       </Modal.Header>
       <Modal.Body>
         <p>You have run out of local storage space.</p>
-        <p>This application stores all data in your browser's local storage, which is typically limited to 5-10 MB.</p>
+        <p>This application stores all data in your browser's local storage, which is typically limited to 5 MB.</p>
         <p>To free up space, please export some of your sources (using the `.mocko` format to preserve all data) and then delete them from the application.</p>
       </Modal.Body>
       <Modal.Footer>

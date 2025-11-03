@@ -49,19 +49,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
   const [showSplitModal, setShowSplitModal] = useState(false);
   const [splitIndex, setSplitIndex] = useState<number | null>(null);
-  const { grammarCheck, spellCheck, defaultGrammarRule, setShowQuotaError } = useApp();
-
-  const handleSetItem = (key: string, value: string) => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (e: any) {
-      if (e.name === 'QuotaExceededError') {
-        setShowQuotaError(true);
-      } else {
-        throw e;
-      }
-    }
-  };
+  const { grammarCheck, spellCheck, defaultGrammarRule, handleSetItem } = useApp();
 
   const editorRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -168,12 +156,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         note: currentNote 
       } 
     };
-    setTranslations(updatedTranslations);
+    
     if (source) {
-      handleSetItem(`translations_${source.id}`, JSON.stringify(updatedTranslations));
-      onTranslationsUpdate();
+      if (handleSetItem(`translations_${source.id}`, JSON.stringify(updatedTranslations))) {
+        setTranslations(updatedTranslations);
+        onTranslationsUpdate();
+        setEditingSegment(null);
+      }
     }
-    setEditingSegment(null);
   };
 
   const handleSaveAndEditNext = (currentSegmentTrimmed: string) => {
@@ -187,19 +177,19 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         note: currentNote 
       } 
     };
-    setTranslations(updatedTranslations);
+    
     if (source) {
-      handleSetItem(`translations_${source.id}`, JSON.stringify(updatedTranslations));
-      onTranslationsUpdate();
-    }
-
-    const currentIndex = validSegments.indexOf(currentSegmentTrimmed);
-
-    if (currentIndex < validSegments.length - 1) {
-      const nextSegmentToEdit = validSegments[currentIndex + 1];
-      handleEdit(nextSegmentToEdit);
-    } else {
-      setEditingSegment(null);
+      if (handleSetItem(`translations_${source.id}`, JSON.stringify(updatedTranslations))) {
+        setTranslations(updatedTranslations);
+        onTranslationsUpdate();
+        const currentIndex = validSegments.indexOf(currentSegmentTrimmed);
+        if (currentIndex < validSegments.length - 1) {
+          const nextSegmentToEdit = validSegments[currentIndex + 1];
+          handleEdit(nextSegmentToEdit);
+        } else {
+          setEditingSegment(null);
+        }
+      }
     }
   };
 
@@ -209,10 +199,11 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
 
   const handleTitleSave = () => {
     const updatedTranslations = { ...translations, '__title__': translatedTitle };
-    setTranslations(updatedTranslations);
     if (source) {
-      handleSetItem(`translations_${source.id}`, JSON.stringify(updatedTranslations));
-      onTranslationsUpdate();
+      if (handleSetItem(`translations_${source.id}`, JSON.stringify(updatedTranslations))) {
+        setTranslations(updatedTranslations);
+        onTranslationsUpdate();
+      }
     }
   };
 
@@ -242,12 +233,13 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const handleSaveMemory = (target: string) => {
     if (tooltip && source) {
       const updatedMemories = { ...memories, [tooltip.text]: target };
-      handleSetItem(`memories_${source.id}`, JSON.stringify(updatedMemories));
-      setMemoryVersion(prev => prev + 1);
-      setIsAddingMemory(false);
-      setTooltip(null);
-      const instance = new Mark(editorRef.current as HTMLElement);
-      instance.unmark();
+      if (handleSetItem(`memories_${source.id}`, JSON.stringify(updatedMemories))) {
+        setMemoryVersion(prev => prev + 1);
+        setIsAddingMemory(false);
+        setTooltip(null);
+        const instance = new Mark(editorRef.current as HTMLElement);
+        instance.unmark();
+      }
     }
   };
 

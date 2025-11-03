@@ -34,19 +34,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
   const [isLoading, setIsLoading] = useState(false);
   const [isExecutingSegmentation, setIsExecutingSegmentation] = useState(false);
   const [defaultGrammarRule, setDefaultGrammarRule] = useState('');
-  const { grammarCheck, setShowQuotaError } = useApp();
-
-  const handleSetItem = (key: string, value: string) => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (e: any) {
-      if (e.name === 'QuotaExceededError') {
-        setShowQuotaError(true);
-      } else {
-        throw e;
-      }
-    }
-  };
+  const { grammarCheck, handleSetItem } = useApp();
 
   const calculateSourceSize = (sourceId: string) => {
     let total = 0;
@@ -139,8 +127,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
       const parts = content.split(new RegExp(wrappedRule));
       const newSegments = parts.filter((_, i) => i % 2 === 0).map(s => s.trim()).filter(Boolean);
       const newDelimiters = parts.filter((_, i) => i % 2 !== 0);
-      handleSetItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
-
+      
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const oldTranslations = storedTranslations ? JSON.parse(storedTranslations) : {};
       const newTranslations: Record<string, any> = {};
@@ -151,12 +138,16 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
         }
       });
 
-      handleSetItem(`translations_${source.id}`, JSON.stringify(newTranslations));
-      
-      onSourceUpdate({ ...source, title, content, filename, defaultGrammarRule });
-      setOriginalTitle(title);
-      setOriginalContent(content);
-      setOriginalFilename(filename);
+      let success = true;
+      success = success && handleSetItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
+      success = success && handleSetItem(`translations_${source.id}`, JSON.stringify(newTranslations));
+
+      if (success) {
+        onSourceUpdate({ ...source, title, content, filename, defaultGrammarRule });
+        setOriginalTitle(title);
+        setOriginalContent(content);
+        setOriginalFilename(filename);
+      }
     }
   };
 
@@ -176,11 +167,15 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
       worker.onmessage = (e) => {
         if (e.data.task === 'segment') {
           const { newDelimiters, newTranslations } = e.data;
-          handleSetItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
-          handleSetItem(`translations_${source.id}`, JSON.stringify(newTranslations));
-          onSourceUpdate({ ...source, segmentationRule });
-          setOriginalSegmentationRule(segmentationRule);
-          setShowSegPreview(false);
+          let success = true;
+          success = success && handleSetItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
+          success = success && handleSetItem(`translations_${source.id}`, JSON.stringify(newTranslations));
+
+          if (success) {
+            onSourceUpdate({ ...source, segmentationRule });
+            setOriginalSegmentationRule(segmentationRule);
+            setShowSegPreview(false);
+          }
           setIsExecutingSegmentation(false);
         }
       };
@@ -316,8 +311,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
                 type="text" 
                 placeholder="Enter regex" 
                 value={segmentationRule} 
-                onChange={(e) => { 
-                  const val = e.target.value; 
+                onChange={(e) => {
+                  const val = e.target.value;
                   setSegmentationRule(val);
                   validateRegex(val);
                 }} 
