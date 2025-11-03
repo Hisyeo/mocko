@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Card, Collapse } from 'react-bootstrap';
 import { Source } from '../App';
+import { useApp } from '../AppContext';
 
 interface MemoryEditorProps {
   source: Source | null;
@@ -20,6 +21,19 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ source, allSources, segment
   const [importedMemories, setImportedMemories] = useState<Record<string, ImportedMemory>>({});
   const [importSourceIds, setImportSourceIds] = useState<string[]>([]);
   const [showImportPanel, setShowImportPanel] = useState(false);
+  const { setShowQuotaError } = useApp();
+
+  const handleSetItem = (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e: any) {
+      if (e.name === 'QuotaExceededError') {
+        setShowQuotaError(true);
+      } else {
+        throw e;
+      }
+    }
+  };
 
   useEffect(() => {
     if (source) {
@@ -63,7 +77,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ source, allSources, segment
     if (source) {
       const updatedMemories = { ...memories, [sourceText]: currentTranslation };
       setMemories(updatedMemories);
-      localStorage.setItem(`memories_${source.id}`, JSON.stringify(updatedMemories));
+      handleSetItem(`memories_${source.id}`, JSON.stringify(updatedMemories));
       setEditingMemory(null);
     }
   };
@@ -73,7 +87,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ source, allSources, segment
       const updatedMemories = { ...memories };
       delete updatedMemories[sourceText];
       setMemories(updatedMemories);
-      localStorage.setItem(`memories_${source.id}`, JSON.stringify(updatedMemories));
+      handleSetItem(`memories_${source.id}`, JSON.stringify(updatedMemories));
     }
   };
 

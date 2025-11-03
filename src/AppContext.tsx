@@ -13,6 +13,8 @@ interface AppContextType {
   setWiktionarySearch: (value: string) => void;
   defaultGrammarRule: string;
   setDefaultGrammarRule: (value: string) => void;
+  showQuotaError: boolean;
+  setShowQuotaError: (show: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -24,35 +26,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [autocomplete, rawSetAutocomplete] = useState(() => localStorage.getItem('autocomplete') !== 'true');
   const [wiktionarySearch, rawSetWiktionarySearch] = useState(() => localStorage.getItem('wiktionarySearch') || 'modal');
   const [defaultGrammarRule, rawSetDefaultGrammarRule] = useState(() => localStorage.getItem('defaultGrammarRule') || 'Constituents');
+  const [showQuotaError, setShowQuotaError] = useState(false);
+
+  const handleSetItem = (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e: any) {
+      if (e.name === 'QuotaExceededError') {
+        setShowQuotaError(true);
+      } else {
+        throw e;
+      }
+    }
+  };
 
   const setTheme = (newTheme: string) => {
     rawSetTheme(newTheme);
-    localStorage.setItem('yon-mocko-theme', newTheme);
+    handleSetItem('yon-mocko-theme', newTheme);
   };
 
   const setGrammarCheck = (value: boolean) => {
     rawSetGrammarCheck(value);
-    localStorage.setItem('grammarCheck', String(value));
+    handleSetItem('grammarCheck', String(value));
   };
 
   const setSpellCheck = (value: boolean) => {
     rawSetSpellCheck(value);
-    localStorage.setItem('spellCheck', String(value));
+    handleSetItem('spellCheck', String(value));
   };
 
   const setAutocomplete = (value: boolean) => {
     rawSetAutocomplete(value);
-    localStorage.setItem('autocomplete', String(value));
+    handleSetItem('autocomplete', String(value));
   };
 
   const setWiktionarySearch = (value: string) => {
     rawSetWiktionarySearch(value);
-    localStorage.setItem('wiktionarySearch', value);
+    handleSetItem('wiktionarySearch', value);
   };
 
   const setDefaultGrammarRule = (value: string) => {
     rawSetDefaultGrammarRule(value);
-    localStorage.setItem('defaultGrammarRule', value);
+    handleSetItem('defaultGrammarRule', value);
   };
 
   useEffect(() => {
@@ -76,7 +91,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   return (
-    <AppContext.Provider value={{ theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch, defaultGrammarRule, setDefaultGrammarRule }}>
+    <AppContext.Provider value={{ 
+      theme, setTheme, 
+      grammarCheck, setGrammarCheck, 
+      spellCheck, setSpellCheck, 
+      autocomplete, setAutocomplete, 
+      wiktionarySearch, setWiktionarySearch, 
+      defaultGrammarRule, setDefaultGrammarRule,
+      showQuotaError, setShowQuotaError
+    }}>
       {children}
     </AppContext.Provider>
   );

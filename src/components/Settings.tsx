@@ -1,9 +1,36 @@
-import React from 'react';
-import { Button, Card, Form, Stack } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Button, Card, Form, Stack, ProgressBar } from 'react-bootstrap';
 import { useApp } from '../AppContext';
 
 const Settings: React.FC = () => {
-  const { theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch, defaultGrammarRule, setDefaultGrammarRule } = useApp();
+  const { 
+    theme, setTheme, 
+    grammarCheck, setGrammarCheck, 
+    spellCheck, setSpellCheck, 
+    autocomplete, setAutocomplete, 
+    wiktionarySearch, setWiktionarySearch, 
+    defaultGrammarRule, setDefaultGrammarRule 
+  } = useApp();
+  const [storageUsage, setStorageUsage] = useState({ used: 0, percentage: 0 });
+
+  const calculateLocalStorageSize = () => {
+    let total = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) {
+        const value = localStorage.getItem(key);
+        if (value) total += new Blob([key, value]).size;
+      }
+    }
+    return total;
+  };
+
+  useEffect(() => {
+    const used = calculateLocalStorageSize();
+    const total = 5 * 1024 * 1024; // 5MB quota
+    const percentage = (used / total) * 100;
+    setStorageUsage({ used, percentage });
+  }, []);
 
   const handleBackup = () => {
     const data = JSON.stringify(localStorage);
@@ -24,6 +51,8 @@ const Settings: React.FC = () => {
         const content = e.target?.result as string;
         try {
           const data = JSON.parse(content);
+          // Clear existing data before restoring
+          localStorage.clear();
           for (const key in data) {
             localStorage.setItem(key, data[key]);
           }
@@ -111,10 +140,17 @@ const Settings: React.FC = () => {
       </Card>
       
       <Card className="mt-4">
-        <Card.Header>Backup</Card.Header>
+        <Card.Header>Local Storage</Card.Header>
         <Card.Body>
+          <p>Your browser has a local storage quota (usually 5MB). You have used {(storageUsage.used / 1024).toFixed(2)} KB.</p>
+          <ProgressBar 
+            now={storageUsage.percentage} 
+            label={`${storageUsage.percentage.toFixed(2)}%`} 
+            variant={storageUsage.percentage > 80 ? 'danger' : storageUsage.percentage > 60 ? 'warning' : 'success'}
+          />
+          <hr />
           <p>Backup your current session to a file, or restore from a previous backup.</p>
-          <Stack direction='horizontal' gap={1}>
+          <Stack direction='horizontal' gap={1} className="mt-3">
             <Button variant="primary" onClick={handleBackup}>Backup Data</Button>
             <label htmlFor="restore-input" className="btn btn-secondary ml-2">Restore Data</label>
             <input id="restore-input" type="file" accept=".json" onChange={handleRestore} style={{ display: 'none' }} />

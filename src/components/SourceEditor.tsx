@@ -28,6 +28,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
   const [originalSegmentationRule, setOriginalSegmentationRule] = useState('\n');
   const [showSegPreview, setShowSegPreview] = useState(false);
   const [stats, setStats] = useState<Record<string, number | string>>({});
+  const [sourceSize, setSourceSize] = useState(0);
   const [renderedContent, setRenderedContent] = useState('');
   const [showRenPreview, setShowRenPreview] = useState(false);
   const [translatedTitle, setTranslatedTitle] = useState('');
@@ -35,7 +36,43 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
   const [isExecutingSegmentation, setIsExecutingSegmentation] = useState(false);
   const [isPreviewingSegmentation, startTransition] = useTransition();
   const [defaultGrammarRule, setDefaultGrammarRule] = useState('');
-  const { grammarCheck } = useApp();
+  const { grammarCheck, setShowQuotaError } = useApp();
+
+  const handleSetItem = (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e: any) {
+      if (e.name === 'QuotaExceededError') {
+        setShowQuotaError(true);
+      } else {
+        throw e;
+      }
+    }
+  };
+
+  const calculateSourceSize = (sourceId: string) => {
+    let total = 0;
+    const keys = [
+        `translations_${sourceId}`,
+        `memories_${sourceId}`,
+        `delimiters_${sourceId}`
+    ];
+    const sourcesStr = localStorage.getItem('sources');
+    if (sourcesStr) {
+        const sources = JSON.parse(sourcesStr);
+        const currentSource = sources.find((s: Source) => s.id === sourceId);
+        if (currentSource) {
+            total += new Blob([JSON.stringify(currentSource)]).size;
+        }
+    }
+    keys.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value) {
+            total += new Blob([value]).size;
+        }
+    });
+    return total;
+  };
 
   const validateRegex = (rule: string) => {
     try {
@@ -62,7 +99,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
       setSegmentationRule(rule);
       setOriginalSegmentationRule(rule);
       setDefaultGrammarRule(source.defaultGrammarRule || '');
-      validateRegex(rule); // Validate initial rule
+      validateRegex(rule);
+      setSourceSize(calculateSourceSize(source.id));
 
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const translations = storedTranslations ? JSON.parse(storedTranslations) : {};
@@ -103,7 +141,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
       const parts = content.split(new RegExp(wrappedRule));
       const newSegments = parts.filter((_, i) => i % 2 === 0).map(s => s.trim()).filter(Boolean);
       const newDelimiters = parts.filter((_, i) => i % 2 !== 0);
-      localStorage.setItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
+      handleSetItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
 
       const storedTranslations = localStorage.getItem(`translations_${source.id}`);
       const oldTranslations = storedTranslations ? JSON.parse(storedTranslations) : {};
@@ -115,7 +153,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
         }
       });
 
-      localStorage.setItem(`translations_${source.id}`, JSON.stringify(newTranslations));
+      handleSetItem(`translations_${source.id}`, JSON.stringify(newTranslations));
       
       onSourceUpdate({ ...source, title, content, filename, defaultGrammarRule });
       setOriginalTitle(title);
@@ -140,8 +178,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
       worker.onmessage = (e) => {
         if (e.data.task === 'segment') {
           const { newDelimiters, newTranslations } = e.data;
-          localStorage.setItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
-          localStorage.setItem(`translations_${source.id}`, JSON.stringify(newTranslations));
+          handleSetItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
+          handleSetItem(`translations_${source.id}`, JSON.stringify(newTranslations));
           onSourceUpdate({ ...source, segmentationRule });
           setOriginalSegmentationRule(segmentationRule);
           setShowSegPreview(false);
@@ -337,6 +375,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ source, allSources, onSourc
                 <p>Average source words per segment: {stats.avgSourceWords}</p>
                 <p>Completed translation segments: {stats.numTranslatedSegments}</p>
                 <p>Average translation words per completed segment: {stats.avgTranslatedWords}</p>
+                <p>Source size: {(sourceSize / 1024).toFixed(2)} KB</p>
               </Card.Body>
             </Card>
           </div>
