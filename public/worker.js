@@ -49,11 +49,15 @@ self.onmessage = (e) => {
       if (!trimmedSeg) return;
 
       const translationData = translations[trimmedSeg];
+      const prevTranslationData = i > 0 ? translations[segments[i - 1].trim()] : null;
+
       let translationText = seg;
       let noteAppended = false;
 
       if (translationData) {
-        if (typeof translationData === 'object' && translationData !== null) {
+        if (translationData.segmentType === 'Skip') {
+          translationText = ''; // Don't include the segment text itself if skipped
+        } else if (typeof translationData === 'object' && translationData !== null) {
           translationText = translationData.text || seg;
           if (translationData.note) {
             translationText += ` [${noteCounter}]`;
@@ -66,11 +70,18 @@ self.onmessage = (e) => {
         }
       }
       
-      reconstructed += translationText;
-
-      if (delimiters[i]) {
-        reconstructed += delimiters[i];
+      // Handle preceding delimiter
+      if (i > 0 && delimiters[i-1]) {
+        const prevAction = prevTranslationData?.delimiterAction;
+        if (prevAction !== 'Skip Succeeding' && prevAction !== 'Skip Both') {
+            const currentAction = translationData?.delimiterAction;
+            if (currentAction !== 'Skip Preceding' && currentAction !== 'Skip Both') {
+                reconstructed += delimiters[i-1];
+            }
+        }
       }
+
+      reconstructed += translationText;
     });
 
     if (notes.length > 0) {
