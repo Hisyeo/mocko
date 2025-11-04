@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 
 interface AppContextType {
   theme: string;
@@ -38,9 +38,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [defaultCompression, rawSetDefaultCompression] = useState(() => localStorage.getItem('defaultCompression') === 'true');
   const [defaultCompressionLevel, rawSetDefaultCompressionLevel] = useState(() => parseInt(localStorage.getItem('defaultCompressionLevel') || '1', 10));
 
-  const updateStorageVersion = () => setStorageVersion(v => v + 1);
+  const updateStorageVersion = useCallback(() => setStorageVersion(v => v + 1), []);
 
-  const handleSetItem = (key: string, value: string): boolean => {
+  const handleSetItem = useCallback((key: string, value: string): boolean => {
     try {
       localStorage.setItem(key, value);
       updateStorageVersion();
@@ -54,67 +54,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         throw e;
       }
     }
-  };
+  }, [updateStorageVersion]);
 
-  const setTheme = (newTheme: string) => {
+  const setTheme = useCallback((newTheme: string) => {
     if (handleSetItem('yon-mocko-theme', newTheme)) {
       rawSetTheme(newTheme);
     }
-  };
+  }, [handleSetItem]);
 
-  const setGrammarCheck = (value: boolean) => {
+  const setGrammarCheck = useCallback((value: boolean) => {
     if (handleSetItem('grammarCheck', String(value))) {
       rawSetGrammarCheck(value);
     }
-  };
+  }, [handleSetItem]);
 
-  const setSpellCheck = (value: boolean) => {
+  const setSpellCheck = useCallback((value: boolean) => {
     if (handleSetItem('spellCheck', String(value))) {
       rawSetSpellCheck(value);
     }
-  };
+  }, [handleSetItem]);
 
-  const setAutocomplete = (value: boolean) => {
+  const setAutocomplete = useCallback((value: boolean) => {
     if (handleSetItem('autocomplete', String(value))) {
       rawSetAutocomplete(value);
     }
-  };
+  }, [handleSetItem]);
 
-  const setWiktionarySearch = (value: string) => {
+  const setWiktionarySearch = useCallback((value: string) => {
     if (handleSetItem('wiktionarySearch', value)) {
       rawSetWiktionarySearch(value);
     }
-  };
+  }, [handleSetItem]);
 
-  const setDefaultGrammarRule = (value: string) => {
+  const setDefaultGrammarRule = useCallback((value: string) => {
     if (handleSetItem('defaultGrammarRule', value)) {
       rawSetDefaultGrammarRule(value);
     }
-  };
+  }, [handleSetItem]);
 
-  const setDefaultCompression = (value: boolean) => {
+  const setDefaultCompression = useCallback((value: boolean) => {
     if (handleSetItem('defaultCompression', String(value))) {
       rawSetDefaultCompression(value);
     }
-  };
+  }, [handleSetItem]);
 
-  const setDefaultCompressionLevel = (value: number) => {
+  const setDefaultCompressionLevel = useCallback((value: number) => {
     if (handleSetItem('defaultCompressionLevel', String(value))) {
       rawSetDefaultCompressionLevel(value);
     }
-  };
+  }, [handleSetItem]);
 
   useEffect(() => {
     updateStorageVersion(); // Initial calculation
-  }, []);
+  }, [updateStorageVersion]);
 
   return (
-    <AppContext.Provider value={{ 
-      theme, setTheme, 
-      grammarCheck, setGrammarCheck, 
-      spellCheck, setSpellCheck, 
-      autocomplete, setAutocomplete, 
-      wiktionarySearch, setWiktionarySearch, 
+    <AppContext.Provider value={useMemo(() => ({
+      theme, setTheme,
+      grammarCheck, setGrammarCheck,
+      spellCheck, setSpellCheck,
+      autocomplete, setAutocomplete,
+      wiktionarySearch, setWiktionarySearch,
       defaultGrammarRule, setDefaultGrammarRule,
       error, setError,
       handleSetItem,
@@ -124,7 +124,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setDefaultCompression,
       defaultCompressionLevel,
       setDefaultCompressionLevel
-    }}>
+    }), [ theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch, defaultGrammarRule, setDefaultGrammarRule, error, handleSetItem, storageVersion, updateStorageVersion, defaultCompression, setDefaultCompression, defaultCompressionLevel, setDefaultCompressionLevel ])}>
       {children}
     </AppContext.Provider>
   );

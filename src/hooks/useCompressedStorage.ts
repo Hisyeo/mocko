@@ -1,6 +1,7 @@
 import { useApp } from '../AppContext';
 import { useSource } from '../SourceContext';
 import pako from 'pako';
+import { useCallback } from 'react';
 
 export type CompressionLevel = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | undefined;
 
@@ -18,7 +19,7 @@ export function useCompressedStorage() {
   const { handleSetItem, setError } = useApp();
   const { source } = useSource();
 
-  const getItem = (key: string): any | null => {
+  const getItem = useCallback((key: string): any | null => {
     const rawValue = localStorage.getItem(key);
     if (!rawValue) return null;
 
@@ -38,9 +39,9 @@ export function useCompressedStorage() {
       // If it fails to parse, it might be a raw string (like from an old version)
       return decompressed;
     }
-  };
+  }, [source, setError]);
 
-  const setItem = (key: string, value: any): boolean => {
+  const setItem = useCallback((key: string, value: any): boolean => {
     if (!source) return false;
 
     const stringifiedValue = JSON.stringify(value);
@@ -56,7 +57,7 @@ export function useCompressedStorage() {
       }
     }
     return handleSetItem(key, valueToStore);
-  };
+  }, [source, handleSetItem, setError]);
 
   return { getItem, setItem };
 }
