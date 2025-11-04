@@ -55,6 +55,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const [editingSegment, setEditingSegment] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
   const [currentNote, setCurrentNote] = useState('');
+  const [currentBookmark, setCurrentBookmark] = useState<{ name: string; comment: string } | null>(null);
   const [diagnostics, setDiagnostics] = useState<readonly Diagnostic[]>([]);
   const [memories, setMemories] = useState<Record<string, string>>({});
   const [translatedTitle, setTranslatedTitle] = useState('');
@@ -206,6 +207,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     if (typeof translationData === 'object' && translationData !== null) {
       setCurrentTranslation(translationData.text || '');
       setCurrentNote(translationData.note || '');
+      setCurrentBookmark(translationData.bookmark || null);
       setSegmentGrammarRule(translationData.grammarRule || '');
       setSegmentType(translationData.segmentType || 'Body');
       setOutlineLevel(translationData.outlineLevel || 'Level 2');
@@ -213,6 +215,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     } else {
       setCurrentTranslation(translationData || '');
       setCurrentNote('');
+      setCurrentBookmark(null);
       setSegmentGrammarRule('');
       setSegmentType('Body');
       setOutlineLevel('Level 2');
@@ -245,6 +248,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       [trimmedSegment]: { 
         text: currentTranslation, 
         note: currentNote, 
+        bookmark: currentBookmark,
         grammarRule: segmentGrammarRule,
         segmentType: segmentType,
         outlineLevel: outlineLevel,
@@ -269,6 +273,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       [currentSegmentTrimmed]: { 
         text: currentTranslation, 
         note: currentNote, 
+        bookmark: currentBookmark,
         grammarRule: segmentGrammarRule,
         segmentType: segmentType,
         outlineLevel: outlineLevel,
@@ -397,6 +402,16 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     setSegmentType(newType);
   };
 
+  const bookmarks = useMemo(() => {
+    return validSegments.map((seg, index) => {
+      const data = translations[seg];
+      if (data?.bookmark?.name) {
+        return { name: data.bookmark.name, index };
+      }
+      return null;
+    }).filter(Boolean) as { name: string; index: number; }[];
+  }, [translations, validSegments]);
+
   if (!source) {
     return <div>Please select a source from the sidebar to start translating.</div>;
   }
@@ -464,6 +479,32 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     </Popover>
   );
 
+  const bookmarkPopover = (
+    <Popover id="popover-bookmark">
+      <Popover.Header as="h3">Bookmark</Popover.Header>
+      <Popover.Body>
+        <Form.Group className="mb-2">
+          <Form.Label>Name</Form.Label>
+          <Form.Control 
+            type="text" 
+            value={currentBookmark?.name || ''} 
+            onChange={(e) => setCurrentBookmark(prev => ({ ...prev, name: e.target.value, comment: prev?.comment || '' }))} 
+          />
+        </Form.Group>
+        <Form.Group className="mb-2">
+          <Form.Label>Comment</Form.Label>
+          <Form.Control 
+            as="textarea" 
+            rows={3} 
+            value={currentBookmark?.comment || ''}
+            onChange={(e) => setCurrentBookmark(prev => ({ ...prev, name: prev?.name || '', comment: e.target.value }))} 
+          />
+        </Form.Group>
+        <Button variant="danger" size="sm" onClick={() => setCurrentBookmark(null)}>Clear</Button>
+      </Popover.Body>
+    </Popover>
+  );
+
   const renderSegmentContent = (segment: string, translationData: any, delimiter?: string) => {
     const translationText = translationData?.text;
     const segType = translationData?.segmentType || 'Body';
@@ -509,6 +550,20 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       <div className="d-flex justify-content-between align-items-center">
         <h1>{translatedTitle || source.title}</h1>
         <Stack direction="horizontal" gap={2}>
+          <Dropdown>
+            <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+              Bookmarks
+            </Dropdown.Toggle>
+            <Dropdown.Menu>
+              {bookmarks.length > 0 ? (
+                bookmarks.map(b => (
+                  <Dropdown.Item key={b.index} onClick={() => navigateToSegment(b.index)}>{b.name}</Dropdown.Item>
+                ))
+              ) : (
+                <Dropdown.Item disabled>No bookmarks found</Dropdown.Item>
+              )}
+            </Dropdown.Menu>
+          </Dropdown>
           <InputGroup size="sm">
             <Button variant="outline-info" onClick={handleGoToIncomplete}>Go To Incomplete</Button>
             <Button variant="outline-danger" onClick={handleGoToEnd}>Go To End</Button>
@@ -540,6 +595,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
             const isLastSegment = index === validSegments.length - 1;
             const translationData = translations[segment];
             const noteText = translationData?.note;
+            const bookmarkData = translationData?.bookmark;
             const segType = translationData?.segmentType || 'Body';
             const delimiter = delimiters[index]?.replaceAll('\n', '⏎')
 
@@ -558,12 +614,15 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                       grammarRule={segmentGrammarRule || source.defaultGrammarRule || defaultGrammarRule}
                     />
                     <Stack direction='horizontal' gap={1}>
-                      <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(segment)} disabled={isLastSegment || (hasErrors && segmentType !== 'Skip') || (!currentTranslation && segmentType !== 'Skip')}>Save & Edit Next</Button>
-                      <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(segment)} disabled={(hasErrors && segmentType !== 'Skip') || (!currentTranslation && segmentType !== 'Skip')}>Save</Button>
+                      <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(segment)} disabled={isLastSegment || (hasErrors && segType !== 'Skip') || (!currentTranslation && segType !== 'Skip')}>Save & Edit Next</Button>
+                      <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(segment)} disabled={(hasErrors && segType !== 'Skip') || (!currentTranslation && segType !== 'Skip')}>Save</Button>
                       <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
                       <Form.Label column className='mt-2'>{' '}<small>Segment #{index+1}</small></Form.Label>
                       <OverlayTrigger trigger="click" placement="top" overlay={notePopover} rootClose>
                         <Button variant={currentNote ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2">Note</Button>
+                      </OverlayTrigger>
+                      <OverlayTrigger trigger="click" placement="top" overlay={bookmarkPopover} rootClose>
+                        <Button variant={currentBookmark ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2">Bookmark</Button>
                       </OverlayTrigger>
                       <OverlayTrigger trigger="click" placement="left" overlay={settingsPopover} rootClose>
                         <Button variant="secondary" size="sm" className="mt-2 ms-auto">⚙️</Button>
@@ -575,6 +634,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                     {renderSegmentContent(segment, translationData, delimiter)}
                     <Stack direction='horizontal'>
                       {noteText && <span title={`Note: ${noteText}`} style={{ paddingRight: '1em' }}>🗒️</span>}
+                      {bookmarkData && <span title={`Bookmark: ${bookmarkData.name}`} style={{ paddingRight: '1em' }}>🔖</span>}
                       <Button variant="link" title='Edit segment' onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
                       <Button variant="link" title='Split source' onClick={() => handleShowSplitModal(index)} style={{textDecoration: 'none'}} disabled={index===0}>✂️</Button>
                     </Stack>
