@@ -402,6 +402,36 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     setSegmentType(newType);
   };
 
+  const handleBookmarkClick = (index: number) => {
+    if (!currentBookmark) {
+      setCurrentBookmark({ name: `Segment ${index + 1}`, comment: '' });
+    }
+  };
+
+  const handleSaveBookmark = () => {
+    if (editingSegment) {
+      const updatedTranslations = { 
+        ...translations, 
+        [editingSegment]: { 
+          ...translations[editingSegment],
+          text: currentTranslation, 
+          note: currentNote, 
+          bookmark: currentBookmark,
+          grammarRule: segmentGrammarRule,
+          segmentType: segmentType,
+          outlineLevel: outlineLevel,
+          delimiterAction: segmentType === 'Skip' ? delimiterAction : undefined
+        } 
+      };
+      if (source) {
+        if (saveData(`translations_${source.id}`, updatedTranslations)) {
+          setTranslations(updatedTranslations);
+          onTranslationsUpdate();
+        }
+      }
+    }
+  };
+
   const bookmarks = useMemo(() => {
     return validSegments.map((seg, index) => {
       const data = translations[seg];
@@ -500,7 +530,10 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
             onChange={(e) => setCurrentBookmark(prev => ({ ...prev, name: prev?.name || '', comment: e.target.value }))} 
           />
         </Form.Group>
-        <Button variant="danger" size="sm" onClick={() => setCurrentBookmark(null)}>Clear</Button>
+        <Stack direction="horizontal" gap={2}>
+          <Button variant="primary" size="sm" onClick={handleSaveBookmark}>Save</Button>
+          <Button variant="danger" size="sm" onClick={() => setCurrentBookmark(null)}>Clear</Button>
+        </Stack>
       </Popover.Body>
     </Popover>
   );
@@ -622,7 +655,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                         <Button variant={currentNote ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2">Note</Button>
                       </OverlayTrigger>
                       <OverlayTrigger trigger="click" placement="top" overlay={bookmarkPopover} rootClose>
-                        <Button variant={currentBookmark ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2">Bookmark</Button>
+                        <Button variant={currentBookmark ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2" onClick={() => handleBookmarkClick(index)}>Bookmark</Button>
                       </OverlayTrigger>
                       <OverlayTrigger trigger="click" placement="left" overlay={settingsPopover} rootClose>
                         <Button variant="secondary" size="sm" className="mt-2 ms-auto">⚙️</Button>
@@ -634,7 +667,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                     {renderSegmentContent(segment, translationData, delimiter)}
                     <Stack direction='horizontal'>
                       {noteText && <span title={`Note: ${noteText}`} style={{ paddingRight: '1em' }}>🗒️</span>}
-                      {bookmarkData && <span title={`Bookmark: ${bookmarkData.name}`} style={{ paddingRight: '1em' }}>🔖</span>}
+                      {bookmarkData && <span title={`${bookmarkData.name}: ${bookmarkData.comment}`} style={{ paddingRight: '1em' }}>🔖</span>}
                       <Button variant="link" title='Edit segment' onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
                       <Button variant="link" title='Split source' onClick={() => handleShowSplitModal(index)} style={{textDecoration: 'none'}} disabled={index===0}>✂️</Button>
                     </Stack>
