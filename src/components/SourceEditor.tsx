@@ -104,7 +104,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
       setOriginalCompressionLevel(level);
 
       const storedTranslations = getItem(`translations_${source.id}`);
-      const translations = storedTranslations ? JSON.parse(storedTranslations) : {};
+      const translations = storedTranslations || {};
       setTranslatedTitle(translations['__title__'] || '');
 
       const worker = new Worker(process.env.PUBLIC_URL + '/worker.js');
@@ -199,7 +199,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
         }
       };
       const storedTranslations = getItem(`translations_${source.id}`);
-      const oldTranslations = storedTranslations ? JSON.parse(storedTranslations) : {};
+      const oldTranslations = storedTranslations || {};
       worker.postMessage({ task: 'segment', content: decompressedContent, segmentationRule, oldTranslations });
     }
   };

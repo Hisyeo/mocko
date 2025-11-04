@@ -1,20 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Card, Collapse } from 'react-bootstrap';
 import { Source } from '../App';
-import { useApp } from '../AppContext';
 import { useSource } from '../SourceContext';
 import { useCompressedStorage } from '../hooks/useCompressedStorage';
-import Pako from 'pako';
-
-// Helper to check if a string is base64 encoded
-function isBase64(str: string) {
-  if (str ==='' || str.trim() ==='') { return false; }
-  try {
-    return btoa(atob(str)) === str;
-  } catch (err) {
-    return false;
-  }
-}
+import pako from 'pako';
 
 // Helper to decode from base64 Uint8Array
 const atobUint8Array = (b64: string) => {
@@ -49,7 +38,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
   useEffect(() => {
     if (source) {
       const storedMemories = getItem(`memories_${source.id}`);
-      setMemories(storedMemories ? JSON.parse(storedMemories) : {});
+      setMemories(storedMemories || {});
       setImportedMemories({});
       setImportSourceIds([]);
     } else {
@@ -62,17 +51,16 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
   useEffect(() => {
     let allImported: Record<string, ImportedMemory> = {};
     importSourceIds.forEach(id => {
-      const sourceTitle = allSources.find(s => s.id === id)?.title || 'Unknown Source';
-      // This part does not use the hook because it's reading other sources' data
-      // which might have different compression settings. For simplicity, we read raw.
-      // A more robust solution would require a getItem that accepts a source object.
+      const sourceToRead = allSources.find(s => s.id === id);
+      if (!sourceToRead) return;
+
+      const sourceTitle = sourceToRead.title || 'Unknown Source';
       const stored = localStorage.getItem(`memories_${id}`);
       if (stored) {
         try {
-          const sourceToRead = allSources.find(s => s.id === id);
           let decompressed = stored;
-          if (sourceToRead?.compression) {
-            decompressed = isBase64(decompressed) ? Pako.inflate(atobUint8Array(decompressed), { to: 'string' }) : decompressed;
+          if (sourceToRead.compression) {
+            decompressed = pako.inflate(atobUint8Array(stored), { to: 'string' });
           }
           const parsedMemories: Record<string, string> = JSON.parse(decompressed);
           for (const sourceText in parsedMemories) {
@@ -99,7 +87,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
   const handleSave = (sourceText: string) => {
     if (source) {
       const updatedMemories = { ...memories, [sourceText]: currentTranslation };
-      if (setItem(`memories_${source.id}`, JSON.stringify(updatedMemories))) {
+      if (setItem(`memories_${source.id}`, updatedMemories)) {
         setMemories(updatedMemories);
         setEditingMemory(null);
       }
@@ -110,7 +98,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
     if (source) {
       const updatedMemories = { ...memories };
       delete updatedMemories[sourceText];
-      if (setItem(`memories_${source.id}`, JSON.stringify(updatedMemories))) {
+      if (setItem(`memories_${source.id}`, updatedMemories)) {
         setMemories(updatedMemories);
       }
     }

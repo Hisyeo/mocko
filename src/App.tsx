@@ -26,16 +26,6 @@ export interface Source {
   compressionLevel?: number;
 }
 
-// Helper to check if a string is base64 encoded
-function isBase64(str: string) {
-  if (str ==='' || str.trim() ==='') { return false; }
-  try {
-    return btoa(atob(str)) === str;
-  } catch (err) {
-    return false;
-  }
-}
-
 // Helper to decode from base64 Uint8Array
 const atobUint8Array = (b64: string) => {
   const byteCharacters = atob(b64);
@@ -313,7 +303,7 @@ const App: React.FC = () => {
             try {
               let data = raw;
               if (source.compression) {
-                data = isBase64(raw) ? pako.inflate(atobUint8Array(raw), { to: 'string' }) : raw;
+                data = pako.inflate(atobUint8Array(raw), { to: 'string' })
               }
               return Object.keys(JSON.parse(data) || {}).length;
             } catch (e) {
