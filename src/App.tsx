@@ -127,10 +127,41 @@ const App: React.FC = () => {
       compression: defaultCompression,
       compressionLevel: defaultCompressionLevel
     };
-    const updatedSources = [...sources, newSource];
-    if (handleSetItem('sources', JSON.stringify(updatedSources))) {
-      setSources(updatedSources);
+
+    let finalContent = content;
+    if (newSource.compression) {
+      try {
+        finalContent = btoa(String.fromCharCode(...pako.deflate(content, { level: newSource.compressionLevel })));
+        newSource.content = finalContent;
+      } catch (err: any) {
+        setError({ title: 'Compression Error', message: `Failed to compress new source: ${err.message}` });
+        return;
+      }
     }
+
+    const updatedSources = [...sources, newSource];
+    let success = handleSetItem('sources', JSON.stringify(updatedSources));
+    if (!success) return;
+
+    // Create empty, possibly compressed, data for the new source
+    const emptyData = ['{}', '{}', '[]']; // translations, memories, delimiters
+    const keys = [`translations_${newSource.id}`, `memories_${newSource.id}`, `delimiters_${newSource.id}`];
+
+    for (let i = 0; i < keys.length; i++) {
+      let valueToStore = emptyData[i];
+      if (newSource.compression) {
+        try {
+          valueToStore = btoa(String.fromCharCode(...pako.deflate(valueToStore, { level: newSource.compressionLevel })));
+        } catch (err: any) {
+          setError({ title: 'Compression Error', message: `Failed to create compressed data for new source: ${err.message}` });
+          return;
+        }
+      }
+      success = success && handleSetItem(keys[i], valueToStore);
+      if (!success) return;
+    }
+
+    setSources(updatedSources);
   };
 
   const handleSourceUpdate = (updatedSource: Source) => {
@@ -224,35 +255,43 @@ const App: React.FC = () => {
   const finalizeImport = (data: any, newFilename?: string) => {
     const { source, translations, memories, delimiters } = data;
     const newId = new Date().toISOString();
-    const newSource = { ...source, id: newId, modified: Date.now(), filename: newFilename || source.filename };
+    
+    // Honor default compression if not specified in import
+    const compression = source.compression === undefined ? defaultCompression : source.compression;
+    const compressionLevel = source.compressionLevel === undefined ? defaultCompressionLevel : source.compressionLevel;
+
+    const newSource = { ...source, id: newId, modified: Date.now(), filename: newFilename || source.filename, compression, compressionLevel };
 
     const updatedSources = newFilename ? [...sources, newSource] : sources.map(s => s.id === data.existingSourceId ? newSource : s);
     
     let success = true;
     success = success && handleSetItem('sources', JSON.stringify(updatedSources));
 
-    const itemsToStore: { [key: string]: string } = {
-      [`translations_${newId}`]: JSON.stringify(translations),
-      [`memories_${newId}`]: JSON.stringify(memories),
-      [`delimiters_${newId}`]: JSON.stringify(delimiters),
+    const itemsToStore: { [key: string]: any } = {
+      [`translations_${newId}`]: translations,
+      [`memories_${newId}`]: memories,
+      [`delimiters_${newId}`]: delimiters,
     };
 
     for (const key in itemsToStore) {
       if (!success) break;
       let value = itemsToStore[key];
-      // Unlike the hook, we must manually compress here because we are creating a new source
-      // and the hook is bound to the currently selected source in context.
+      
+      // Ensure value is a string before compressing or saving
+      const stringifiedValue = typeof value === 'string' ? value : JSON.stringify(value);
+      let valueToStore = stringifiedValue;
+
       if (newSource.compression) {
         try {
-          const compressed = pako.deflate(value, { level: newSource.compressionLevel ?? 1 });
-          value = btoa(String.fromCharCode(...compressed));
+          const compressed = pako.deflate(stringifiedValue, { level: newSource.compressionLevel });
+          valueToStore = btoa(String.fromCharCode(...compressed));
         } catch (err: any) {
           setError({ title: 'Compression Error', message: `Failed to import and compress data for key ${key}: ${err.message}` });
           success = false;
           continue;
         }
       }
-      success = success && handleSetItem(key, value);
+      success = success && handleSetItem(key, valueToStore);
     }
 
     if (success) {
