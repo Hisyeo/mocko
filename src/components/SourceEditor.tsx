@@ -398,13 +398,18 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
               <Form.Check
                 type="switch"
                 id="compression-switch"
-                label="Compress source content"
+                label="Enable source compression"
                 checked={isCompressed}
                 onChange={(e) => setIsCompressed(e.target.checked)}
               />
+              <Form.Text muted>
+                Source compression may lead to slower application responsiveness due to additional calculations whenever saving
+                changes but it will dramatically reduce storage space used.
+              </Form.Text>
               <Form.Group controlId="compressionLevel" className="mt-3">
                 <Form.Label>Compression Level: {compressionLevel}</Form.Label>
-                <Form.Range 
+                <Form.Range
+                  disabled={!isCompressed}
                   min="0" 
                   max="9" 
                   step="1" 
