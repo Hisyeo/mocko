@@ -395,20 +395,20 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     </Popover>
   );
 
-  const renderSegmentContent = (segment: string, translationData: any) => {
+  const renderSegmentContent = (segment: string, translationData: any, delimiter?: string) => {
     const translationText = translationData?.text;
     const segType = translationData?.segmentType || 'Body';
     const outLevel = translationData?.outlineLevel || (
-      // If it's a heading, and no outline level is set, default to Level 2
       segType === 'Heading' ? 'Level 2' : 'Skip'
     );
-    const textToShow = translationData?.segmentType === 'Skip' ? segment : (translationText || segment);
+    const textToShow = segType === 'Skip' ? segment : (translationText || segment);
 
     if (segType === 'Heading') {
       if (outLevel === 'Level 2') return <h2>{textToShow}</h2>;
       if (outLevel === 'Level 3') return <h3>{textToShow}</h3>;
     }
-    return <p className={`mb-0 ${!translationText && segType !== 'Skip' ? 'source-text' : ''} ${segType === 'Skip' ? 'text-muted' : ''}`}>{textToShow}</p>;
+    const delimiterBadge = <Badge title='Delimiter' bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiter}</Badge>
+    return <p className={`mb-0 ${!translationText && segType !== 'Skip' ? 'source-text' : ''} ${segType === 'Skip' ? 'text-muted' : ''}`}>{textToShow}{delimiter && delimiterBadge}</p>;
   };
 
   return (
@@ -476,8 +476,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                       grammarRule={segmentGrammarRule || source.defaultGrammarRule || defaultGrammarRule}
                     />
                     <Stack direction='horizontal' gap={1}>
-                      <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(segment)} disabled={isLastSegment || (hasErrors && segType !== 'Skip') || (!currentTranslation && segType !== 'Skip')}>Save & Edit Next</Button>
-                      <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(segment)} disabled={(hasErrors && segType !== 'Skip') || (!currentTranslation && segType !== 'Skip')}>Save</Button>
+                      <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(segment)} disabled={isLastSegment || (hasErrors && segmentType !== 'Skip') || (!currentTranslation && segmentType !== 'Skip')}>Save & Edit Next</Button>
+                      <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(segment)} disabled={(hasErrors && segmentType !== 'Skip') || (!currentTranslation && segmentType !== 'Skip')}>Save</Button>
                       <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
                       <Form.Label column className='mt-2'>{' '}<small>Segment #{index+1}</small></Form.Label>
                       <OverlayTrigger trigger="click" placement="top" overlay={notePopover} rootClose>
@@ -490,7 +490,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                   </div>
                 ) : (
                   <div className="d-flex justify-content-between align-items-center w-100">
-                    {renderSegmentContent(segment, translationData)}
+                    {renderSegmentContent(segment, translationData, delimiter)}
                     <Stack direction='horizontal'>
                       {noteText && <span title={`Note: ${noteText}`} style={{ paddingRight: '1em' }}>🗒️</span>}
                       <Button variant="link" title='Edit segment' onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
