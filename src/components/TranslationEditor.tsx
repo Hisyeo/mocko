@@ -316,7 +316,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   };
 
   const handleMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (tooltipRef.current && tooltipRef.current.contains(event.target as Node)) {
+    if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
       return;
     }
     const selection = window.getSelection();
@@ -411,7 +411,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     if (!currentBookmark) {
       const newBookmark = { name: `Segment ${index + 1}`, comment: '' };
       setCurrentBookmark(newBookmark);
-      setInitialBookmark(newBookmark);
+      setInitialBookmark(null); // Make sure it's different from initial
     }
     setShowBookmarkPopover(!showBookmarkPopover);
   };
@@ -487,7 +487,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const spellingErrors = diagnostics.filter(d => d.severity === 'warning');
   const hasErrors = (grammarCheck && grammarErrors.length > 0) || (spellCheck && spellingErrors.length > 0);
 
-  const isBookmarkUnchanged = JSON.stringify(currentBookmark) === JSON.stringify(initialBookmark);
+  const isBookmarkUnchanged = initialBookmark !== null && JSON.stringify(currentBookmark) === JSON.stringify(initialBookmark);
 
   const settingsPopover = (
     <Popover id="popover-basic">
@@ -622,6 +622,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       <div className="d-flex justify-content-between align-items-center">
         <h1>{translatedTitle || source.title}</h1>
         <Stack direction="horizontal" gap={2}>
+          <InputGroup size="sm">
           <Dropdown>
             <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
               Bookmarks
@@ -636,9 +637,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
               )}
             </Dropdown.Menu>
           </Dropdown>
-          <InputGroup size="sm">
-            <Button variant="outline-info" onClick={handleGoToIncomplete}>Go To Incomplete</Button>
-            <Button variant="outline-danger" onClick={handleGoToEnd}>Go To End</Button>
+            <Button title='Go to the first incomplete translation segment' variant="outline-info" onClick={handleGoToIncomplete}>Incomplete</Button>
+            <Button title='Go to the last segment' variant="outline-danger" onClick={handleGoToEnd}>⬇</Button>
             <Form.Control
               id='go-to-segment-number-input'
               type="number"
@@ -691,13 +691,13 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                       <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
                       <Form.Label column className='mt-2'>{' '}<small>Segment #{index+1}</small></Form.Label>
                       <OverlayTrigger trigger="click" placement="top" overlay={notePopover} rootClose>
-                        <Button variant={currentNote ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2">Note</Button>
+                        <Button variant={currentNote ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2 ms-auto">Note</Button>
                       </OverlayTrigger>
-                      <OverlayTrigger show={showBookmarkPopover} trigger="click" placement="top" overlay={bookmarkPopover} rootClose>
+                      <OverlayTrigger show={showBookmarkPopover} trigger="click" placement="top" overlay={bookmarkPopover} rootClose onToggle={() => setShowBookmarkPopover(!showBookmarkPopover)}>
                         <Button variant={currentBookmark ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2" onClick={() => handleBookmarkClick(index)}>Bookmark</Button>
                       </OverlayTrigger>
                       <OverlayTrigger trigger="click" placement="left" overlay={settingsPopover} rootClose>
-                        <Button variant="secondary" size="sm" className="mt-2 ms-auto">⚙️</Button>
+                        <Button variant="secondary" size="sm" className="mt-2">⚙️</Button>
                       </OverlayTrigger>
                     </Stack>
                   </div>
@@ -706,7 +706,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                     {renderSegmentContent(segment, translationData, delimiter)}
                     <Stack direction='horizontal'>
                       {noteText && <span title={`Note: ${noteText}`} style={{ paddingRight: '1em' }}>🗒️</span>}
-                      {bookmarkData && <span title={`${bookmarkData.name}: ${bookmarkData.comment}`} style={{ paddingRight: '1em' }}>🔖</span>}
+                      {bookmarkData && <span title={`${bookmarkData.name}${bookmarkData.comment ? `:\n${bookmarkData.comment}` : ''}`} style={{ paddingRight: '1em' }}>🔖</span>}
                       <Button variant="link" title='Edit segment' onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
                       <Button variant="link" title='Split source' onClick={() => handleShowSplitModal(index)} style={{textDecoration: 'none'}} disabled={index===0}>✂️</Button>
                     </Stack>
