@@ -494,7 +494,7 @@ const App: React.FC = () => {
                     {source.filename ?? source.title}
                   </Nav.Link>
                   {selectedSource?.id === source.id && headings.length > 0 && (
-                    <span style={{marginRight: '0.5em', cursor: expandedOutlines[source.id] ? 'n-resize' : 's-resize'}} onClick={() => toggleOutline(source.id)} className="ms-auto p-2">{expandedOutlines[source.id] ? '▼' : '▶'}</span>
+                    <span title={`${expandedOutlines[source.id] ? 'Collapse' : 'Expand'} outline`} style={{marginRight: '0.5em', cursor: expandedOutlines[source.id] ? 'n-resize' : 's-resize'}} onClick={() => toggleOutline(source.id)} className="ms-auto p-2">{expandedOutlines[source.id] ? '▼' : '▶'}</span>
                   )}
                 </Stack>
                 {expandedOutlines[source.id] && (
