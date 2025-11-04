@@ -218,7 +218,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         grammarRule: segmentGrammarRule,
         segmentType: segmentType,
         outlineLevel: outlineLevel,
-        delimiterAction: delimiterAction
+        delimiterAction: segmentType === 'Skip' ? delimiterAction : undefined
       } 
     };
     
@@ -242,7 +242,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         grammarRule: segmentGrammarRule,
         segmentType: segmentType,
         outlineLevel: outlineLevel,
-        delimiterAction: delimiterAction
+        delimiterAction: segmentType === 'Skip' ? delimiterAction : undefined
       } 
     };
     
@@ -328,6 +328,13 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     }
   };
 
+  const handleSegmentTypeChange = (newType: SegmentType) => {
+    if (segmentType === 'Skip' && newType !== 'Skip') {
+      setDelimiterAction('Keep Both');
+    }
+    setSegmentType(newType);
+  };
+
   if (!source) {
     return <div>Please select a source from the sidebar to start translating.</div>;
   }
@@ -350,7 +357,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         </Form.Group>
         <Form.Group className="mb-3">
             <Form.Label>Segment Type</Form.Label>
-            <Form.Select value={segmentType} onChange={(e) => setSegmentType(e.target.value as SegmentType)} size="sm">
+            <Form.Select value={segmentType} onChange={(e) => handleSegmentTypeChange(e.target.value as SegmentType)} size="sm">
                 <option value="Body">Body</option>
                 <option value="Heading">Heading</option>
                 <option value="Skip">Skip</option>
@@ -484,7 +491,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                         <Button variant={currentNote ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2">Note</Button>
                       </OverlayTrigger>
                       <OverlayTrigger trigger="click" placement="left" overlay={settingsPopover} rootClose>
-                        <Button variant="outline-secondary" size="sm" className="mt-2 ms-auto">⚙️</Button>
+                        <Button variant="secondary" size="sm" className="mt-2 ms-auto">⚙️</Button>
                       </OverlayTrigger>
                     </Stack>
                   </div>
