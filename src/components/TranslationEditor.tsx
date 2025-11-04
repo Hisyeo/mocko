@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Form, ListGroup, Button, Badge, Stack, Dropdown, InputGroup, OverlayTrigger, Popover } from 'react-bootstrap';
 import Mark from 'mark.js';
-import SelectionTooltip from './SelectionTooltip';
-import UnderlinedText from './UnderlinedText';
 import { Source } from '../App';
 import SpellCheckEditor from './SpellCheckEditor';
 import { Diagnostic } from '@codemirror/lint';
@@ -12,6 +10,7 @@ import WiktionaryModal from './WiktionaryModal';
 import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import SplitSourceModal from './SplitSourceModal';
 import pako from 'pako';
+import UnderlinedText from './UnderlinedText';
 
 // Helper to decode from base64 Uint8Array
 const atobUint8Array = (b64: string) => {
@@ -23,25 +22,20 @@ const atobUint8Array = (b64: string) => {
   return new Uint8Array(byteNumbers);
 }
 
+type SegmentType = 'Body' | 'Heading' | 'Skip';
+type OutlineLevel = 'Skip' | 'Level 2' | 'Level 3';
+type DelimiterAction = 'Skip Preceding' | 'Skip Succeeding' | 'Skip Both' | 'Keep Both';
+
 interface TranslationEditorProps {
   onSplit: (source: Source, splitIndex: number) => void;
   onTranslationsUpdate: () => void;
   onMemoryUpdate: () => void;
   memoryVersion: number;
+  scrollToSegment: { sourceId: string; segmentIndex: number; } | null;
+  onScrollToSegmentHandled: () => void;
 }
 
-function isSelectionInSelector(selection: Selection, selector: string): boolean {
-  if (!selection || selection.rangeCount === 0) return false;
-  const range = selection.getRangeAt(0);
-  const commonAncestor = range.commonAncestorContainer;
-  let startingElement: Element | null = commonAncestor.nodeType === Node.ELEMENT_NODE ? commonAncestor as Element : commonAncestor.parentElement;
-  if (startingElement) {
-    return startingElement.closest(selector) !== null;
-  }
-  return false;
-}
-
-const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTranslationsUpdate, onMemoryUpdate, memoryVersion }) => {
+const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTranslationsUpdate, onMemoryUpdate, memoryVersion, scrollToSegment, onScrollToSegmentHandled }) => {
   const { source, segments, delimiters } = useSource();
   const { grammarCheck, spellCheck, defaultGrammarRule, handleSetItem, setError } = useApp();
 
@@ -50,22 +44,24 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const [currentTranslation, setCurrentTranslation] = useState('');
   const [currentNote, setCurrentNote] = useState('');
   const [diagnostics, setDiagnostics] = useState<readonly Diagnostic[]>([]);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
-  const [isAddingMemory, setIsAddingMemory] = useState(false);
   const [memories, setMemories] = useState<Record<string, string>>({});
   const [translatedTitle, setTranslatedTitle] = useState('');
   const [numberedMemories, setNumberedMemories] = useState<Record<number, { source: string, target: string }>>({});
   const [showWiktionaryModal, setShowWiktionaryModal] = useState(false);
   const [wiktionaryTerm, setWiktionaryTerm] = useState('');
   const [visibleSegmentCount, setVisibleSegmentCount] = useState(50);
-  const [segmentGrammarRule, setSegmentGrammarRule] = useState('');
   const [goToSegment, setGoToSegment] = useState('');
-  const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
   const [showSplitModal, setShowSplitModal] = useState(false);
   const [splitIndex, setSplitIndex] = useState<number | null>(null);
+  const [scrollToIndex, setScrollToIndex] = useState<number | null>(null); // Local state for scrolling
+
+  // State for the new popover
+  const [segmentGrammarRule, setSegmentGrammarRule] = useState('');
+  const [segmentType, setSegmentType] = useState<SegmentType>('Body');
+  const [outlineLevel, setOutlineLevel] = useState<OutlineLevel>('Level 2');
+  const [delimiterAction, setDelimiterAction] = useState<DelimiterAction>('Skip Succeeding');
 
   const editorRef = useRef<HTMLDivElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
 
   const validSegments = useMemo(() => segments.map(s => s.trim()).filter(Boolean), [segments]);
 
@@ -78,18 +74,47 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   }, [isIntersecting]);
 
   useEffect(() => {
-    if (scrollToIndex !== null) {
-      const element = document.getElementById(`segment-item-${scrollToIndex}`);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        element.classList.add('highlight-scroll');
+    // Handle external scroll requests from App.tsx
+    if (scrollToSegment && source && scrollToSegment.sourceId === source.id) {
+      const index = scrollToSegment.segmentIndex;
+      if (index >= 0 && index < validSegments.length) {
+        if (index >= visibleSegmentCount) {
+          setVisibleSegmentCount(index + 50);
+        }
         setTimeout(() => {
-          element.classList.remove('highlight-scroll');
-        }, 1500);
+          const element = document.getElementById(`segment-item-${index}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('highlight-scroll');
+            setTimeout(() => {
+              element.classList.remove('highlight-scroll');
+            }, 1500);
+          }
+          onScrollToSegmentHandled();
+        }, 0);
       }
-      setScrollToIndex(null);
     }
-  }, [scrollToIndex, visibleSegmentCount]);
+
+    // Handle internal scroll requests
+    if (scrollToIndex !== null) {
+      if (scrollToIndex >= 0 && scrollToIndex < validSegments.length) {
+        if (scrollToIndex >= visibleSegmentCount) {
+          setVisibleSegmentCount(scrollToIndex + 50);
+        }
+        setTimeout(() => {
+          const element = document.getElementById(`segment-item-${scrollToIndex}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('highlight-scroll');
+            setTimeout(() => {
+              element.classList.remove('highlight-scroll');
+            }, 1500);
+          }
+          setScrollToIndex(null); // Clear local scroll request
+        }, 0);
+      }
+    }
+  }, [scrollToSegment, scrollToIndex, source, validSegments, visibleSegmentCount, onScrollToSegmentHandled]);
 
   const onMemoriesNumbered = useCallback((newMemories: Record<number, { source: string, target: string }>) => {
     setNumberedMemories(oldMemories => {
@@ -106,7 +131,6 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
 
   useEffect(() => {
     if (source) {
-      // Manually decompress and parse memories
       let mems = {};
       const rawMemories = localStorage.getItem(`memories_${source.id}`);
       if (rawMemories) {
@@ -122,7 +146,6 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       }
       setMemories(mems);
 
-      // Manually decompress and parse translations
       let trans = {};
       const rawTranslations = localStorage.getItem(`translations_${source.id}`);
       if (rawTranslations) {
@@ -131,11 +154,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
           if (source.compression) {
             decompressed = pako.inflate(atobUint8Array(rawTranslations), { to: 'string' });
           }
-          if (typeof decompressed === 'string') {
-            trans = JSON.parse(decompressed);
-          } else {
-            trans = decompressed;
-          }
+          trans = JSON.parse(decompressed);
         } catch (e: any) {
           setError({ title: 'Data Error', message: `Could not read translations: ${e.message}` });
         }
@@ -150,36 +169,24 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     }
   }, [source, memoryVersion, setError]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
-        setTooltip(null);
-        if (isAddingMemory) {
-          setIsAddingMemory(false);
-          const instance = new Mark(editorRef.current as HTMLElement);
-          instance.unmark();
-        }
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [tooltipRef, isAddingMemory]);
-
   const handleEdit = (segment: string) => {
     const trimmedSegment = segment.trim();
     setEditingSegment(trimmedSegment);
     const translationData = translations[trimmedSegment];
     if (typeof translationData === 'object' && translationData !== null) {
       setCurrentTranslation(translationData.text || '');
-      setSegmentGrammarRule(translationData.grammarRule || '');
       setCurrentNote(translationData.note || '');
+      setSegmentGrammarRule(translationData.grammarRule || '');
+      setSegmentType(translationData.segmentType || 'Body');
+      setOutlineLevel(translationData.outlineLevel || 'Level 2');
+      setDelimiterAction(translationData.delimiterAction || 'Skip Succeeding');
     } else {
       setCurrentTranslation(translationData || '');
-      setSegmentGrammarRule('');
       setCurrentNote('');
+      setSegmentGrammarRule('');
+      setSegmentType('Body');
+      setOutlineLevel('Level 2');
+      setDelimiterAction('Skip Succeeding');
     }
     setDiagnostics([]);
     setNumberedMemories({});
@@ -201,14 +208,17 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   }
 
   const handleSave = (segment: string) => {
-    if (hasErrors) return;
+    if (hasErrors && segmentType !== 'Skip') return;
     const trimmedSegment = segment.trim();
     const updatedTranslations = { 
       ...translations, 
       [trimmedSegment]: { 
         text: currentTranslation, 
-        grammarRule: segmentGrammarRule, 
-        note: currentNote 
+        note: currentNote, 
+        grammarRule: segmentGrammarRule,
+        segmentType: segmentType,
+        outlineLevel: outlineLevel,
+        delimiterAction: segmentType === 'Skip' ? delimiterAction : undefined
       } 
     };
     
@@ -222,14 +232,17 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   };
 
   const handleSaveAndEditNext = (currentSegmentTrimmed: string) => {
-    if (hasErrors) return;
+    if (hasErrors && segmentType !== 'Skip') return;
 
     const updatedTranslations = { 
       ...translations, 
       [currentSegmentTrimmed]: { 
         text: currentTranslation, 
-        grammarRule: segmentGrammarRule, 
-        note: currentNote 
+        note: currentNote, 
+        grammarRule: segmentGrammarRule,
+        segmentType: segmentType,
+        outlineLevel: outlineLevel,
+        delimiterAction: segmentType === 'Skip' ? delimiterAction : undefined
       } 
     };
     
@@ -262,45 +275,13 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     }
   };
 
-  const handleMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (tooltipRef.current && tooltipRef.current.contains(event.target as Node)) {
-      return;
-    }
-    const selection = window.getSelection();
-    if (selection && selection.toString()
-      && (isSelectionInSelector(selection, '.source-text') || isSelectionInSelector(selection, '#current-editing-translation-source-text'))) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      setTooltip({ x: rect.left, y: rect.top - 30, text: selection.toString() });
-    } else {
-      setTooltip(null);
-    }
-  };
-
-  const handleAddMemory = () => {
-    if (tooltip) {
-      const instance = new Mark(editorRef.current as HTMLElement);
-      instance.unmark({ done: () => instance.mark(tooltip.text, { separateWordSearch: false}) });
-      setIsAddingMemory(true);
-    }
-  };
-
-  const handleSaveMemory = (target: string) => {
-    if (tooltip && source) {
-      const updatedMemories = { ...memories, [tooltip.text]: target };
+  const handleSaveMemory = (sourceText: string, targetText: string) => {
+    if (source) {
+      const updatedMemories = { ...memories, [sourceText]: targetText };
       if (saveData(`memories_${source.id}`, updatedMemories)) {
         onMemoryUpdate();
-        setIsAddingMemory(false);
-        setTooltip(null);
-        const instance = new Mark(editorRef.current as HTMLElement);
-        instance.unmark();
       }
     }
-  };
-
-  const handleWiktionarySearch = (term: string) => {
-    setWiktionaryTerm(term);
-    setShowWiktionaryModal(true);
   };
 
   const navigateToSegment = (index: number) => {
@@ -308,7 +289,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       if (index >= visibleSegmentCount) {
         setVisibleSegmentCount(index + 50);
       }
-      setScrollToIndex(index);
+      setScrollToIndex(index); // Correctly setting local state
     }
   };
 
@@ -316,7 +297,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     const nextIncompleteIndex = validSegments.findIndex(seg => {
       const translationData = translations[seg];
       const text = (typeof translationData === 'object' && translationData !== null) ? translationData.text : translationData;
-      return !text;
+      return !text && translationData?.segmentType !== 'Skip';
     });
     if (nextIncompleteIndex !== -1) {
       navigateToSegment(nextIncompleteIndex);
@@ -347,6 +328,13 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     }
   };
 
+  const handleSegmentTypeChange = (newType: SegmentType) => {
+    if (segmentType === 'Skip' && newType !== 'Skip') {
+      setDelimiterAction('Keep Both');
+    }
+    setSegmentType(newType);
+  };
+
   if (!source) {
     return <div>Please select a source from the sidebar to start translating.</div>;
   }
@@ -354,6 +342,51 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const grammarErrors = diagnostics.filter(d => d.severity === 'info');
   const spellingErrors = diagnostics.filter(d => d.severity === 'warning');
   const hasErrors = (grammarCheck && grammarErrors.length > 0) || (spellCheck && spellingErrors.length > 0);
+
+  const settingsPopover = (
+    <Popover id="popover-basic">
+      <Popover.Body>
+        <Form.Group className="mb-3">
+            <Form.Label>Segment Grammar Rule</Form.Label>
+            <Form.Select value={segmentGrammarRule} onChange={(e) => setSegmentGrammarRule(e.target.value)} size="sm">
+                <option value="">Default</option>
+                <option value="Sentences">Sentences</option>
+                <option value="Constituents">Constituents</option>
+                <option value="Phrases">Phrases</option>
+            </Form.Select>
+        </Form.Group>
+        <Form.Group className="mb-3">
+            <Form.Label>Segment Type</Form.Label>
+            <Form.Select value={segmentType} onChange={(e) => handleSegmentTypeChange(e.target.value as SegmentType)} size="sm">
+                <option value="Body">Body</option>
+                <option value="Heading">Heading</option>
+                <option value="Skip">Skip</option>
+            </Form.Select>
+        </Form.Group>
+        {segmentType === 'Heading' && (
+            <Form.Group className="mb-3">
+                <Form.Label>Outline Level</Form.Label>
+                <Form.Select value={outlineLevel} onChange={(e) => setOutlineLevel(e.target.value as OutlineLevel)} size="sm">
+                    <option value="Skip">Skip</option>
+                    <option value="Level 2">Level 2</option>
+                    <option value="Level 3">Level 3</option>
+                </Form.Select>
+            </Form.Group>
+        )}
+        {segmentType === 'Skip' && (
+            <Form.Group className="mb-3">
+                <Form.Label>Delimiter Actions</Form.Label>
+                <Form.Select value={delimiterAction} onChange={(e) => setDelimiterAction(e.target.value as DelimiterAction)} size="sm">
+                    <option value="Keep Both">Keep Both</option>
+                    <option value="Skip Preceding">Skip Preceding</option>
+                    <option value="Skip Succeeding">Skip Succeeding</option>
+                    <option value="Skip Both">Skip Both</option>
+                </Form.Select>
+            </Form.Group>
+        )}
+      </Popover.Body>
+    </Popover>
+  );
 
   const notePopover = (
     <Popover id="popover-basic">
@@ -369,21 +402,24 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     </Popover>
   );
 
+  const renderSegmentContent = (segment: string, translationData: any, delimiter?: string) => {
+    const translationText = translationData?.text;
+    const segType = translationData?.segmentType || 'Body';
+    const outLevel = translationData?.outlineLevel || (
+      segType === 'Heading' ? 'Level 2' : 'Skip'
+    );
+    const textToShow = segType === 'Skip' ? segment : (translationText || segment);
+
+    if (segType === 'Heading') {
+      if (outLevel === 'Level 2') return <h2>{textToShow}</h2>;
+      if (outLevel === 'Level 3') return <h3>{textToShow}</h3>;
+    }
+    const delimiterBadge = <Badge title='Delimiter' bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiter}</Badge>
+    return <p className={`mb-0 ${!translationText && segType !== 'Skip' ? 'source-text' : ''} ${segType === 'Skip' ? 'text-muted' : ''}`}>{textToShow}{delimiter && delimiterBadge}</p>;
+  };
+
   return (
-    <div ref={editorRef} onMouseUp={handleMouseUp}>
-      {tooltip && (
-        <SelectionTooltip 
-          ref={tooltipRef}
-          x={tooltip.x} 
-          y={tooltip.y} 
-          text={tooltip.text}
-          onAddMemory={handleAddMemory} 
-          onSaveMemory={handleSaveMemory}
-          onWiktionarySearch={handleWiktionarySearch}
-          isAddingMemory={isAddingMemory}
-        />
-      )}
-      <WiktionaryModal show={showWiktionaryModal} onHide={() => setShowWiktionaryModal(false)} term={wiktionaryTerm} />
+    <div ref={editorRef}>
       {source && splitIndex !== null && (
         <SplitSourceModal 
           show={showSplitModal}
@@ -428,15 +464,15 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         {validSegments.slice(0, visibleSegmentCount).map((segment, index) => {
             const isLastSegment = index === validSegments.length - 1;
             const translationData = translations[segment];
-            const translationText = typeof translationData === 'object' && translationData !== null ? translationData.text : translationData;
-            const noteText = typeof translationData === 'object' && translationData !== null ? translationData.note : null;
+            const noteText = translationData?.note;
+            const segType = translationData?.segmentType || 'Body';
             const delimiter = delimiters[index]?.replaceAll('\n', '⏎')
 
             return (
-              <ListGroup.Item key={index} id={`segment-item-${index}`} className="d-flex align-items-center">
+              <ListGroup.Item key={index} id={`segment-item-${index}`} className={`d-flex align-items-center ${segType === 'Skip' ? 'list-group-item-light' : ''}`}>
                 {editingSegment === segment ? (
                   <div className="w-100">
-                    <UnderlinedText text={segment} memories={memories} memoryVersion={memoryVersion} onInsert={handleInsertMemory} onMemoriesNumbered={onMemoriesNumbered} />
+                    <UnderlinedText text={segment} memories={memories} onInsert={handleInsertMemory} onMemoriesNumbered={onMemoriesNumbered} memoryVersion={memoryVersion} />
                     {delimiter && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiter}</Badge>}
                     <SpellCheckEditor 
                       value={currentTranslation} 
@@ -447,34 +483,21 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                       grammarRule={segmentGrammarRule || source.defaultGrammarRule || defaultGrammarRule}
                     />
                     <Stack direction='horizontal' gap={1}>
-                      <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(segment)} disabled={isLastSegment || hasErrors}>Save & Edit Next</Button>
-                      <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(segment)} disabled={hasErrors}>Save</Button>
+                      <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(segment)} disabled={isLastSegment || (hasErrors && segmentType !== 'Skip') || (!currentTranslation && segmentType !== 'Skip')}>Save & Edit Next</Button>
+                      <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(segment)} disabled={(hasErrors && segmentType !== 'Skip') || (!currentTranslation && segmentType !== 'Skip')}>Save</Button>
                       <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
                       <Form.Label column className='mt-2'>{' '}<small>Segment #{index+1}</small></Form.Label>
                       <OverlayTrigger trigger="click" placement="top" overlay={notePopover} rootClose>
                         <Button variant={currentNote ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2">Note</Button>
                       </OverlayTrigger>
-                      {grammarCheck && (
-                        <Dropdown onSelect={(e) => setSegmentGrammarRule(e || '')} className='ms-auto'>
-                          <Dropdown.Toggle variant="info" size="sm" className="mt-2 ml-2">
-                            Grammar
-                          </Dropdown.Toggle>
-                          <Dropdown.Menu>
-                            <Dropdown.Item active={segmentGrammarRule === ''} eventKey="">Default</Dropdown.Item>
-                            <Dropdown.Item active={segmentGrammarRule === 'Sentences'} eventKey="Sentences">Sentences</Dropdown.Item>
-                            <Dropdown.Item active={segmentGrammarRule === 'Constituents'} eventKey="Constituents">Constituents</Dropdown.Item>
-                            <Dropdown.Item active={segmentGrammarRule === 'Phrases'} eventKey="Phrases">Phrases</Dropdown.Item>
-                          </Dropdown.Menu>
-                        </Dropdown>
-                      )}
+                      <OverlayTrigger trigger="click" placement="left" overlay={settingsPopover} rootClose>
+                        <Button variant="secondary" size="sm" className="mt-2 ms-auto">⚙️</Button>
+                      </OverlayTrigger>
                     </Stack>
                   </div>
                 ) : (
                   <div className="d-flex justify-content-between align-items-center w-100">
-                    <p className={`mb-0 ${!translationText ? 'source-text': ''}`}> 
-                      {translationText || segment}
-                      {delimiter && <Badge title='Delimiter' bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiter}</Badge>}
-                    </p>
+                    {renderSegmentContent(segment, translationData, delimiter)}
                     <Stack direction='horizontal'>
                       {noteText && <span title={`Note: ${noteText}`} style={{ paddingRight: '1em' }}>🗒️</span>}
                       <Button variant="link" title='Edit segment' onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
@@ -482,7 +505,6 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                     </Stack>
                   </div>
                 )}
-              
               </ListGroup.Item>
             )
         })}

@@ -54,9 +54,13 @@ const App: React.FC = () => {
   const [conflictData, setConflictData] = useState<any | null>(null);
   const [translationsVersion, setTranslationsVersion] = useState(0);
   const [memoryVersion, setMemoryVersion] = useState(0);
-  const { 
-    theme, error, setError, handleSetItem, updateStorageVersion, 
-    defaultCompression, defaultCompressionLevel 
+  const [expandedOutlines, setExpandedOutlines] = useState<Record<string, boolean>>({});
+  const [scrollToSegment, setScrollToSegment] = useState<{ sourceId: string; segmentIndex: number; } | null>(null);
+  const [activeTab, setActiveTab] = useState('source');
+
+  const {
+    theme, error, setError, handleSetItem, updateStorageVersion,
+    defaultCompression, defaultCompressionLevel
   } = useApp();
 
   useEffect(() => {
@@ -117,6 +121,9 @@ const App: React.FC = () => {
 
   const handleSelectSource = (source: Source) => {
     setSelectedSource(source);
+    setExpandedOutlines(prev => ({
+      [source.id]: prev[source.id] || false // Keep expanded if it was already, otherwise collapse
+    }));
   }
 
   const handleAddSource = (title: string, content: string) => {
@@ -145,8 +152,7 @@ const App: React.FC = () => {
     let success = handleSetItem('sources', JSON.stringify(updatedSources));
     if (!success) return;
 
-    // Create empty, possibly compressed, data for the new source
-    const emptyData = ['{}', '{}', '[]']; // translations, memories, delimiters
+    const emptyData = ['{}', '{}', '[]'];
     const keys = [`translations_${newSource.id}`, `memories_${newSource.id}`, `delimiters_${newSource.id}`];
 
     for (let i = 0; i < keys.length; i++) {
@@ -362,6 +368,19 @@ const App: React.FC = () => {
     updateStorageVersion();
   };
 
+  const handleOutlineClick = (sourceId: string, segmentIndex: number) => {
+    const sourceToSelect = sources.find(s => s.id === sourceId);
+    if (sourceToSelect) {
+      setSelectedSource(sourceToSelect);
+      setActiveTab('translation');
+      setScrollToSegment({ sourceId, segmentIndex });
+    }
+  };
+
+  const toggleOutline = (sourceId: string) => {
+    setExpandedOutlines(prev => ({ ...prev, [sourceId]: !prev[sourceId] }));
+  };
+
   const sortedAndFilteredSources = [...sources]
     .filter(source => (source.filename ?? source.title).toLowerCase().includes(sourceFilter.toLowerCase()))
     .sort((a, b) => {
@@ -384,7 +403,7 @@ const App: React.FC = () => {
               }
               return Object.keys(JSON.parse(data) || {}).length;
             } catch (e) {
-              return 0; // Ignore errors for sorting
+              return 0;
             }
           };
           const aCount = getTranslationCount(a);
@@ -399,6 +418,30 @@ const App: React.FC = () => {
         }
       }
     });
+
+  const getHeadings = (source: Source) => {
+    const rawTranslations = localStorage.getItem(`translations_${source.id}`);
+    if (!rawTranslations) return [];
+    try {
+      let decompressed = rawTranslations;
+      if (source.compression) {
+        decompressed = pako.inflate(atobUint8Array(rawTranslations), { to: 'string' });
+      }
+      const translations = JSON.parse(decompressed);
+      const rule = source.segmentationRule || '\n';
+      const segments = source.content.split(new RegExp(rule)).map(s => s.trim()).filter(Boolean);
+      
+      return segments.map((seg, index) => {
+        const transData = translations[seg];
+        if (transData?.segmentType === 'Heading' && transData?.outlineLevel !== 'Skip') {
+          return { text: transData.text || seg, index, level: transData.outlineLevel };
+        }
+        return null;
+      }).filter(Boolean);
+    } catch (e) {
+      return [];
+    }
+  };
 
   if (isScreenTooSmall) {
     return <SizeBlocker />;
@@ -442,16 +485,37 @@ const App: React.FC = () => {
           
         </div>
         <Nav className="flex-column" navbarScroll>
-          {sortedAndFilteredSources.map(source => (
-            <Nav.Link key={source.id} onClick={() => handleSelectSource(source)} className={selectedSource?.id === source.id ? 'bg-info text-bg-info' : ''}>{source.filename ?? source.title}</Nav.Link>
-          ))}
+          {sortedAndFilteredSources.map(source => {
+            const headings = getHeadings(source);
+            return (
+              <React.Fragment key={source.id}>
+                <Stack direction='horizontal' className={selectedSource?.id === source.id ? 'bg-info text-bg-info' : ''}>
+                  <Nav.Link onClick={() => handleSelectSource(source)} className='flex-grow-1'>
+                    {source.filename ?? source.title}
+                  </Nav.Link>
+                  {selectedSource?.id === source.id && headings.length > 0 && (
+                    <span title={`${expandedOutlines[source.id] ? 'Collapse' : 'Expand'} outline`} style={{marginRight: '0.5em', cursor: expandedOutlines[source.id] ? 'n-resize' : 's-resize'}} onClick={() => toggleOutline(source.id)} className="ms-auto p-2">{expandedOutlines[source.id] ? '▼' : '▶'}</span>
+                  )}
+                </Stack>
+                {expandedOutlines[source.id] && (
+                  <Nav className="flex-column ms-3">
+                    {headings.map(h => h && (
+                      <Nav.Link key={h.index} onClick={() => handleOutlineClick(source.id, h.index)} className={`outline-level-${h.level.replace(' ', '-')}`}>
+                        {h.text}
+                      </Nav.Link>
+                    ))}
+                  </Nav>
+                )}
+              </React.Fragment>
+            )
+          })}
         </Nav>
       </div>
       <Resizer onResize={handleResize} onResizeEnd={handleResizeEnd} />
       <div id="page-content-wrapper">
         <div className="page-content">
           <Container fluid>
-            <Tab.Container defaultActiveKey='source'>
+            <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'source')}>
               <Row className="align-items-center header-row">
                 <Nav variant='pills' className='flex-row'>
                   <Nav.Item>
@@ -478,7 +542,7 @@ const App: React.FC = () => {
                       <SourceEditor onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} allSources={sources} translationsVersion={translationsVersion} />
                     </Tab.Pane>
                     <Tab.Pane eventKey="translation">
-                      <TranslationEditor onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} onMemoryUpdate={handleMemoryUpdate} memoryVersion={memoryVersion} />
+                      <TranslationEditor onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} onMemoryUpdate={handleMemoryUpdate} memoryVersion={memoryVersion} scrollToSegment={scrollToSegment} onScrollToSegmentHandled={() => setScrollToSegment(null)} />
                     </Tab.Pane>
                     <Tab.Pane eventKey="memory">
                       <MemoryEditor allSources={sources} memoryVersion={memoryVersion} onSourceUpdate={handleSourceUpdate} />
