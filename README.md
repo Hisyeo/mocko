@@ -63,9 +63,9 @@ In no particular order.
 - [ ] Perf: Make grammarLinter asynchronous
 - [x] Make the import memories panel collapsible
 - [ ] Huge: Support identifying and checking styling tags
-- [ ] Add segment options popover with a type dropdown: heading (sub-option: heading level), body, skip (sub-option: skip delimiters: neither, before, after, both)
-- [ ] Make the heading type segments appear as dropdown options for the sidebar nav
-- [ ] Make the skip type segments be completely skipped from generated output and will skip grammar/spellcheck validation
+- [x] Add segment options popover with a type dropdown: heading (sub-option: heading level), body, skip (sub-option: skip delimiters: neither, before, after, both)
+- [x] Make the heading type segments appear as dropdown options for the sidebar nav
+- [x] Make the skip type segments be completely skipped from generated output and will skip grammar/spellcheck validation
 - [ ] Export to markdown and possibly other formats
 - [x] Notes per segment for when you want to share something to readers about how you translated (placed into the export as a reference and addendum)
 - [ ] Comments per segment for when you want to scratch down a thought or share a detail to a co-translator
