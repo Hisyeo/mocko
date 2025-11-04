@@ -71,8 +71,8 @@ In no particular order.
 - [x] Make the skip type segments be completely skipped from generated output and will skip grammar/spellcheck validation
 - [ ] Export to markdown and possibly other formats
 - [x] Notes per segment for when you want to share something to readers about how you translated (placed into the export as a reference and addendum)
-- [ ] Comments per segment for when you want to scratch down a thought or share a detail to a co-translator
-- [ ] Add a bookmark button that allows you to name the bookmarked segment and navigate to it from a dropdown of all bookmarks
+- [x] Comments per segment for when you want to scratch down a thought or share a detail to a co-translator
+- [x] Add a bookmark button that allows you to name the bookmarked segment and navigate to it from a dropdown of all bookmarks
 - [ ] Allow multi-select of sources and the source editing mode still has some usable buttons: duplicate, delete, and exports (an alert will show under the Export header that indicates that exporting is done in the order of select and the current order will be shown)
 - [x] Show total local storage usage for browser and for each source
 
