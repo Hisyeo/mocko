@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Form, Button, Card, Collapse } from 'react-bootstrap';
 import { Source } from '../App';
 import { useApp } from '../AppContext';
@@ -18,6 +18,7 @@ const atobUint8Array = (b64: string) => {
 interface MemoryEditorProps {
   allSources: Source[];
   memoryVersion: number;
+  onSourceUpdate: (updatedSource: Source) => void;
 }
 
 interface ImportedMemory {
@@ -25,7 +26,7 @@ interface ImportedMemory {
   sourceTitle: string;
 }
 
-const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion }) => {
+const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, onSourceUpdate }) => {
   const { source, segments } = useSource();
   const { handleSetItem, setError } = useApp();
 
@@ -33,11 +34,12 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion }
   const [editingMemory, setEditingMemory] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
   const [importedMemories, setImportedMemories] = useState<Record<string, ImportedMemory>>({});
-  const [importSourceIds, setImportSourceIds] = useState<string[]>([]);
+  const [importSources, setImportSources] = useState<{ id: string; filename: string; }[]>([]);
   const [showImportPanel, setShowImportPanel] = useState(false);
 
   useEffect(() => {
     if (source) {
+      setImportSources(source.memoryImports || []);
       let mems = {};
       const rawMemories = localStorage.getItem(`memories_${source.id}`);
       if (rawMemories) {
@@ -52,23 +54,20 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion }
         }
       }
       setMemories(mems);
-      setImportedMemories({});
-      setImportSourceIds([]);
     } else {
       setMemories({});
-      setImportedMemories({});
-      setImportSourceIds([]);
+      setImportSources([]);
     }
   }, [source, memoryVersion, setError]);
 
   useEffect(() => {
     let allImported: Record<string, ImportedMemory> = {};
-    importSourceIds.forEach(id => {
-      const sourceToRead = allSources.find(s => s.id === id);
+    importSources.forEach(imported => {
+      const sourceToRead = allSources.find(s => s.id === imported.id);
       if (!sourceToRead) return;
 
       const sourceTitle = sourceToRead.title || 'Unknown Source';
-      const stored = localStorage.getItem(`memories_${id}`);
+      const stored = localStorage.getItem(`memories_${sourceToRead.id}`);
       if (stored) {
         try {
           let decompressed = stored;
@@ -77,7 +76,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion }
           }
           const parsedMemories: Record<string, string> = JSON.parse(decompressed);
           for (const sourceText in parsedMemories) {
-            if (!allImported[sourceText]) { // Avoid overwriting from multiple imports, first one wins
+            if (!allImported[sourceText]) {
               allImported[sourceText] = {
                 target: parsedMemories[sourceText],
                 sourceTitle: sourceTitle
@@ -85,12 +84,12 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion }
             }
           }
         } catch (e) {
-          console.error(`Failed to parse memories for source ${id}`, e);
+          console.error(`Failed to parse memories for source ${imported.id}`, e);
         }
       }
     });
     setImportedMemories(allImported);
-  }, [importSourceIds, allSources]);
+  }, [importSources, allSources]);
 
   const saveData = (key: string, data: any) => {
     if (!source) return false;
@@ -134,9 +133,17 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion }
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, checked } = e.target;
-    setImportSourceIds(prevIds => 
-      checked ? [...prevIds, id] : prevIds.filter(prevId => prevId !== id)
-    );
+    if (!source) return;
+
+    const sourceToToggle = allSources.find(s => s.id === id);
+    if (!sourceToToggle) return;
+
+    const newImportSources = checked
+      ? [...importSources, { id: sourceToToggle.id, filename: sourceToToggle.filename }]
+      : importSources.filter(s => s.id !== id);
+    
+    setImportSources(newImportSources);
+    onSourceUpdate({ ...source, memoryImports: newImportSources });
   };
 
   const getMemoryUsage = (memoryText: string) => {
@@ -160,6 +167,13 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion }
     }
   }
 
+  const { available, missing } = useMemo(() => {
+    const available = allSources.filter(s => s.id !== source?.id);
+    const missing = (source?.memoryImports || []).filter(imp => !allSources.some(s => s.id === imp.id));
+    return { available, missing };
+  }, [allSources, source]);
+
+
   if (!source) {
     return <div>Please select a source from the sidebar to edit memories.</div>;
   }
@@ -182,14 +196,24 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion }
             <Card.Body>
               <Form.Group controlId="importSelect">
                 <Form.Label>Select sources to import memories from. Memories will only be displayed if there is a segment that contains the source text of the memory.</Form.Label>
-                {allSources.filter(s => s.id !== source.id).map(s => (
+                {available.map(s => (
                   <Form.Check 
                     type="checkbox"
                     key={s.id}
                     id={s.id}
                     label={s.filename ?? s.title}
-                    checked={importSourceIds.includes(s.id)}
+                    checked={importSources.some(is => is.id === s.id)}
                     onChange={handleCheckboxChange}
+                  />
+                ))}
+                {missing.map(ms => (
+                  <Form.Check 
+                    disabled
+                    type="checkbox"
+                    key={ms.id}
+                    id={ms.id}
+                    label={<>{ms.filename} <span title="File not found">⚠️</span></>}
+                    checked={true}
                   />
                 ))}
               </Form.Group>

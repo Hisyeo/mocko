@@ -24,6 +24,7 @@ export interface Source {
   modified?: number;
   compression?: boolean;
   compressionLevel?: CompressionLevel;
+  memoryImports?: { id: string; filename: string; }[];
 }
 
 // Helper to decode from base64 Uint8Array
@@ -262,13 +263,10 @@ const App: React.FC = () => {
 
     const newSource = { ...source, id: newId, modified: Date.now(), filename: newFilename || source.filename, compression, compressionLevel };
 
-    // If the target format is compressed, ensure the main content is compressed.
     if (newSource.compression) {
-      // Check if the source content is already compressed (it won't be if it came from an uncompressed .mocko)
       let isContentCompressed = false;
       try {
-        atob(newSource.content); // Simple check to see if it's base64
-        // This is not foolproof, but a decent heuristic. A more robust check would be to try decompressing.
+        atob(newSource.content);
         isContentCompressed = true;
       } catch (e) {
         isContentCompressed = false;
@@ -483,7 +481,7 @@ const App: React.FC = () => {
                       <TranslationEditor onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} onMemoryUpdate={handleMemoryUpdate} memoryVersion={memoryVersion} />
                     </Tab.Pane>
                     <Tab.Pane eventKey="memory">
-                      <MemoryEditor allSources={sources} memoryVersion={memoryVersion} />
+                      <MemoryEditor allSources={sources} memoryVersion={memoryVersion} onSourceUpdate={handleSourceUpdate} />
                     </Tab.Pane>
                   </SourceProvider>
                   <Tab.Pane eventKey="settings">
