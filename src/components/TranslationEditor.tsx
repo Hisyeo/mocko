@@ -56,6 +56,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const [currentTranslation, setCurrentTranslation] = useState('');
   const [currentNote, setCurrentNote] = useState('');
   const [currentBookmark, setCurrentBookmark] = useState<{ name: string; comment: string } | null>(null);
+  const [initialBookmark, setInitialBookmark] = useState<{ name: string; comment: string } | null>(null);
   const [diagnostics, setDiagnostics] = useState<readonly Diagnostic[]>([]);
   const [memories, setMemories] = useState<Record<string, string>>({});
   const [translatedTitle, setTranslatedTitle] = useState('');
@@ -69,6 +70,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const [isAddingMemory, setIsAddingMemory] = useState(false);
+  const [showBookmarkPopover, setShowBookmarkPopover] = useState(false);
 
   const [segmentGrammarRule, setSegmentGrammarRule] = useState('');
   const [segmentType, setSegmentType] = useState<SegmentType>('Body');
@@ -207,7 +209,9 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     if (typeof translationData === 'object' && translationData !== null) {
       setCurrentTranslation(translationData.text || '');
       setCurrentNote(translationData.note || '');
-      setCurrentBookmark(translationData.bookmark || null);
+      const bookmark = translationData.bookmark || null;
+      setCurrentBookmark(bookmark);
+      setInitialBookmark(bookmark);
       setSegmentGrammarRule(translationData.grammarRule || '');
       setSegmentType(translationData.segmentType || 'Body');
       setOutlineLevel(translationData.outlineLevel || 'Level 2');
@@ -216,6 +220,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       setCurrentTranslation(translationData || '');
       setCurrentNote('');
       setCurrentBookmark(null);
+      setInitialBookmark(null);
       setSegmentGrammarRule('');
       setSegmentType('Body');
       setOutlineLevel('Level 2');
@@ -404,8 +409,11 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
 
   const handleBookmarkClick = (index: number) => {
     if (!currentBookmark) {
-      setCurrentBookmark({ name: `Segment ${index + 1}`, comment: '' });
+      const newBookmark = { name: `Segment ${index + 1}`, comment: '' };
+      setCurrentBookmark(newBookmark);
+      setInitialBookmark(newBookmark);
     }
+    setShowBookmarkPopover(!showBookmarkPopover);
   };
 
   const handleSaveBookmark = () => {
@@ -427,6 +435,35 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         if (saveData(`translations_${source.id}`, updatedTranslations)) {
           setTranslations(updatedTranslations);
           onTranslationsUpdate();
+          setInitialBookmark(currentBookmark);
+          setShowBookmarkPopover(false);
+        }
+      }
+    }
+  };
+
+  const handleDeleteBookmark = () => {
+    if (editingSegment) {
+      setCurrentBookmark(null);
+      const updatedTranslations = { 
+        ...translations, 
+        [editingSegment]: { 
+          ...translations[editingSegment],
+          text: currentTranslation, 
+          note: currentNote, 
+          bookmark: null,
+          grammarRule: segmentGrammarRule,
+          segmentType: segmentType,
+          outlineLevel: outlineLevel,
+          delimiterAction: segmentType === 'Skip' ? delimiterAction : undefined
+        } 
+      };
+      if (source) {
+        if (saveData(`translations_${source.id}`, updatedTranslations)) {
+          setTranslations(updatedTranslations);
+          onTranslationsUpdate();
+          setInitialBookmark(null);
+          setShowBookmarkPopover(false);
         }
       }
     }
@@ -449,6 +486,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const grammarErrors = diagnostics.filter(d => d.severity === 'info');
   const spellingErrors = diagnostics.filter(d => d.severity === 'warning');
   const hasErrors = (grammarCheck && grammarErrors.length > 0) || (spellCheck && spellingErrors.length > 0);
+
+  const isBookmarkUnchanged = JSON.stringify(currentBookmark) === JSON.stringify(initialBookmark);
 
   const settingsPopover = (
     <Popover id="popover-basic">
@@ -531,8 +570,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
           />
         </Form.Group>
         <Stack direction="horizontal" gap={2}>
-          <Button variant="primary" size="sm" onClick={handleSaveBookmark}>Save</Button>
-          <Button variant="danger" size="sm" onClick={() => setCurrentBookmark(null)}>Clear</Button>
+          <Button variant="primary" size="sm" onClick={handleSaveBookmark} disabled={isBookmarkUnchanged}>Save</Button>
+          <Button variant="danger" size="sm" onClick={handleDeleteBookmark}>Delete</Button>
         </Stack>
       </Popover.Body>
     </Popover>
@@ -654,7 +693,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                       <OverlayTrigger trigger="click" placement="top" overlay={notePopover} rootClose>
                         <Button variant={currentNote ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2">Note</Button>
                       </OverlayTrigger>
-                      <OverlayTrigger trigger="click" placement="top" overlay={bookmarkPopover} rootClose>
+                      <OverlayTrigger show={showBookmarkPopover} trigger="click" placement="top" overlay={bookmarkPopover} rootClose>
                         <Button variant={currentBookmark ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2" onClick={() => handleBookmarkClick(index)}>Bookmark</Button>
                       </OverlayTrigger>
                       <OverlayTrigger trigger="click" placement="left" overlay={settingsPopover} rootClose>
