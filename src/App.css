@@ -97,6 +97,11 @@ html, body, #root {
     width: 120%;
 }
 
+[data-theme="darkly"] .memory-highlight,
+[data-theme="quartz"] .memory-highlight {
+  color: var(--bs-dark);
+}
+
 [data-theme="cyborg"] .cm-editor, [data-theme="darkly"] .cm-editor  {
     color: #212529;
     background-color: #fff;
@@ -110,6 +115,7 @@ html, body, #root {
 [data-theme="solar"] .cm-tooltip.cm-completionInfo.cm-completionInfo-right {
     color: black;
 }
+
 
 /* This is needed because of the longer content in the icons below */
 .cm-completionIcon {

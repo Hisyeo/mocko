@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Form, Button, Card, Collapse } from 'react-bootstrap';
+import { Form, Button, Card, Collapse, InputGroup, Badge } from 'react-bootstrap';
 import { Source } from '../App';
 import { useApp } from '../AppContext';
 import { useSource } from '../SourceContext';
@@ -26,6 +26,13 @@ interface ImportedMemory {
   sourceTitle: string;
 }
 
+interface ProcessedMemory {
+  target: string;
+  alternatives: string[];
+  sourceTitle?: string;
+  usage: (string | null)[];
+}
+
 const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, onSourceUpdate }) => {
   const { source, segments } = useSource();
   const { handleSetItem, setError } = useApp();
@@ -36,6 +43,8 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
   const [importedMemories, setImportedMemories] = useState<Record<string, ImportedMemory>>({});
   const [importSources, setImportSources] = useState<{ id: string; filename: string; }[]>([]);
   const [showImportPanel, setShowImportPanel] = useState(false);
+  const [addingAlternativeTo, setAddingAlternativeTo] = useState<string | null>(null);
+  const [newAlternative, setNewAlternative] = useState('');
 
   useEffect(() => {
     if (source) {
@@ -146,26 +155,69 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
     onSourceUpdate({ ...source, memoryImports: newImportSources });
   };
 
+  const handleSaveAlternative = (mainSourceText: string) => {
+    if (source && newAlternative) {
+      const updatedMemories = { ...memories, [newAlternative]: `@${mainSourceText}` };
+      if (saveData(`memories_${source.id}`, updatedMemories)) {
+        setMemories(updatedMemories);
+        setAddingAlternativeTo(null);
+        setNewAlternative('');
+      }
+    }
+  };
+
+  const handleDeleteAlternative = (alternativeText: string) => {
+    if (source) {
+      const updatedMemories = { ...memories };
+      delete updatedMemories[alternativeText];
+      if (saveData(`memories_${source.id}`, updatedMemories)) {
+        setMemories(updatedMemories);
+      }
+    }
+  };
+
   const getMemoryUsage = (memoryText: string) => {
     if (!source) return [];
     return segments.map((segment, index) => segment.includes(memoryText) ? `Segment ${index + 1}` : null).filter(Boolean);
   };
 
-  const finalMemories: Record<string, { target: string, sourceTitle?: string, usage: (string | null)[] }> = {};
+  const finalMemories = useMemo(() => {
+    const processed: Record<string, ProcessedMemory> = {};
+    const allMems = { ...importedMemories, ...memories };
 
-  for (const sourceText in importedMemories) {
-    const usage = getMemoryUsage(sourceText);
-    if (usage.length > 0) {
-      finalMemories[sourceText] = { ...importedMemories[sourceText], usage };
+    // First pass: identify main memories and initialize
+    for (const sourceText in allMems) {
+      const value = allMems[sourceText];
+      const target = typeof value === 'object' ? value.target : value;
+      if (!target.startsWith('@')) {
+        const usage = getMemoryUsage(sourceText);
+        if (usage.length > 0) {
+          processed[sourceText] = {
+            target: target,
+            alternatives: [],
+            usage: usage,
+            sourceTitle: typeof value === 'object' ? value.sourceTitle : undefined
+          };
+        }
+      }
     }
-  }
 
-  for (const sourceText in memories) {
-    const usage = getMemoryUsage(sourceText);
-    if (usage.length > 0) {
-      finalMemories[sourceText] = { target: memories[sourceText], usage };
+    // Second pass: associate alternatives
+    for (const sourceText in allMems) {
+      const value = allMems[sourceText];
+      const target = typeof value === 'object' ? value.target : value;
+      if (target.startsWith('@')) {
+        const mainKey = target.substring(1);
+        if (processed[mainKey]) {
+          processed[mainKey].alternatives.push(sourceText);
+          // Also add usage of alternative to main memory
+          const alternativeUsage = getMemoryUsage(sourceText);
+          processed[mainKey].usage.push(...alternativeUsage);
+        }
+      }
     }
-  }
+    return processed;
+  }, [memories, importedMemories, segments]);
 
   const { available, missing } = useMemo(() => {
     const available = allSources.filter(s => s.id !== source?.id);
@@ -227,7 +279,14 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
           <Card key={sourceText} className="mb-2">
             {mem.sourceTitle && <Card.Header>{mem.sourceTitle}</Card.Header>}
             <Card.Body>
-              <Card.Title>{sourceText}</Card.Title>
+              <Card.Title>
+                {sourceText}
+                {mem.alternatives.map(alt => (
+                  <Badge key={alt} pill bg="info" className="ms-2">
+                    {alt} <span onClick={() => handleDeleteAlternative(alt)} style={{cursor: 'pointer', fontWeight: 'bold'}}>X</span>
+                  </Badge>
+                ))}
+              </Card.Title>
               {editingMemory === sourceText ? (
                 <div>
                   <Form.Control 
@@ -242,17 +301,28 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
               ) : (
                 <div>
                   <Card.Text>{mem.target}</Card.Text>
-                  {memories[sourceText] && (
+                  {!mem.sourceTitle && (
                     <div>
                       <Button variant="link" onClick={() => handleEdit(sourceText)} style={{textDecoration: 'none'}}>✏️</Button>
                       <Button variant="link" onClick={() => handleDelete(sourceText)} style={{textDecoration: 'none'}}>🗑️</Button>
+                      <Button variant="link" onClick={() => setAddingAlternativeTo(sourceText)} style={{textDecoration: 'none'}}>↔️</Button>
                     </div>
                   )}
                 </div>
               )}
+              {addingAlternativeTo === sourceText && (
+                <InputGroup className="mt-2">
+                  <Form.Control
+                    placeholder="Add alternative spelling"
+                    value={newAlternative}
+                    onChange={(e) => setNewAlternative(e.target.value)}
+                  />
+                  <Button variant="outline-secondary" onClick={() => handleSaveAlternative(sourceText)}>Save</Button>
+                </InputGroup>
+              )}
             </Card.Body>
             <Card.Footer className="text-muted">
-              Usage: {mem.usage.join(', ') || 'None'}
+              Usage: {[...new Set(mem.usage)].join(', ') || 'None'}
             </Card.Footer>
           </Card>
         ))}
