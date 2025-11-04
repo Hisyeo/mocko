@@ -59,7 +59,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const [segmentGrammarRule, setSegmentGrammarRule] = useState('');
   const [segmentType, setSegmentType] = useState<SegmentType>('Body');
   const [outlineLevel, setOutlineLevel] = useState<OutlineLevel>('Level 2');
-  const [delimiterAction, setDelimiterAction] = useState<DelimiterAction>('Keep Both');
+  const [delimiterAction, setDelimiterAction] = useState<DelimiterAction>('Skip Succeeding');
 
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -179,14 +179,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       setSegmentGrammarRule(translationData.grammarRule || '');
       setSegmentType(translationData.segmentType || 'Body');
       setOutlineLevel(translationData.outlineLevel || 'Level 2');
-      setDelimiterAction(translationData.delimiterAction || 'Keep Both');
+      setDelimiterAction(translationData.delimiterAction || 'Skip Succeeding');
     } else {
       setCurrentTranslation(translationData || '');
       setCurrentNote('');
       setSegmentGrammarRule('');
       setSegmentType('Body');
       setOutlineLevel('Level 2');
-      setDelimiterAction('Keep Both');
+      setDelimiterAction('Skip Succeeding');
     }
     setDiagnostics([]);
     setNumberedMemories({});
@@ -483,7 +483,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                       <OverlayTrigger trigger="click" placement="top" overlay={notePopover} rootClose>
                         <Button variant={currentNote ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2">Note</Button>
                       </OverlayTrigger>
-                      <OverlayTrigger trigger="click" placement="top" overlay={settingsPopover} rootClose>
+                      <OverlayTrigger trigger="click" placement="left" overlay={settingsPopover} rootClose>
                         <Button variant="outline-secondary" size="sm" className="mt-2 ms-auto">⚙️</Button>
                       </OverlayTrigger>
                     </Stack>
