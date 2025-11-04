@@ -392,34 +392,6 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
             </Stack>
           </Form>
 
-          <Card className="mt-4">
-            <Card.Header>Compression</Card.Header>
-            <Card.Body>
-              <Form.Check
-                type="switch"
-                id="compression-switch"
-                label="Enable source compression"
-                checked={isCompressed}
-                onChange={(e) => setIsCompressed(e.target.checked)}
-              />
-              <Form.Text muted>
-                Source compression may lead to slower application responsiveness due to additional calculations whenever saving
-                changes but it will dramatically reduce storage space used.
-              </Form.Text>
-              <Form.Group controlId="compressionLevel" className="mt-3">
-                <Form.Label>Compression Level: {compressionLevel}</Form.Label>
-                <Form.Range
-                  disabled={!isCompressed}
-                  min="0" 
-                  max="9" 
-                  step="1" 
-                  value={compressionLevel} 
-                  onChange={(e) => setCompressionLevel(parseInt(e.target.value, 10) as CompressionLevel)}
-                />
-              </Form.Group>
-            </Card.Body>
-          </Card>
-
           <div className="mt-4">
             <h2>Segmentation</h2>
             {grammarCheck && (
@@ -467,6 +439,34 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
               {isExecutingSegmentation && <Spinner animation="border" size="sm" className="mt-2" />}
             </Stack>
           </div>
+
+          <Card className="mt-4">
+            <Card.Header>Compression</Card.Header>
+            <Card.Body>
+              <Form.Check
+                type="switch"
+                id="compression-switch"
+                label="Enable source compression"
+                checked={isCompressed}
+                onChange={(e) => setIsCompressed(e.target.checked)}
+              />
+              <Form.Text muted>
+                Source compression may lead to slower application responsiveness due to additional calculations whenever saving
+                changes but it will dramatically reduce storage space used. Click <strong>save</strong> to trigger any changes in compression settings.
+              </Form.Text>
+              <Form.Group controlId="compressionLevel" className="mt-3">
+                <Form.Label>Compression Level: {compressionLevel}</Form.Label>
+                <Form.Range
+                  disabled={!isCompressed}
+                  min="0" 
+                  max="9" 
+                  step="1" 
+                  value={compressionLevel} 
+                  onChange={(e) => setCompressionLevel(parseInt(e.target.value, 10) as CompressionLevel)}
+                />
+              </Form.Group>
+            </Card.Body>
+          </Card>
 
           <div className="mt-4">
             <h2>Export</h2>
