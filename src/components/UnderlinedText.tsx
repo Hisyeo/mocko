@@ -39,6 +39,8 @@ const UnderlinedText: React.FC<UnderlinedTextProps> = ({ text, memories, onInser
     return resolved;
   }, [memories]);
 
+  const badges: HTMLElement[] = [];
+
   useEffect(() => {
     const handleMarkClick = (event: MouseEvent) => {
       const target = event.currentTarget as HTMLElement;
@@ -53,6 +55,9 @@ const UnderlinedText: React.FC<UnderlinedTextProps> = ({ text, memories, onInser
     
     instance.unmark({
       done: () => {
+        // clear existing badges
+        for (let badge in badges) { badges[badge].remove(); delete badges[badge] }
+
         const sourceTextToNumberMap: Record<string, number> = {};
         let memoryCounter = 1;
 
@@ -83,6 +88,7 @@ const UnderlinedText: React.FC<UnderlinedTextProps> = ({ text, memories, onInser
                   badge.textContent = String(number);
                   badge.style.pointerEvents = 'none'; 
                   el.appendChild(badge);
+                  badges.push(badge)
                 }
               }
             }
