@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Card, Form, Stack, ProgressBar } from 'react-bootstrap';
-import { useApp } from '../AppContext';
+import { CompressionLevel, useApp } from '../AppContext';
 
 const Settings: React.FC = () => {
   const { 
@@ -10,7 +10,9 @@ const Settings: React.FC = () => {
     autocomplete, setAutocomplete, 
     wiktionarySearch, setWiktionarySearch, 
     defaultGrammarRule, setDefaultGrammarRule,
-    storageVersion, updateStorageVersion
+    storageVersion, updateStorageVersion,
+    defaultCompression, setDefaultCompression,
+    defaultCompressionLevel, setDefaultCompressionLevel
   } = useApp();
   const [storageUsage, setStorageUsage] = useState({ used: 0, percentage: 0 });
 
@@ -70,6 +72,7 @@ const Settings: React.FC = () => {
   const handleReset = () => {
     if (window.confirm('Are you sure you want to reset your session? All data will be lost.')) {
       localStorage.clear();
+      updateStorageVersion();
       window.location.reload();
     }
   };
@@ -137,6 +140,24 @@ const Settings: React.FC = () => {
               </Form.Control>
             </Form.Group>
           )}
+          <hr />
+          <Form.Check
+            type="switch"
+            id="default-compression-switch"
+            label="Compress new or imported sources on creation"
+            checked={defaultCompression}
+            onChange={(e) => setDefaultCompression(e.target.checked)}
+          />
+          <Form.Group controlId="defaultCompressionLevel" className="mt-3" hidden={!defaultCompression}>
+            <Form.Label>Default Compression Level: {defaultCompressionLevel}</Form.Label>
+            <Form.Range
+              min="0" 
+              max="9" 
+              step="1" 
+              value={defaultCompressionLevel} 
+              onChange={(e) => setDefaultCompressionLevel(parseInt(e.target.value, 10) as CompressionLevel)} 
+            />
+          </Form.Group>
         </Card.Body>
       </Card>
       

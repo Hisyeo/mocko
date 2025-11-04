@@ -3,6 +3,17 @@ import { Form, Button, Card, Collapse } from 'react-bootstrap';
 import { Source } from '../App';
 import { useApp } from '../AppContext';
 import { useSource } from '../SourceContext';
+import pako from 'pako';
+
+// Helper to decode from base64 Uint8Array
+const atobUint8Array = (b64: string) => {
+  const byteCharacters = atob(b64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  return new Uint8Array(byteNumbers);
+}
 
 interface MemoryEditorProps {
   allSources: Source[];
@@ -15,18 +26,32 @@ interface ImportedMemory {
 
 const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
   const { source, segments } = useSource();
+  const { handleSetItem, setError } = useApp();
+
   const [memories, setMemories] = useState<Record<string, string>>({});
   const [editingMemory, setEditingMemory] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
   const [importedMemories, setImportedMemories] = useState<Record<string, ImportedMemory>>({});
   const [importSourceIds, setImportSourceIds] = useState<string[]>([]);
   const [showImportPanel, setShowImportPanel] = useState(false);
-  const { handleSetItem } = useApp();
 
   useEffect(() => {
     if (source) {
-      const storedMemories = localStorage.getItem(`memories_${source.id}`);
-      setMemories(storedMemories ? JSON.parse(storedMemories) : {});
+      let mems = {};
+      const rawMemories = localStorage.getItem(`memories_${source.id}`);
+      if (rawMemories) {
+        try {
+          let decompressed = rawMemories;
+          if (source.compression) {
+            decompressed = pako.inflate(atobUint8Array(rawMemories), { to: 'string' });
+          }
+          mems = JSON.parse(decompressed);
+        } catch (e: any) {
+          console.log(e)
+          setError({ title: 'Data Error', message: `Could not read memories: ${e.message}` });
+        }
+      }
+      setMemories(mems);
       setImportedMemories({});
       setImportSourceIds([]);
     } else {
@@ -34,27 +59,53 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
       setImportedMemories({});
       setImportSourceIds([]);
     }
-  }, [source]);
+  }, [source, setError]);
 
   useEffect(() => {
     let allImported: Record<string, ImportedMemory> = {};
     importSourceIds.forEach(id => {
-      const sourceTitle = allSources.find(s => s.id === id)?.title || 'Unknown Source';
+      const sourceToRead = allSources.find(s => s.id === id);
+      if (!sourceToRead) return;
+
+      const sourceTitle = sourceToRead.title || 'Unknown Source';
       const stored = localStorage.getItem(`memories_${id}`);
       if (stored) {
-        const parsedMemories: Record<string, string> = JSON.parse(stored);
-        for (const sourceText in parsedMemories) {
-          if (!allImported[sourceText]) { // Avoid overwriting from multiple imports, first one wins
-            allImported[sourceText] = {
-              target: parsedMemories[sourceText],
-              sourceTitle: sourceTitle
-            };
+        try {
+          let decompressed = stored;
+          if (sourceToRead.compression) {
+            decompressed = pako.inflate(atobUint8Array(stored), { to: 'string' });
           }
+          const parsedMemories: Record<string, string> = JSON.parse(decompressed);
+          for (const sourceText in parsedMemories) {
+            if (!allImported[sourceText]) { // Avoid overwriting from multiple imports, first one wins
+              allImported[sourceText] = {
+                target: parsedMemories[sourceText],
+                sourceTitle: sourceTitle
+              };
+            }
+          }
+        } catch (e) {
+          console.error(`Failed to parse memories for source ${id}`, e);
         }
       }
     });
     setImportedMemories(allImported);
   }, [importSourceIds, allSources]);
+
+  const saveData = (key: string, data: any) => {
+    if (!source) return false;
+    const stringified = JSON.stringify(data);
+    let valueToStore = stringified;
+    if (source.compression) {
+      try {
+        valueToStore = btoa(String.fromCharCode(...pako.deflate(stringified, { level: source.compressionLevel })));
+      } catch (err: any) {
+        setError({ title: 'Compression Error', message: `Failed to save data for key ${key}: ${err.message}` });
+        return false;
+      }
+    }
+    return handleSetItem(key, valueToStore);
+  }
 
   const handleEdit = (sourceText: string) => {
     setEditingMemory(sourceText);
@@ -64,7 +115,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
   const handleSave = (sourceText: string) => {
     if (source) {
       const updatedMemories = { ...memories, [sourceText]: currentTranslation };
-      if (handleSetItem(`memories_${source.id}`, JSON.stringify(updatedMemories))) {
+      if (saveData(`memories_${source.id}`, updatedMemories)) {
         setMemories(updatedMemories);
         setEditingMemory(null);
       }
@@ -75,7 +126,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
     if (source) {
       const updatedMemories = { ...memories };
       delete updatedMemories[sourceText];
-      if (handleSetItem(`memories_${source.id}`, JSON.stringify(updatedMemories))) {
+      if (saveData(`memories_${source.id}`, updatedMemories)) {
         setMemories(updatedMemories);
       }
     }

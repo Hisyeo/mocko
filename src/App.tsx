@@ -7,11 +7,12 @@ import MemoryEditor from './components/MemoryEditor';
 import Settings from './components/Settings';
 import AddSourceModal from './components/AddSourceModal';
 import SizeBlocker from './components/SizeBlocker';
-import { useApp } from './AppContext';
+import { CompressionLevel, useApp } from './AppContext';
 import { SourceProvider } from './SourceContext';
 import Resizer from './components/Resizer';
 import ImportConflictModal from './components/ImportConflictModal';
-import QuotaExceededModal from './components/QuotaExceededModal';
+import ErrorModal from './components/ErrorModal';
+import pako from 'pako';
 
 export interface Source {
   id: string;
@@ -21,6 +22,18 @@ export interface Source {
   segmentationRule?: string;
   defaultGrammarRule?: string;
   modified?: number;
+  compression?: boolean;
+  compressionLevel?: CompressionLevel;
+}
+
+// Helper to decode from base64 Uint8Array
+const atobUint8Array = (b64: string) => {
+  const byteCharacters = atob(b64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  return new Uint8Array(byteNumbers);
 }
 
 type SortOrder = 'Oldest First' | 'Newest First' | 'Most Recently Modified' | 'Least Recently Modified' | 'Longest Source' | 'Shortest Source' | 'Most Translated' | 'Least Translated' | 'Alphabetical';
@@ -39,7 +52,10 @@ const App: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => (localStorage.getItem('sortOrder') as SortOrder) || 'Alphabetical');
   const [conflictData, setConflictData] = useState<any | null>(null);
   const [translationsVersion, setTranslationsVersion] = useState(0);
-  const { theme, showQuotaError, setShowQuotaError, handleSetItem, updateStorageVersion } = useApp();
+  const { 
+    theme, error, setError, handleSetItem, updateStorageVersion, 
+    defaultCompression, defaultCompressionLevel 
+  } = useApp();
 
   useEffect(() => {
     const themeLink = document.getElementById('theme-link') as HTMLLinkElement;
@@ -108,11 +124,44 @@ const App: React.FC = () => {
       filename: title,
       content,
       modified: Date.now(),
+      compression: defaultCompression,
+      compressionLevel: defaultCompressionLevel
     };
-    const updatedSources = [...sources, newSource];
-    if (handleSetItem('sources', JSON.stringify(updatedSources))) {
-      setSources(updatedSources);
+
+    let finalContent = content;
+    if (newSource.compression) {
+      try {
+        finalContent = btoa(String.fromCharCode(...pako.deflate(content, { level: newSource.compressionLevel })));
+        newSource.content = finalContent;
+      } catch (err: any) {
+        setError({ title: 'Compression Error', message: `Failed to compress new source: ${err.message}` });
+        return;
+      }
     }
+
+    const updatedSources = [...sources, newSource];
+    let success = handleSetItem('sources', JSON.stringify(updatedSources));
+    if (!success) return;
+
+    // Create empty, possibly compressed, data for the new source
+    const emptyData = ['{}', '{}', '[]']; // translations, memories, delimiters
+    const keys = [`translations_${newSource.id}`, `memories_${newSource.id}`, `delimiters_${newSource.id}`];
+
+    for (let i = 0; i < keys.length; i++) {
+      let valueToStore = emptyData[i];
+      if (newSource.compression) {
+        try {
+          valueToStore = btoa(String.fromCharCode(...pako.deflate(valueToStore, { level: newSource.compressionLevel })));
+        } catch (err: any) {
+          setError({ title: 'Compression Error', message: `Failed to create compressed data for new source: ${err.message}` });
+          return;
+        }
+      }
+      success = success && handleSetItem(keys[i], valueToStore);
+      if (!success) return;
+    }
+
+    setSources(updatedSources);
   };
 
   const handleSourceUpdate = (updatedSource: Source) => {
@@ -206,15 +255,78 @@ const App: React.FC = () => {
   const finalizeImport = (data: any, newFilename?: string) => {
     const { source, translations, memories, delimiters } = data;
     const newId = new Date().toISOString();
-    const newSource = { ...source, id: newId, modified: Date.now(), filename: newFilename || source.filename };
+    
+    const compression = source.compression === undefined ? defaultCompression : source.compression;
+    const compressionLevel = source.compressionLevel === undefined ? defaultCompressionLevel : source.compressionLevel;
+
+    const newSource = { ...source, id: newId, modified: Date.now(), filename: newFilename || source.filename, compression, compressionLevel };
+
+    // If the target format is compressed, ensure the main content is compressed.
+    if (newSource.compression) {
+      // Check if the source content is already compressed (it won't be if it came from an uncompressed .mocko)
+      let isContentCompressed = false;
+      try {
+        atob(newSource.content); // Simple check to see if it's base64
+        // This is not foolproof, but a decent heuristic. A more robust check would be to try decompressing.
+        isContentCompressed = true;
+      } catch (e) {
+        isContentCompressed = false;
+      }
+
+      if (!isContentCompressed) {
+        try {
+          const compressedContent = btoa(String.fromCharCode(...pako.deflate(newSource.content, { level: newSource.compressionLevel })));
+          newSource.content = compressedContent;
+        } catch (err: any) {
+          setError({ title: 'Compression Error', message: `Failed to compress imported source content: ${err.message}` });
+          return;
+        }
+      }
+    }
 
     const updatedSources = newFilename ? [...sources, newSource] : sources.map(s => s.id === data.existingSourceId ? newSource : s);
     
-    let success = true;
-    success = success && handleSetItem('sources', JSON.stringify(updatedSources));
-    success = success && handleSetItem(`translations_${newId}`, JSON.stringify(translations));
-    success = success && handleSetItem(`memories_${newId}`, JSON.stringify(memories));
-    success = success && handleSetItem(`delimiters_${newId}`, JSON.stringify(delimiters));
+    let success = handleSetItem('sources', JSON.stringify(updatedSources));
+    if (!success) return;
+
+    const itemsToStore: { [key: string]: any } = {
+      [`translations_${newId}`]: translations,
+      [`memories_${newId}`]: memories,
+      [`delimiters_${newId}`]: delimiters,
+    };
+
+    for (const key in itemsToStore) {
+      if (!success) break;
+      let value = itemsToStore[key]; // This is a string from the .mocko file (either JSON or base64)
+      let valueToStore = value;
+
+      let isCurrentlyCompressed = false;
+      try {
+        JSON.parse(value);
+        isCurrentlyCompressed = false;
+      } catch (e) {
+        isCurrentlyCompressed = true;
+      }
+
+      if (newSource.compression && !isCurrentlyCompressed) {
+        try {
+          const compressed = pako.deflate(value, { level: newSource.compressionLevel });
+          valueToStore = btoa(String.fromCharCode(...compressed));
+        } catch (err: any) {
+          setError({ title: 'Compression Error', message: `Failed to compress imported data for ${key}: ${err.message}` });
+          success = false; continue;
+        }
+      } else if (!newSource.compression && isCurrentlyCompressed) {
+        try {
+          valueToStore = pako.inflate(atobUint8Array(value), { to: 'string' });
+        } catch (err: any) {
+          setError({ title: 'Decompression Error', message: `Failed to decompress imported data for ${key}: ${err.message}` });
+          success = false; continue;
+        }
+      }
+
+      success = success && handleSetItem(key, valueToStore);
+    }
 
     if (success) {
       setSources(updatedSources);
@@ -256,15 +368,24 @@ const App: React.FC = () => {
         case 'Least Recently Modified': return (a.modified || 0) - (b.modified || 0);
         case 'Longest Source': return b.content.length - a.content.length;
         case 'Shortest Source': return a.content.length - b.content.length;
-        case 'Most Translated': {
-          const aTranslations = JSON.parse(localStorage.getItem(`translations_${a.id}`) || '{}');
-          const bTranslations = JSON.parse(localStorage.getItem(`translations_${b.id}`) || '{}');
-          return Object.keys(bTranslations).length - Object.keys(aTranslations).length;
-        }
+        case 'Most Translated':
         case 'Least Translated': {
-          const aTranslations = JSON.parse(localStorage.getItem(`translations_${a.id}`) || '{}');
-          const bTranslations = JSON.parse(localStorage.getItem(`translations_${b.id}`) || '{}');
-          return Object.keys(aTranslations).length - Object.keys(bTranslations).length;
+          const getTranslationCount = (source: Source) => {
+            const raw = localStorage.getItem(`translations_${source.id}`);
+            if (!raw) return 0;
+            try {
+              let data = raw;
+              if (source.compression) {
+                data = pako.inflate(atobUint8Array(raw), { to: 'string' })
+              }
+              return Object.keys(JSON.parse(data) || {}).length;
+            } catch (e) {
+              return 0; // Ignore errors for sorting
+            }
+          };
+          const aCount = getTranslationCount(a);
+          const bCount = getTranslationCount(b);
+          return sortOrder === 'Most Translated' ? bCount - aCount : aCount - bCount;
         }
         case 'Alphabetical':
         default: {
@@ -391,7 +512,14 @@ const App: React.FC = () => {
           sources={sources}
         />
       )}
-      <QuotaExceededModal show={showQuotaError} onHide={() => setShowQuotaError(false)} />
+      {error && (
+        <ErrorModal 
+          show={!!error}
+          onHide={() => setError(null)}
+          title={error.title}
+          message={error.message}
+        />
+      )}
     </div>
   );
 }
