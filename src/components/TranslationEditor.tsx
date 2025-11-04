@@ -436,7 +436,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
               <ListGroup.Item key={index} id={`segment-item-${index}`} className="d-flex align-items-center">
                 {editingSegment === segment ? (
                   <div className="w-100">
-                    <UnderlinedText text={segment} memories={memories} onInsert={handleInsertMemory} onMemoriesNumbered={onMemoriesNumbered} />
+                    <UnderlinedText text={segment} memories={memories} memoryVersion={memoryVersion} onInsert={handleInsertMemory} onMemoriesNumbered={onMemoriesNumbered} />
                     {delimiter && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiter}</Badge>}
                     <SpellCheckEditor 
                       value={currentTranslation} 
