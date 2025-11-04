@@ -261,20 +261,33 @@ const App: React.FC = () => {
 
     const newSource = { ...source, id: newId, modified: Date.now(), filename: newFilename || source.filename, compression, compressionLevel };
 
+    // If the target format is compressed, ensure the main content is compressed.
     if (newSource.compression) {
+      // Check if the source content is already compressed (it won't be if it came from an uncompressed .mocko)
+      let isContentCompressed = false;
       try {
-        const compressedContent = btoa(String.fromCharCode(...pako.deflate(newSource.content, { level: newSource.compressionLevel })));
-        newSource.content = compressedContent;
-      } catch (err: any) {
-        setError({ title: 'Compression Error', message: `Failed to compress imported source content: ${err.message}` });
-        return;
+        atob(newSource.content); // Simple check to see if it's base64
+        // This is not foolproof, but a decent heuristic. A more robust check would be to try decompressing.
+        isContentCompressed = true;
+      } catch (e) {
+        isContentCompressed = false;
+      }
+
+      if (!isContentCompressed) {
+        try {
+          const compressedContent = btoa(String.fromCharCode(...pako.deflate(newSource.content, { level: newSource.compressionLevel })));
+          newSource.content = compressedContent;
+        } catch (err: any) {
+          setError({ title: 'Compression Error', message: `Failed to compress imported source content: ${err.message}` });
+          return;
+        }
       }
     }
 
     const updatedSources = newFilename ? [...sources, newSource] : sources.map(s => s.id === data.existingSourceId ? newSource : s);
     
-    let success = true;
-    success = success && handleSetItem('sources', JSON.stringify(updatedSources));
+    let success = handleSetItem('sources', JSON.stringify(updatedSources));
+    if (!success) return;
 
     const itemsToStore: { [key: string]: any } = {
       [`translations_${newId}`]: translations,
@@ -284,21 +297,34 @@ const App: React.FC = () => {
 
     for (const key in itemsToStore) {
       if (!success) break;
-      let value = itemsToStore[key];
-      
-      const stringifiedValue = typeof value === 'string' ? value : JSON.stringify(value);
-      let valueToStore = stringifiedValue;
+      let value = itemsToStore[key]; // This is a string from the .mocko file (either JSON or base64)
+      let valueToStore = value;
 
-      if (newSource.compression) {
+      let isCurrentlyCompressed = false;
+      try {
+        JSON.parse(value);
+        isCurrentlyCompressed = false;
+      } catch (e) {
+        isCurrentlyCompressed = true;
+      }
+
+      if (newSource.compression && !isCurrentlyCompressed) {
         try {
-          const compressed = pako.deflate(stringifiedValue, { level: newSource.compressionLevel });
+          const compressed = pako.deflate(value, { level: newSource.compressionLevel });
           valueToStore = btoa(String.fromCharCode(...compressed));
         } catch (err: any) {
-          setError({ title: 'Compression Error', message: `Failed to import and compress data for key ${key}: ${err.message}` });
-          success = false;
-          continue;
+          setError({ title: 'Compression Error', message: `Failed to compress imported data for ${key}: ${err.message}` });
+          success = false; continue;
+        }
+      } else if (!newSource.compression && isCurrentlyCompressed) {
+        try {
+          valueToStore = pako.inflate(atobUint8Array(value), { to: 'string' });
+        } catch (err: any) {
+          setError({ title: 'Decompression Error', message: `Failed to decompress imported data for ${key}: ${err.message}` });
+          success = false; continue;
         }
       }
+
       success = success && handleSetItem(key, valueToStore);
     }
 
