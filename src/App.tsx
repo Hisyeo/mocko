@@ -256,11 +256,20 @@ const App: React.FC = () => {
     const { source, translations, memories, delimiters } = data;
     const newId = new Date().toISOString();
     
-    // Honor default compression if not specified in import
     const compression = source.compression === undefined ? defaultCompression : source.compression;
     const compressionLevel = source.compressionLevel === undefined ? defaultCompressionLevel : source.compressionLevel;
 
     const newSource = { ...source, id: newId, modified: Date.now(), filename: newFilename || source.filename, compression, compressionLevel };
+
+    if (newSource.compression) {
+      try {
+        const compressedContent = btoa(String.fromCharCode(...pako.deflate(newSource.content, { level: newSource.compressionLevel })));
+        newSource.content = compressedContent;
+      } catch (err: any) {
+        setError({ title: 'Compression Error', message: `Failed to compress imported source content: ${err.message}` });
+        return;
+      }
+    }
 
     const updatedSources = newFilename ? [...sources, newSource] : sources.map(s => s.id === data.existingSourceId ? newSource : s);
     
@@ -277,7 +286,6 @@ const App: React.FC = () => {
       if (!success) break;
       let value = itemsToStore[key];
       
-      // Ensure value is a string before compressing or saving
       const stringifiedValue = typeof value === 'string' ? value : JSON.stringify(value);
       let valueToStore = stringifiedValue;
 
