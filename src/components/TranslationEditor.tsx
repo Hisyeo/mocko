@@ -11,6 +11,7 @@ import { useSource } from '../SourceContext';
 import WiktionaryModal from './WiktionaryModal';
 import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import SplitSourceModal from './SplitSourceModal';
+import { useCompressedStorage } from '../hooks/useCompressedStorage';
 
 interface TranslationEditorProps {
   onSplit: (source: Source, splitIndex: number) => void;
@@ -30,6 +31,9 @@ function isSelectionInSelector(selection: Selection, selector: string): boolean 
 
 const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTranslationsUpdate }) => {
   const { source, segments, delimiters } = useSource();
+  const { grammarCheck, spellCheck, defaultGrammarRule } = useApp();
+  const { getItem, setItem } = useCompressedStorage();
+
   const [translations, setTranslations] = useState<Record<string, any>>({});
   const [editingSegment, setEditingSegment] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
@@ -49,7 +53,6 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
   const [showSplitModal, setShowSplitModal] = useState(false);
   const [splitIndex, setSplitIndex] = useState<number | null>(null);
-  const { grammarCheck, spellCheck, defaultGrammarRule, handleSetItem } = useApp();
 
   const editorRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -88,27 +91,29 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   }, []);
 
   const handleInsertMemory = useCallback((text: string) => {
-    console.log('handleInsertMemory');
     setCurrentTranslation(prev => prev + text);
   }, []);
 
   useEffect(() => {
     if (source) {
-      const storedMemories = localStorage.getItem(`memories_${source.id}`);
+      const storedMemories = getItem(`memories_${source.id}`);
       setMemories(storedMemories ? JSON.parse(storedMemories) : {});
 
-      const storedTranslations = localStorage.getItem(`translations_${source.id}`);
+      const storedTranslations = getItem(`translations_${source.id}`);
       if (storedTranslations) {
         const parsedTranslations = JSON.parse(storedTranslations);
         setTranslations(parsedTranslations);
         setTranslatedTitle(parsedTranslations['__title__'] || '');
+      } else {
+        setTranslations({});
+        setTranslatedTitle('');
       }
     } else {
       setTranslations({});
       setTranslatedTitle('');
       setVisibleSegmentCount(50);
     }
-  }, [source, memoryVersion]);
+  }, [source, memoryVersion, getItem]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -158,7 +163,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     };
     
     if (source) {
-      if (handleSetItem(`translations_${source.id}`, JSON.stringify(updatedTranslations))) {
+      if (setItem(`translations_${source.id}`, JSON.stringify(updatedTranslations))) {
         setTranslations(updatedTranslations);
         onTranslationsUpdate();
         setEditingSegment(null);
@@ -179,7 +184,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     };
     
     if (source) {
-      if (handleSetItem(`translations_${source.id}`, JSON.stringify(updatedTranslations))) {
+      if (setItem(`translations_${source.id}`, JSON.stringify(updatedTranslations))) {
         setTranslations(updatedTranslations);
         onTranslationsUpdate();
         const currentIndex = validSegments.indexOf(currentSegmentTrimmed);
@@ -200,7 +205,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const handleTitleSave = () => {
     const updatedTranslations = { ...translations, '__title__': translatedTitle };
     if (source) {
-      if (handleSetItem(`translations_${source.id}`, JSON.stringify(updatedTranslations))) {
+      if (setItem(`translations_${source.id}`, JSON.stringify(updatedTranslations))) {
         setTranslations(updatedTranslations);
         onTranslationsUpdate();
       }
@@ -233,7 +238,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const handleSaveMemory = (target: string) => {
     if (tooltip && source) {
       const updatedMemories = { ...memories, [tooltip.text]: target };
-      if (handleSetItem(`memories_${source.id}`, JSON.stringify(updatedMemories))) {
+      if (setItem(`memories_${source.id}`, JSON.stringify(updatedMemories))) {
         setMemoryVersion(prev => prev + 1);
         setIsAddingMemory(false);
         setTooltip(null);

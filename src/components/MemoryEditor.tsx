@@ -3,6 +3,28 @@ import { Form, Button, Card, Collapse } from 'react-bootstrap';
 import { Source } from '../App';
 import { useApp } from '../AppContext';
 import { useSource } from '../SourceContext';
+import { useCompressedStorage } from '../hooks/useCompressedStorage';
+import Pako from 'pako';
+
+// Helper to check if a string is base64 encoded
+function isBase64(str: string) {
+  if (str ==='' || str.trim() ==='') { return false; }
+  try {
+    return btoa(atob(str)) === str;
+  } catch (err) {
+    return false;
+  }
+}
+
+// Helper to decode from base64 Uint8Array
+const atobUint8Array = (b64: string) => {
+  const byteCharacters = atob(b64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  return new Uint8Array(byteNumbers);
+}
 
 interface MemoryEditorProps {
   allSources: Source[];
@@ -15,17 +37,18 @@ interface ImportedMemory {
 
 const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
   const { source, segments } = useSource();
+  const { getItem, setItem } = useCompressedStorage();
+
   const [memories, setMemories] = useState<Record<string, string>>({});
   const [editingMemory, setEditingMemory] = useState<string | null>(null);
   const [currentTranslation, setCurrentTranslation] = useState('');
   const [importedMemories, setImportedMemories] = useState<Record<string, ImportedMemory>>({});
   const [importSourceIds, setImportSourceIds] = useState<string[]>([]);
   const [showImportPanel, setShowImportPanel] = useState(false);
-  const { handleSetItem } = useApp();
 
   useEffect(() => {
     if (source) {
-      const storedMemories = localStorage.getItem(`memories_${source.id}`);
+      const storedMemories = getItem(`memories_${source.id}`);
       setMemories(storedMemories ? JSON.parse(storedMemories) : {});
       setImportedMemories({});
       setImportSourceIds([]);
@@ -34,22 +57,34 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
       setImportedMemories({});
       setImportSourceIds([]);
     }
-  }, [source]);
+  }, [source, getItem]);
 
   useEffect(() => {
     let allImported: Record<string, ImportedMemory> = {};
     importSourceIds.forEach(id => {
       const sourceTitle = allSources.find(s => s.id === id)?.title || 'Unknown Source';
+      // This part does not use the hook because it's reading other sources' data
+      // which might have different compression settings. For simplicity, we read raw.
+      // A more robust solution would require a getItem that accepts a source object.
       const stored = localStorage.getItem(`memories_${id}`);
       if (stored) {
-        const parsedMemories: Record<string, string> = JSON.parse(stored);
-        for (const sourceText in parsedMemories) {
-          if (!allImported[sourceText]) { // Avoid overwriting from multiple imports, first one wins
-            allImported[sourceText] = {
-              target: parsedMemories[sourceText],
-              sourceTitle: sourceTitle
-            };
+        try {
+          const sourceToRead = allSources.find(s => s.id === id);
+          let decompressed = stored;
+          if (sourceToRead?.compression) {
+            decompressed = isBase64(decompressed) ? Pako.inflate(atobUint8Array(decompressed), { to: 'string' }) : decompressed;
           }
+          const parsedMemories: Record<string, string> = JSON.parse(decompressed);
+          for (const sourceText in parsedMemories) {
+            if (!allImported[sourceText]) { // Avoid overwriting from multiple imports, first one wins
+              allImported[sourceText] = {
+                target: parsedMemories[sourceText],
+                sourceTitle: sourceTitle
+              };
+            }
+          }
+        } catch (e) {
+          console.error(`Failed to parse memories for source ${id}`, e);
         }
       }
     });
@@ -64,7 +99,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
   const handleSave = (sourceText: string) => {
     if (source) {
       const updatedMemories = { ...memories, [sourceText]: currentTranslation };
-      if (handleSetItem(`memories_${source.id}`, JSON.stringify(updatedMemories))) {
+      if (setItem(`memories_${source.id}`, JSON.stringify(updatedMemories))) {
         setMemories(updatedMemories);
         setEditingMemory(null);
       }
@@ -75,7 +110,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
     if (source) {
       const updatedMemories = { ...memories };
       delete updatedMemories[sourceText];
-      if (handleSetItem(`memories_${source.id}`, JSON.stringify(updatedMemories))) {
+      if (setItem(`memories_${source.id}`, JSON.stringify(updatedMemories))) {
         setMemories(updatedMemories);
       }
     }

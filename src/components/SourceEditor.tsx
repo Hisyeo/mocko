@@ -5,6 +5,7 @@ import { Source } from '../App';
 import { useApp } from '../AppContext';
 import { useSource } from '../SourceContext';
 import pako from 'pako';
+import { useCompressedStorage, type CompressionLevel } from '../hooks/useCompressedStorage';
 
 interface SourceEditorProps {
   allSources: Source[];
@@ -16,7 +17,8 @@ interface SourceEditorProps {
 
 const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate, onDelete, onDuplicate, translationsVersion }) => {
   const { source, decompressedContent } = useSource();
-  const { grammarCheck, handleSetItem, setError } = useApp();
+  const { grammarCheck, setError } = useApp();
+  const { getItem, setItem } = useCompressedStorage();
 
   const [title, setTitle] = useState('');
   const [filename, setFilename] = useState('');
@@ -38,7 +40,6 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
   const [isExecutingSegmentation, setIsExecutingSegmentation] = useState(false);
   const [defaultGrammarRule, setDefaultGrammarRule] = useState('');
   const [isCompressed, setIsCompressed] = useState(false);
-  type CompressionLevel = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | undefined
   const [compressionLevel, setCompressionLevel] = useState<CompressionLevel>(1);
   const [originalCompression, setOriginalCompression] = useState(false);
   const [originalCompressionLevel, setOriginalCompressionLevel] = useState(1);
@@ -102,7 +103,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
       setOriginalCompression(compression);
       setOriginalCompressionLevel(level);
 
-      const storedTranslations = localStorage.getItem(`translations_${source.id}`);
+      const storedTranslations = getItem(`translations_${source.id}`);
       const translations = storedTranslations ? JSON.parse(storedTranslations) : {};
       setTranslatedTitle(translations['__title__'] || '');
 
@@ -116,7 +117,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
       };
       worker.postMessage({ task: 'stats', content: decompressedContent, segmentationRule: rule, translations });
     }
-  }, [source, translationsVersion, decompressedContent]);
+  }, [source, translationsVersion, decompressedContent, getItem]);
 
   const handleDefaultSegmentRuleChange : React.ChangeEventHandler<HTMLInputElement> = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (typeof event.target.value == 'string' && source?.id) {
@@ -140,7 +141,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
       let finalContent = content;
       if (isCompressed) {
         try {
-          finalContent = btoa(String.fromCharCode(...pako.deflate(content, { level: compressionLevel })));
+          const compressed = pako.deflate(content, { level: compressionLevel });
+          finalContent = btoa(String.fromCharCode(...compressed));
         } catch (err: any) {
           setError({ title: 'Compression Error', message: `Failed to compress content: ${err.message}` });
           return; // Abort save
@@ -154,7 +156,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
         content: finalContent,
         defaultGrammarRule,
         compression: isCompressed,
-        compressionLevel
+        compressionLevel: compressionLevel
       };
 
       onSourceUpdate(updatedSource);
@@ -185,8 +187,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
         if (e.data.task === 'segment') {
           const { newDelimiters, newTranslations } = e.data;
           let success = true;
-          success = success && handleSetItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
-          success = success && handleSetItem(`translations_${source.id}`, JSON.stringify(newTranslations));
+          success = success && setItem(`delimiters_${source.id}`, JSON.stringify(newDelimiters));
+          success = success && setItem(`translations_${source.id}`, JSON.stringify(newTranslations));
 
           if (success) {
             onSourceUpdate({ ...source, segmentationRule });
@@ -196,7 +198,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
           setIsExecutingSegmentation(false);
         }
       };
-      const storedTranslations = localStorage.getItem(`translations_${source.id}`);
+      const storedTranslations = getItem(`translations_${source.id}`);
       const oldTranslations = storedTranslations ? JSON.parse(storedTranslations) : {};
       worker.postMessage({ task: 'segment', content: decompressedContent, segmentationRule, oldTranslations });
     }
@@ -227,11 +229,12 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
   const handleExportMocko = () => {
     if (!source) return;
 
+    // We read raw from localStorage to preserve compression
     const mockoData = {
       source: { ...source, filename, defaultGrammarRule, compression: isCompressed, compressionLevel },
-      translations: JSON.parse(localStorage.getItem(`translations_${source.id}`) || '{}'),
-      memories: JSON.parse(localStorage.getItem(`memories_${source.id}`) || '{}'),
-      delimiters: JSON.parse(localStorage.getItem(`delimiters_${source.id}`) || '[]'),
+      translations: localStorage.getItem(`translations_${source.id}`) || '{}',
+      memories: localStorage.getItem(`memories_${source.id}`) || '{}',
+      delimiters: localStorage.getItem(`delimiters_${source.id}`) || '[]',
     };
 
     const blob = new Blob([JSON.stringify(mockoData, null, 2)], { type: 'application/json' });

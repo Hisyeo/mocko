@@ -12,6 +12,7 @@ import { SourceProvider } from './SourceContext';
 import Resizer from './components/Resizer';
 import ImportConflictModal from './components/ImportConflictModal';
 import ErrorModal from './components/ErrorModal';
+import pako from 'pako';
 
 export interface Source {
   id: string;
@@ -23,6 +24,26 @@ export interface Source {
   modified?: number;
   compression?: boolean;
   compressionLevel?: number;
+}
+
+// Helper to check if a string is base64 encoded
+function isBase64(str: string) {
+  if (str ==='' || str.trim() ==='') { return false; }
+  try {
+    return btoa(atob(str)) === str;
+  } catch (err) {
+    return false;
+  }
+}
+
+// Helper to decode from base64 Uint8Array
+const atobUint8Array = (b64: string) => {
+  const byteCharacters = atob(b64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  return new Uint8Array(byteNumbers);
 }
 
 type SortOrder = 'Oldest First' | 'Newest First' | 'Most Recently Modified' | 'Least Recently Modified' | 'Longest Source' | 'Shortest Source' | 'Most Translated' | 'Least Translated' | 'Alphabetical';
@@ -219,9 +240,30 @@ const App: React.FC = () => {
     
     let success = true;
     success = success && handleSetItem('sources', JSON.stringify(updatedSources));
-    success = success && handleSetItem(`translations_${newId}`, JSON.stringify(translations));
-    success = success && handleSetItem(`memories_${newId}`, JSON.stringify(memories));
-    success = success && handleSetItem(`delimiters_${newId}`, JSON.stringify(delimiters));
+
+    const itemsToStore: { [key: string]: string } = {
+      [`translations_${newId}`]: translations,
+      [`memories_${newId}`]: memories,
+      [`delimiters_${newId}`]: delimiters,
+    };
+
+    for (const key in itemsToStore) {
+      if (!success) break;
+      let value = itemsToStore[key];
+      // Unlike the hook, we must manually compress here because we are creating a new source
+      // and the hook is bound to the currently selected source in context.
+      if (newSource.compression) {
+        try {
+          const compressed = pako.deflate(value, { level: newSource.compressionLevel ?? 1 });
+          value = btoa(String.fromCharCode(...compressed));
+        } catch (err: any) {
+          setError({ title: 'Compression Error', message: `Failed to import and compress data for key ${key}: ${err.message}` });
+          success = false;
+          continue;
+        }
+      }
+      success = success && handleSetItem(key, value);
+    }
 
     if (success) {
       setSources(updatedSources);
@@ -263,15 +305,24 @@ const App: React.FC = () => {
         case 'Least Recently Modified': return (a.modified || 0) - (b.modified || 0);
         case 'Longest Source': return b.content.length - a.content.length;
         case 'Shortest Source': return a.content.length - b.content.length;
-        case 'Most Translated': {
-          const aTranslations = JSON.parse(localStorage.getItem(`translations_${a.id}`) || '{}');
-          const bTranslations = JSON.parse(localStorage.getItem(`translations_${b.id}`) || '{}');
-          return Object.keys(bTranslations).length - Object.keys(aTranslations).length;
-        }
+        case 'Most Translated':
         case 'Least Translated': {
-          const aTranslations = JSON.parse(localStorage.getItem(`translations_${a.id}`) || '{}');
-          const bTranslations = JSON.parse(localStorage.getItem(`translations_${b.id}`) || '{}');
-          return Object.keys(aTranslations).length - Object.keys(bTranslations).length;
+          const getTranslationCount = (source: Source) => {
+            const raw = localStorage.getItem(`translations_${source.id}`);
+            if (!raw) return 0;
+            try {
+              let data = raw;
+              if (source.compression) {
+                data = isBase64(raw) ? pako.inflate(atobUint8Array(raw), { to: 'string' }) : raw;
+              }
+              return Object.keys(JSON.parse(data) || {}).length;
+            } catch (e) {
+              return 0; // Ignore errors for sorting
+            }
+          };
+          const aCount = getTranslationCount(a);
+          const bCount = getTranslationCount(b);
+          return sortOrder === 'Most Translated' ? bCount - aCount : aCount - bCount;
         }
         case 'Alphabetical':
         default: {
