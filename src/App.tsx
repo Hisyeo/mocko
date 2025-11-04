@@ -121,6 +121,9 @@ const App: React.FC = () => {
 
   const handleSelectSource = (source: Source) => {
     setSelectedSource(source);
+    setExpandedOutlines(prev => ({
+      [source.id]: prev[source.id] || false // Keep expanded if it was already, otherwise collapse
+    }));
   }
 
   const handleAddSource = (title: string, content: string) => {
@@ -497,7 +500,7 @@ const App: React.FC = () => {
                 {expandedOutlines[source.id] && (
                   <Nav className="flex-column ms-3">
                     {headings.map(h => h && (
-                      <Nav.Link key={h.index} onClick={() => handleOutlineClick(source.id, h.index)} className={`outline-level-${h.level}`}>
+                      <Nav.Link key={h.index} onClick={() => handleOutlineClick(source.id, h.index)} className={`outline-level-${h.level.replace(' ', '-')}`}>
                         {h.text}
                       </Nav.Link>
                     ))}
