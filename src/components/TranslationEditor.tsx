@@ -26,6 +26,8 @@ const atobUint8Array = (b64: string) => {
 interface TranslationEditorProps {
   onSplit: (source: Source, splitIndex: number) => void;
   onTranslationsUpdate: () => void;
+  onMemoryUpdate: () => void;
+  memoryVersion: number;
 }
 
 function isSelectionInSelector(selection: Selection, selector: string): boolean {
@@ -39,7 +41,7 @@ function isSelectionInSelector(selection: Selection, selector: string): boolean 
   return false;
 }
 
-const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTranslationsUpdate }) => {
+const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTranslationsUpdate, onMemoryUpdate, memoryVersion }) => {
   const { source, segments, delimiters } = useSource();
   const { grammarCheck, spellCheck, defaultGrammarRule, handleSetItem, setError } = useApp();
 
@@ -55,7 +57,6 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const [numberedMemories, setNumberedMemories] = useState<Record<number, { source: string, target: string }>>({});
   const [showWiktionaryModal, setShowWiktionaryModal] = useState(false);
   const [wiktionaryTerm, setWiktionaryTerm] = useState('');
-  const [memoryVersion, setMemoryVersion] = useState(0);
   const [visibleSegmentCount, setVisibleSegmentCount] = useState(50);
   const [segmentGrammarRule, setSegmentGrammarRule] = useState('');
   const [goToSegment, setGoToSegment] = useState('');
@@ -130,7 +131,11 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
           if (source.compression) {
             decompressed = pako.inflate(atobUint8Array(rawTranslations), { to: 'string' });
           }
-          trans = JSON.parse(decompressed);
+          if (typeof decompressed === 'string') {
+            trans = JSON.parse(decompressed);
+          } else {
+            trans = decompressed;
+          }
         } catch (e: any) {
           setError({ title: 'Data Error', message: `Could not read translations: ${e.message}` });
         }
@@ -284,7 +289,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     if (tooltip && source) {
       const updatedMemories = { ...memories, [tooltip.text]: target };
       if (saveData(`memories_${source.id}`, updatedMemories)) {
-        setMemoryVersion(prev => prev + 1);
+        onMemoryUpdate();
         setIsAddingMemory(false);
         setTooltip(null);
         const instance = new Mark(editorRef.current as HTMLElement);

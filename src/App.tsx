@@ -52,6 +52,7 @@ const App: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => (localStorage.getItem('sortOrder') as SortOrder) || 'Alphabetical');
   const [conflictData, setConflictData] = useState<any | null>(null);
   const [translationsVersion, setTranslationsVersion] = useState(0);
+  const [memoryVersion, setMemoryVersion] = useState(0);
   const { 
     theme, error, setError, handleSetItem, updateStorageVersion, 
     defaultCompression, defaultCompressionLevel 
@@ -297,7 +298,7 @@ const App: React.FC = () => {
 
     for (const key in itemsToStore) {
       if (!success) break;
-      let value = itemsToStore[key]; // This is a string from the .mocko file (either JSON or base64)
+      let value = itemsToStore[key];
       let valueToStore = value;
 
       let isCurrentlyCompressed = false;
@@ -355,6 +356,11 @@ const App: React.FC = () => {
 
   const handleTranslationsUpdate = () => {
     setTranslationsVersion(v => v + 1);
+    updateStorageVersion();
+  };
+
+  const handleMemoryUpdate = () => {
+    setMemoryVersion(v => v + 1);
     updateStorageVersion();
   };
 
@@ -474,10 +480,10 @@ const App: React.FC = () => {
                       <SourceEditor onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} allSources={sources} translationsVersion={translationsVersion} />
                     </Tab.Pane>
                     <Tab.Pane eventKey="translation">
-                      <TranslationEditor onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} />
+                      <TranslationEditor onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} onMemoryUpdate={handleMemoryUpdate} memoryVersion={memoryVersion} />
                     </Tab.Pane>
                     <Tab.Pane eventKey="memory">
-                      <MemoryEditor allSources={sources} />
+                      <MemoryEditor allSources={sources} memoryVersion={memoryVersion} />
                     </Tab.Pane>
                   </SourceProvider>
                   <Tab.Pane eventKey="settings">

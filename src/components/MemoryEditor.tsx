@@ -17,6 +17,7 @@ const atobUint8Array = (b64: string) => {
 
 interface MemoryEditorProps {
   allSources: Source[];
+  memoryVersion: number;
 }
 
 interface ImportedMemory {
@@ -24,7 +25,7 @@ interface ImportedMemory {
   sourceTitle: string;
 }
 
-const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
+const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion }) => {
   const { source, segments } = useSource();
   const { handleSetItem, setError } = useApp();
 
@@ -47,7 +48,6 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
           }
           mems = JSON.parse(decompressed);
         } catch (e: any) {
-          console.log(e)
           setError({ title: 'Data Error', message: `Could not read memories: ${e.message}` });
         }
       }
@@ -59,7 +59,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources }) => {
       setImportedMemories({});
       setImportSourceIds([]);
     }
-  }, [source, setError]);
+  }, [source, memoryVersion, setError]);
 
   useEffect(() => {
     let allImported: Record<string, ImportedMemory> = {};
