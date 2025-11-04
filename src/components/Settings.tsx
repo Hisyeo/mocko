@@ -140,22 +140,17 @@ const Settings: React.FC = () => {
               </Form.Control>
             </Form.Group>
           )}
-        </Card.Body>
-      </Card>
-
-      <Card className="mt-4">
-        <Card.Header>Default Compression</Card.Header>
-        <Card.Body>
+          <hr />
           <Form.Check
             type="switch"
             id="default-compression-switch"
-            label="Compress new sources by default"
+            label="Compress new or imported sources on creation"
             checked={defaultCompression}
             onChange={(e) => setDefaultCompression(e.target.checked)}
           />
-          <Form.Group controlId="defaultCompressionLevel" className="mt-3">
+          <Form.Group controlId="defaultCompressionLevel" className="mt-3" hidden={!defaultCompression}>
             <Form.Label>Default Compression Level: {defaultCompressionLevel}</Form.Label>
-            <Form.Range 
+            <Form.Range
               min="0" 
               max="9" 
               step="1" 
