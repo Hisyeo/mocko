@@ -11,6 +11,7 @@ import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import SplitSourceModal from './SplitSourceModal';
 import pako from 'pako';
 import UnderlinedText from './UnderlinedText';
+import SelectionTooltip from './SelectionTooltip';
 
 // Helper to decode from base64 Uint8Array
 const atobUint8Array = (b64: string) => {
@@ -35,6 +36,17 @@ interface TranslationEditorProps {
   onScrollToSegmentHandled: () => void;
 }
 
+function isSelectionInSelector(selection: Selection, selector: string): boolean {
+  if (!selection || selection.rangeCount === 0) return false;
+  const range = selection.getRangeAt(0);
+  const commonAncestor = range.commonAncestorContainer;
+  let startingElement: Element | null = commonAncestor.nodeType === Node.ELEMENT_NODE ? commonAncestor as Element : commonAncestor.parentElement;
+  if (startingElement) {
+    return startingElement.closest(selector) !== null;
+  }
+  return false;
+}
+
 const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTranslationsUpdate, onMemoryUpdate, memoryVersion, scrollToSegment, onScrollToSegmentHandled }) => {
   const { source, segments, delimiters } = useSource();
   const { grammarCheck, spellCheck, defaultGrammarRule, handleSetItem, setError } = useApp();
@@ -53,15 +65,17 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const [goToSegment, setGoToSegment] = useState('');
   const [showSplitModal, setShowSplitModal] = useState(false);
   const [splitIndex, setSplitIndex] = useState<number | null>(null);
-  const [scrollToIndex, setScrollToIndex] = useState<number | null>(null); // Local state for scrolling
+  const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [isAddingMemory, setIsAddingMemory] = useState(false);
 
-  // State for the new popover
   const [segmentGrammarRule, setSegmentGrammarRule] = useState('');
   const [segmentType, setSegmentType] = useState<SegmentType>('Body');
   const [outlineLevel, setOutlineLevel] = useState<OutlineLevel>('Level 2');
   const [delimiterAction, setDelimiterAction] = useState<DelimiterAction>('Skip Succeeding');
 
   const editorRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   const validSegments = useMemo(() => segments.map(s => s.trim()).filter(Boolean), [segments]);
 
@@ -74,7 +88,6 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   }, [isIntersecting]);
 
   useEffect(() => {
-    // Handle external scroll requests from App.tsx
     if (scrollToSegment && source && scrollToSegment.sourceId === source.id) {
       const index = scrollToSegment.segmentIndex;
       if (index >= 0 && index < validSegments.length) {
@@ -95,7 +108,6 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       }
     }
 
-    // Handle internal scroll requests
     if (scrollToIndex !== null) {
       if (scrollToIndex >= 0 && scrollToIndex < validSegments.length) {
         if (scrollToIndex >= visibleSegmentCount) {
@@ -110,7 +122,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
               element.classList.remove('highlight-scroll');
             }, 1500);
           }
-          setScrollToIndex(null); // Clear local scroll request
+          setScrollToIndex(null);
         }, 0);
       }
     }
@@ -168,6 +180,24 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       setVisibleSegmentCount(50);
     }
   }, [source, memoryVersion, setError]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+        setTooltip(null);
+        if (isAddingMemory) {
+          setIsAddingMemory(false);
+          const instance = new Mark(editorRef.current as HTMLElement);
+          instance.unmark();
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [tooltipRef, isAddingMemory]);
 
   const handleEdit = (segment: string) => {
     const trimmedSegment = segment.trim();
@@ -275,13 +305,45 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     }
   };
 
-  const handleSaveMemory = (sourceText: string, targetText: string) => {
-    if (source) {
-      const updatedMemories = { ...memories, [sourceText]: targetText };
+  const handleMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (tooltipRef.current && tooltipRef.current.contains(event.target as Node)) {
+      return;
+    }
+    const selection = window.getSelection();
+    if (selection && selection.toString() 
+      && (isSelectionInSelector(selection, '.source-text') || isSelectionInSelector(selection, '#current-editing-translation-source-text'))) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      setTooltip({ x: rect.left, y: rect.top - 30, text: selection.toString() });
+    } else {
+      setTooltip(null);
+    }
+  };
+
+  const handleAddMemory = () => {
+    if (tooltip) {
+      const instance = new Mark(editorRef.current as HTMLElement);
+      instance.unmark({ done: () => instance.mark(tooltip.text, { separateWordSearch: false}) });
+      setIsAddingMemory(true);
+    }
+  };
+
+  const handleSaveMemory = (target: string) => {
+    if (tooltip && source) {
+      const updatedMemories = { ...memories, [tooltip.text]: target };
       if (saveData(`memories_${source.id}`, updatedMemories)) {
         onMemoryUpdate();
+        setIsAddingMemory(false);
+        setTooltip(null);
+        const instance = new Mark(editorRef.current as HTMLElement);
+        instance.unmark();
       }
     }
+  };
+
+  const handleWiktionarySearch = (term: string) => {
+    setWiktionaryTerm(term);
+    setShowWiktionaryModal(true);
   };
 
   const navigateToSegment = (index: number) => {
@@ -289,7 +351,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       if (index >= visibleSegmentCount) {
         setVisibleSegmentCount(index + 50);
       }
-      setScrollToIndex(index); // Correctly setting local state
+      setScrollToIndex(index);
     }
   };
 
@@ -419,7 +481,20 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   };
 
   return (
-    <div ref={editorRef}>
+    <div ref={editorRef} onMouseUp={handleMouseUp}>
+      {tooltip && (
+        <SelectionTooltip 
+          ref={tooltipRef}
+          x={tooltip.x} 
+          y={tooltip.y} 
+          text={tooltip.text}
+          onAddMemory={handleAddMemory} 
+          onSaveMemory={handleSaveMemory}
+          onWiktionarySearch={handleWiktionarySearch}
+          isAddingMemory={isAddingMemory}
+        />
+      )}
+      <WiktionaryModal show={showWiktionaryModal} onHide={() => setShowWiktionaryModal(false)} term={wiktionaryTerm} />
       {source && splitIndex !== null && (
         <SplitSourceModal 
           show={showSplitModal}
