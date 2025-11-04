@@ -26,13 +26,16 @@ Find out some information about the source such as word count, segment count, av
 By default the grammar and spellchecker are enabled and will be enforced before saving any segment's translation. The grammar error messages are unfortunately cryptic but still indicate real errors with the grammar of your segment.
 
 ### Autocomplete words in the editor
-Type anything and the editor will suggest words and you can hit enter to save the suggestion into your translation.
+Type anything and the editor will suggest words and you can hit enter to save the suggestion into your translation. Exclamation point shortcut to access previously created memories without using your mouse.
 
 ### Highlight and store memories
-Select some text in the source and a popup will offer to save a memory for that source text. Memories are small tidbits of translated source that will be underlined in all other source segments saving you some time typing them out again. Manage memories in the Memories tab and see what segments they are used in.
+Select some text in the source and a popup will offer to save a memory for that source text. Memories are small tidbits of translated source that will be highlighted in all other source segments saving you some time typing them out again. Manage memories in the Memories tab and see what segments they are used in. Add alternative spellings to a memory to expand its usefulness across your sources.
 
 ### Basic keyboard navigation
 Navigating from one translation segment to another should be three keystrokes backwards (shift-tab, enter) and two keystrokes forward (tab, enter).
+
+### Source navigation shortcuts
+You can use a series of navigation buttons to move through your translations with ease and headings can be navigated to by clicking in the expandable sidebar outline.
 
 ### Themes and session settings
 Change to another [bootswatch](https://bootswatch.com) theme or turn off some of the translation editor features and these settings will be saved in your session data. You can also backup and restore sessions which will include all of the source files currently in the tool.
