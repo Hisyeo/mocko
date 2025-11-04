@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Card, Form, Stack, ProgressBar } from 'react-bootstrap';
-import { useApp } from '../AppContext';
+import { CompressionLevel, useApp } from '../AppContext';
 
 const Settings: React.FC = () => {
   const { 
@@ -160,7 +160,7 @@ const Settings: React.FC = () => {
               max="9" 
               step="1" 
               value={defaultCompressionLevel} 
-              onChange={(e) => setDefaultCompressionLevel(parseInt(e.target.value, 10))} 
+              onChange={(e) => setDefaultCompressionLevel(parseInt(e.target.value, 10) as CompressionLevel)} 
             />
           </Form.Group>
         </Card.Body>

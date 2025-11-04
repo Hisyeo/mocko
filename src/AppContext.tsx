@@ -1,5 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 
+export type CompressionLevel = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | undefined;
+
 interface AppContextType {
   theme: string;
   setTheme: (theme: string) => void;
@@ -20,8 +22,8 @@ interface AppContextType {
   updateStorageVersion: () => void;
   defaultCompression: boolean;
   setDefaultCompression: (value: boolean) => void;
-  defaultCompressionLevel: number;
-  setDefaultCompressionLevel: (value: number) => void;
+  defaultCompressionLevel: CompressionLevel;
+  setDefaultCompressionLevel: (value: CompressionLevel) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -36,7 +38,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [error, setError] = useState<{ title: string; message: React.ReactNode } | null>(null);
   const [storageVersion, setStorageVersion] = useState(0);
   const [defaultCompression, rawSetDefaultCompression] = useState(() => localStorage.getItem('defaultCompression') === 'true');
-  const [defaultCompressionLevel, rawSetDefaultCompressionLevel] = useState(() => parseInt(localStorage.getItem('defaultCompressionLevel') || '1', 10));
+  const [defaultCompressionLevel, rawSetDefaultCompressionLevel] = useState<CompressionLevel>(() => parseInt(localStorage.getItem('defaultCompressionLevel') || '1', 10) as CompressionLevel);
 
   const updateStorageVersion = useCallback(() => setStorageVersion(v => v + 1), []);
 
@@ -98,7 +100,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [handleSetItem]);
 
-  const setDefaultCompressionLevel = useCallback((value: number) => {
+  const setDefaultCompressionLevel = useCallback((value: CompressionLevel) => {
     if (handleSetItem('defaultCompressionLevel', String(value))) {
       rawSetDefaultCompressionLevel(value);
     }
@@ -137,3 +139,4 @@ export const useApp = () => {
   }
   return context;
 };
+

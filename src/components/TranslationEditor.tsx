@@ -11,7 +11,17 @@ import { useSource } from '../SourceContext';
 import WiktionaryModal from './WiktionaryModal';
 import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import SplitSourceModal from './SplitSourceModal';
-import { useCompressedStorage } from '../hooks/useCompressedStorage';
+import pako from 'pako';
+
+// Helper to decode from base64 Uint8Array
+const atobUint8Array = (b64: string) => {
+  const byteCharacters = atob(b64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  return new Uint8Array(byteNumbers);
+}
 
 interface TranslationEditorProps {
   onSplit: (source: Source, splitIndex: number) => void;
@@ -31,8 +41,7 @@ function isSelectionInSelector(selection: Selection, selector: string): boolean 
 
 const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTranslationsUpdate }) => {
   const { source, segments, delimiters } = useSource();
-  const { grammarCheck, spellCheck, defaultGrammarRule } = useApp();
-  const { getItem, setItem } = useCompressedStorage();
+  const { grammarCheck, spellCheck, defaultGrammarRule, handleSetItem, setError } = useApp();
 
   const [translations, setTranslations] = useState<Record<string, any>>({});
   const [editingSegment, setEditingSegment] = useState<string | null>(null);
@@ -96,23 +105,45 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
 
   useEffect(() => {
     if (source) {
-      const storedMemories = getItem(`memories_${source.id}`);
-      setMemories(storedMemories || {});
-
-      const storedTranslations = getItem(`translations_${source.id}`);
-      if (storedTranslations) {
-        setTranslations(storedTranslations);
-        setTranslatedTitle(storedTranslations['__title__'] || '');
-      } else {
-        setTranslations({});
-        setTranslatedTitle('');
+      // Manually decompress and parse memories
+      let mems = {};
+      const rawMemories = localStorage.getItem(`memories_${source.id}`);
+      if (rawMemories) {
+        try {
+          let decompressed = rawMemories;
+          if (source.compression) {
+            decompressed = pako.inflate(atobUint8Array(rawMemories), { to: 'string' });
+          }
+          mems = JSON.parse(decompressed);
+        } catch (e: any) {
+          setError({ title: 'Data Error', message: `Could not read memories: ${e.message}` });
+        }
       }
+      setMemories(mems);
+
+      // Manually decompress and parse translations
+      let trans = {};
+      const rawTranslations = localStorage.getItem(`translations_${source.id}`);
+      if (rawTranslations) {
+        try {
+          let decompressed = rawTranslations;
+          if (source.compression) {
+            decompressed = pako.inflate(atobUint8Array(rawTranslations), { to: 'string' });
+          }
+          trans = JSON.parse(decompressed);
+        } catch (e: any) {
+          setError({ title: 'Data Error', message: `Could not read translations: ${e.message}` });
+        }
+      }
+      setTranslations(trans);
+      setTranslatedTitle((trans as any)['__title__'] || '');
+
     } else {
       setTranslations({});
       setTranslatedTitle('');
       setVisibleSegmentCount(50);
     }
-  }, [source, memoryVersion, getItem]);
+  }, [source, memoryVersion, setError]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -149,6 +180,21 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     setNumberedMemories({});
   };
 
+  const saveData = (key: string, data: any) => {
+    if (!source) return false;
+    const stringified = JSON.stringify(data);
+    let valueToStore = stringified;
+    if (source.compression) {
+      try {
+        valueToStore = btoa(String.fromCharCode(...pako.deflate(stringified, { level: source.compressionLevel })));
+      } catch (err: any) {
+        setError({ title: 'Compression Error', message: `Failed to save data for key ${key}: ${err.message}` });
+        return false;
+      }
+    }
+    return handleSetItem(key, valueToStore);
+  }
+
   const handleSave = (segment: string) => {
     if (hasErrors) return;
     const trimmedSegment = segment.trim();
@@ -162,7 +208,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     };
     
     if (source) {
-      if (setItem(`translations_${source.id}`, updatedTranslations)) {
+      if (saveData(`translations_${source.id}`, updatedTranslations)) {
         setTranslations(updatedTranslations);
         onTranslationsUpdate();
         setEditingSegment(null);
@@ -183,7 +229,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     };
     
     if (source) {
-      if (setItem(`translations_${source.id}`, updatedTranslations)) {
+      if (saveData(`translations_${source.id}`, updatedTranslations)) {
         setTranslations(updatedTranslations);
         onTranslationsUpdate();
         const currentIndex = validSegments.indexOf(currentSegmentTrimmed);
@@ -204,7 +250,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const handleTitleSave = () => {
     const updatedTranslations = { ...translations, '__title__': translatedTitle };
     if (source) {
-      if (setItem(`translations_${source.id}`, updatedTranslations)) {
+      if (saveData(`translations_${source.id}`, updatedTranslations)) {
         setTranslations(updatedTranslations);
         onTranslationsUpdate();
       }
@@ -237,7 +283,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const handleSaveMemory = (target: string) => {
     if (tooltip && source) {
       const updatedMemories = { ...memories, [tooltip.text]: target };
-      if (setItem(`memories_${source.id}`, updatedMemories)) {
+      if (saveData(`memories_${source.id}`, updatedMemories)) {
         setMemoryVersion(prev => prev + 1);
         setIsAddingMemory(false);
         setTooltip(null);

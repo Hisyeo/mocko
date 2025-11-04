@@ -7,7 +7,7 @@ import MemoryEditor from './components/MemoryEditor';
 import Settings from './components/Settings';
 import AddSourceModal from './components/AddSourceModal';
 import SizeBlocker from './components/SizeBlocker';
-import { useApp } from './AppContext';
+import { CompressionLevel, useApp } from './AppContext';
 import { SourceProvider } from './SourceContext';
 import Resizer from './components/Resizer';
 import ImportConflictModal from './components/ImportConflictModal';
@@ -23,7 +23,7 @@ export interface Source {
   defaultGrammarRule?: string;
   modified?: number;
   compression?: boolean;
-  compressionLevel?: number;
+  compressionLevel?: CompressionLevel;
 }
 
 // Helper to decode from base64 Uint8Array
@@ -232,9 +232,9 @@ const App: React.FC = () => {
     success = success && handleSetItem('sources', JSON.stringify(updatedSources));
 
     const itemsToStore: { [key: string]: string } = {
-      [`translations_${newId}`]: translations,
-      [`memories_${newId}`]: memories,
-      [`delimiters_${newId}`]: delimiters,
+      [`translations_${newId}`]: JSON.stringify(translations),
+      [`memories_${newId}`]: JSON.stringify(memories),
+      [`delimiters_${newId}`]: JSON.stringify(delimiters),
     };
 
     for (const key in itemsToStore) {
