@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Form, Alert, Card, Collapse, Stack, Spinner, ButtonGroup } from 'react-bootstrap';
+import { Button, Form, Alert, Card, Collapse, Stack, Spinner, ButtonGroup, Row, Col } from 'react-bootstrap';
 import SegmentationPreviewModal from './SegmentationPreviewModal';
 import { Source } from '../App';
 import { CompressionLevel, useApp } from '../AppContext';
-import { useSource } from '../SourceContext';
+import { useSource, getCreationDate } from '../SourceContext';
 import pako from 'pako';
 
 // Helper to decode from base64 Uint8Array
@@ -418,6 +418,30 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
                 {filenameError}
               </Form.Control.Feedback>
             </Form.Group>
+            <Row className='mt-2'>
+              <Col>
+                <Form.Group controlId="createdOn">
+                  <Form.Label>Created On</Form.Label>
+                  <Form.Control
+                    type="text"
+                    readOnly
+                    plaintext
+                    value={new Date(getCreationDate(source)).toLocaleString()}
+                  />
+                </Form.Group>
+              </Col>
+              <Col>
+                <Form.Group controlId="modifiedOn">
+                  <Form.Label>Modified On</Form.Label>
+                  <Form.Control
+                    type="text"
+                    readOnly
+                    plaintext
+                    value={source.modified ? new Date(source.modified).toLocaleString() : 'N/A'}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
             <Form.Group controlId="sourceTitle" className="mt-2">
               <Form.Label>Title</Form.Label>
               <Form.Control 

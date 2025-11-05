@@ -8,7 +8,7 @@ import Settings from './components/Settings';
 import AddSourceModal from './components/AddSourceModal';
 import SizeBlocker from './components/SizeBlocker';
 import { CompressionLevel, useApp } from './AppContext';
-import { SourceProvider } from './SourceContext';
+import { SourceProvider, getCreationDate } from './SourceContext';
 import Resizer from './components/Resizer';
 import ImportConflictModal from './components/ImportConflictModal';
 import ErrorModal from './components/ErrorModal';
@@ -21,6 +21,7 @@ export interface Source {
   content: string;
   segmentationRule?: string;
   defaultGrammarRule?: string;
+  created?: number;
   modified?: number;
   compression?: boolean;
   compressionLevel?: CompressionLevel;
@@ -189,12 +190,14 @@ const App: React.FC = () => {
   }
 
   const handleAddSource = (title: string, content: string) => {
+    const now = Date.now();
     const newSource: Source = {
       id: new Date().toISOString(),
       title,
       filename: title,
       content,
-      modified: Date.now(),
+      created: now,
+      modified: now,
       compression: defaultCompression,
       compressionLevel: defaultCompressionLevel
     };
@@ -257,11 +260,13 @@ const App: React.FC = () => {
   };
 
   const handleDuplicateSource = (source: Source) => {
+    const now = Date.now();
     const newSource: Source = {
       ...source,
       id: new Date().toISOString(),
       filename: `${source.filename} (Copy)`,
-      modified: Date.now(),
+      created: now,
+      modified: now,
     };
     const updatedSources = [...sources, newSource];
     if (handleSetItem('sources', JSON.stringify(updatedSources))) {
@@ -283,6 +288,7 @@ const App: React.FC = () => {
     const partRegex = / - Part (\d+)$/;
     const match = originalFilename.match(partRegex);
     const startPart = match ? parseInt(match[1], 10) : 1;
+    const now = Date.now();
 
     const source1: Source = {
       ...originalSource,
@@ -290,7 +296,8 @@ const App: React.FC = () => {
       title: originalSource.title,
       filename: `${baseFilename} - Part ${startPart}`,
       content: content1,
-      modified: Date.now(),
+      created: now,
+      modified: now,
     };
 
     const source2: Source = {
@@ -299,7 +306,8 @@ const App: React.FC = () => {
       title: originalSource.title,
       filename: `${baseFilename} - Part ${startPart + 1}`,
       content: content2,
-      modified: Date.now(),
+      created: now,
+      modified: now,
     };
 
     const updatedSources = [...sources.filter(s => s.id !== originalSource.id), source1, source2];
@@ -325,11 +333,20 @@ const App: React.FC = () => {
   const finalizeImport = (data: any, newFilename?: string) => {
     const { source, translations, memories, delimiters } = data;
     const newId = new Date().toISOString();
+    const now = Date.now();
     
     const compression = source.compression === undefined ? defaultCompression : source.compression;
     const compressionLevel = source.compressionLevel === undefined ? defaultCompressionLevel : source.compressionLevel;
 
-    const newSource = { ...source, id: newId, modified: Date.now(), filename: newFilename || source.filename, compression, compressionLevel };
+    const newSource = { 
+      ...source, 
+      id: newId, 
+      created: getCreationDate(source) || now,
+      modified: now, 
+      filename: newFilename || source.filename, 
+      compression, 
+      compressionLevel 
+    };
 
     if (newSource.compression) {
       let isContentCompressed = false;
@@ -449,8 +466,8 @@ const App: React.FC = () => {
     .filter(source => (source.filename ?? source.title).toLowerCase().includes(sourceFilter.toLowerCase()))
     .sort((a, b) => {
       switch (sortOrder) {
-        case 'Oldest First': return new Date(a.id.replace(/-part\d+$/,'')).getTime() - new Date(b.id.replace(/-part\d+/,'')).getTime();
-        case 'Newest First': return new Date(b.id.replace(/-part\d+$/,'')).getTime() - new Date(a.id.replace(/-part\d+/,'')).getTime();
+        case 'Oldest First': return getCreationDate(a) - getCreationDate(b);
+        case 'Newest First': return getCreationDate(b) - getCreationDate(a);
         case 'Most Recently Modified': return (b.modified || 0) - (a.modified || 0);
         case 'Least Recently Modified': return (a.modified || 0) - (b.modified || 0);
         case 'Longest Source': return b.content.length - a.content.length;

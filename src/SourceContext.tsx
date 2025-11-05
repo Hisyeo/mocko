@@ -10,6 +10,17 @@ interface SourceContextType {
   decompressedContent: string;
 }
 
+export const getCreationDate = (source: Source): number => {
+  if (source.created) {
+    return source.created;
+  }
+  try {
+    return new Date(source.id.replace(/-part\d+$/, '')).getTime();
+  } catch (e) {
+    return 0;
+  }
+};
+
 const SourceContext = createContext<SourceContextType | undefined>(undefined);
 
 export const SourceProvider: React.FC<{ source: Source | null, children: React.ReactNode }> = ({ source, children }) => {
