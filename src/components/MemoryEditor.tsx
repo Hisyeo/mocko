@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Form, Button, Card, Collapse, InputGroup, Badge } from 'react-bootstrap';
+import { Form, Button, Card, Collapse, InputGroup, Badge, Alert } from 'react-bootstrap';
 import { Source } from '../App';
 import { useApp } from '../AppContext';
 import { useSource } from '../SourceContext';
@@ -190,8 +190,10 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
   const getMemoryUsage = (memoryText: string): Usage[] => {
     if (!source) return [];
     return segments.map((segment, index) => {
-        if (segment.includes(memoryText)) {
-            return { text: `Segment ${index + 1}`, index: index };
+        if (new RegExp(`\\b${memoryText}\\b`, 'ui').test(segment)) {
+          return { text: `Segment ${index + 1}`, index: index };
+        } else if (segment.includes(memoryText)) {
+          return { text: `⚠️ Segment ${index + 1}`, index: index };
         }
         return null;
     }).filter((u): u is Usage => u !== null);
@@ -291,6 +293,9 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
       </Collapse>
 
       <div className="mt-4">
+        <Alert variant='light'>
+          Partially matching memories will be marked with an ⚠️ and will not be clickable in the translation editor nor available for autocomplete. When adding memories or alternatives, please utilize text that goes all the way to a word boundary.
+        </Alert>
         {Object.entries(finalMemories).map(([sourceText, mem]) => (
           <Card key={sourceText} className="mb-2">
             {mem.sourceTitle && <Card.Header>{mem.sourceTitle}</Card.Header>}
