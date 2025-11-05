@@ -39,6 +39,16 @@ const atobUint8Array = (b64: string) => {
 
 type SortOrder = 'Oldest First' | 'Newest First' | 'Most Recently Modified' | 'Least Recently Modified' | 'Longest Source' | 'Shortest Source' | 'Most Translated' | 'Least Translated' | 'Alphabetical';
 
+interface Heading {
+  text: string;
+  index: number;
+  level: string;
+}
+
+interface TreeNode extends Heading {
+  children: TreeNode[];
+}
+
 const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -419,7 +429,7 @@ const App: React.FC = () => {
       }
     });
 
-  const getHeadings = (source: Source) => {
+  const getHeadings = (source: Source): Heading[] => {
     const rawTranslations = localStorage.getItem(`translations_${source.id}`);
     if (!rawTranslations) return [];
     try {
@@ -437,10 +447,46 @@ const App: React.FC = () => {
           return { text: transData.text || seg, index, level: transData.outlineLevel };
         }
         return null;
-      }).filter(Boolean);
+      }).filter((h): h is Heading => h !== null);
     } catch (e) {
       return [];
     }
+  };
+
+  const buildTree = (headings: Heading[]): TreeNode[] => {
+    const tree: TreeNode[] = [];
+    let lastLevel2Node: TreeNode | null = null;
+
+    headings.forEach(heading => {
+        const node: TreeNode = { ...heading, children: [] };
+        const level = parseInt(heading.level.replace('Level ', ''), 10);
+
+        if (level === 2) {
+            tree.push(node);
+            lastLevel2Node = node;
+        } else if (level === 3 && lastLevel2Node) {
+            lastLevel2Node.children.push(node);
+        }
+    });
+
+    return tree;
+  }
+
+  const renderTree = (nodes: TreeNode[], sourceId: string): React.ReactElement | null => {
+    if (!nodes || nodes.length === 0) return null;
+
+    return (
+      <ul>
+        {nodes.map(node => (
+          <li key={node.index}>
+            <Nav.Link onClick={() => handleOutlineClick(sourceId, node.index)}>
+              {node.text}
+            </Nav.Link>
+            {renderTree(node.children, sourceId)}
+          </li>
+        ))}
+      </ul>
+    );
   };
 
   if (isScreenTooSmall) {
@@ -493,18 +539,14 @@ const App: React.FC = () => {
                   <Nav.Link onClick={() => handleSelectSource(source)} className='flex-grow-1'>
                     {source.filename ?? source.title}
                   </Nav.Link>
-                  {selectedSource?.id === source.id && headings.length > 0 && (
-                    <span title={`${expandedOutlines[source.id] ? 'Collapse' : 'Expand'} outline`} style={{marginRight: '0.5em', cursor: expandedOutlines[source.id] ? 'n-resize' : 's-resize'}} onClick={() => toggleOutline(source.id)} className="ms-auto p-2">{expandedOutlines[source.id] ? '▼' : '▶'}</span>
+                  {headings.length > 0 && (
+                    <span style={{marginRight: '0.5em', cursor: expandedOutlines[source.id] ? 'n-resize' : 's-resize'}} onClick={() => toggleOutline(source.id)} className="ms-auto p-2">{expandedOutlines[source.id] ? '▼' : '▶'}</span>
                   )}
                 </Stack>
                 {expandedOutlines[source.id] && (
-                  <Nav className="flex-column ms-3">
-                    {headings.map(h => h && (
-                      <Nav.Link key={h.index} onClick={() => handleOutlineClick(source.id, h.index)} className={`outline-level-${h.level.replace(' ', '-')}`}>
-                        {h.text}
-                      </Nav.Link>
-                    ))}
-                  </Nav>
+                  <div className="tree-outline">
+                    {renderTree(buildTree(headings), source.id)}
+                  </div>
                 )}
               </React.Fragment>
             )
