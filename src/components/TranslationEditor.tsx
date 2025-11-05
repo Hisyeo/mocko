@@ -92,6 +92,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
 
   useEffect(() => {
     if (scrollToSegment && source && scrollToSegment.sourceId === source.id) {
+      setEditingSegment(null);
       const index = scrollToSegment.segmentIndex;
       if (index >= 0 && index < validSegments.length) {
         if (index >= visibleSegmentCount) {
@@ -112,6 +113,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     }
 
     if (scrollToIndex !== null) {
+      setEditingSegment(null);
       if (scrollToIndex >= 0 && scrollToIndex < validSegments.length) {
         if (scrollToIndex >= visibleSegmentCount) {
           setVisibleSegmentCount(scrollToIndex + 50);
@@ -146,6 +148,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
 
   useEffect(() => {
     if (source) {
+      setEditingSegment(null);
       let mems = {};
       const rawMemories = localStorage.getItem(`memories_${source.id}`);
       if (rawMemories) {
@@ -316,7 +319,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   };
 
   const handleMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+    if (tooltipRef.current && tooltipRef.current.contains(event.target as Node)) {
       return;
     }
     const selection = window.getSelection();
