@@ -19,6 +19,7 @@ interface MemoryEditorProps {
   allSources: Source[];
   memoryVersion: number;
   onSourceUpdate: (updatedSource: Source) => void;
+  onMemoryUpdate: () => void;
   onNavigateToSegment: (segmentIndex: number) => void;
 }
 
@@ -39,7 +40,7 @@ interface ProcessedMemory {
   usage: Usage[];
 }
 
-const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, onSourceUpdate, onNavigateToSegment }) => {
+const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, onSourceUpdate, onMemoryUpdate, onNavigateToSegment }) => {
   const { source, segments } = useSource();
   const { handleSetItem, setError } = useApp();
 
@@ -132,6 +133,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
       if (saveData(`memories_${source.id}`, updatedMemories)) {
         setMemories(updatedMemories);
         setEditingMemory(null);
+        onMemoryUpdate();
       }
     }
   };
@@ -142,6 +144,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
       delete updatedMemories[sourceText];
       if (saveData(`memories_${source.id}`, updatedMemories)) {
         setMemories(updatedMemories);
+        onMemoryUpdate();
       }
     }
   };
@@ -168,6 +171,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
         setMemories(updatedMemories);
         setAddingAlternativeTo(null);
         setNewAlternative('');
+        onMemoryUpdate();
       }
     }
   };
@@ -178,6 +182,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
       delete updatedMemories[alternativeText];
       if (saveData(`memories_${source.id}`, updatedMemories)) {
         setMemories(updatedMemories);
+        onMemoryUpdate();
       }
     }
   };

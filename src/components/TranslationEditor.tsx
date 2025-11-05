@@ -336,7 +336,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const handleAddMemory = () => {
     if (tooltip) {
       const instance = new Mark(editorRef.current as HTMLElement);
-      instance.unmark({ done: () => instance.mark(tooltip.text, { separateWordSearch: false}) });
+      instance.unmark({ done: () => instance.mark(tooltip.text, { separateWordSearch: false, accuracy: 'exactly'}) });
       setIsAddingMemory(true);
     }
   };

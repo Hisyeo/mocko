@@ -668,6 +668,7 @@ const App: React.FC = () => {
                         allSources={sources} 
                         memoryVersion={memoryVersion} 
                         onSourceUpdate={handleSourceUpdate} 
+                        onMemoryUpdate={handleMemoryUpdate}
                         onNavigateToSegment={(segmentIndex) => {
                           if (selectedSource) {
                             handleNavigateToSegment(selectedSource.id, segmentIndex);
