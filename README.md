@@ -1,6 +1,6 @@
 # yôn Mocko
 
-A CAT (computer-assisted translation) tool that runs in the browser but saves data locally (no accounts).
+A CAT (computer-assisted translation) tool that runs in the browser but saves data locally (no accounts) and works offline.
 
 ## Functionality
 
