@@ -24,6 +24,13 @@ const SelectionTooltip = React.forwardRef<HTMLDivElement, SelectionTooltipProps>
     }
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      onSaveMemory(target);
+    }
+  };
+
   if (isAddingMemory) {
     return (
       <div ref={ref} style={{ position: 'absolute', top: y, left: x, zIndex: 1000, backgroundColor: 'white', border: '1px solid black', padding: '5px' }}>
@@ -32,6 +39,7 @@ const SelectionTooltip = React.forwardRef<HTMLDivElement, SelectionTooltipProps>
           placeholder="Enter Target Translation" 
           value={target} 
           onChange={(e) => setTarget(e.target.value)} 
+          onKeyDown={handleKeyDown}
         />
         <Button size="sm" onClick={() => onSaveMemory(target)} className="mt-1">Save</Button>
       </div>
