@@ -430,10 +430,12 @@ const App: React.FC = () => {
     updateStorageVersion();
   };
 
-  const handleOutlineClick = (sourceId: string, segmentIndex: number) => {
+  const handleNavigateToSegment = (sourceId: string, segmentIndex: number) => {
     const sourceToSelect = sources.find(s => s.id === sourceId);
     if (sourceToSelect) {
-      setSelectedSource(sourceToSelect);
+      if (selectedSource?.id !== sourceId) {
+        setSelectedSource(sourceToSelect);
+      }
       setActiveTab('translation');
       setScrollToSegment({ sourceId, segmentIndex });
     }
@@ -544,7 +546,7 @@ const App: React.FC = () => {
       <ul>
         {nodes.map(node => (
           <li key={node.index}>
-            <Nav.Link onClick={() => handleOutlineClick(sourceId, node.index)}>
+            <Nav.Link onClick={() => handleNavigateToSegment(sourceId, node.index)}>
               {node.text}
             </Nav.Link>
             {renderTree(node.children, sourceId)}
@@ -662,7 +664,16 @@ const App: React.FC = () => {
                       <TranslationEditor onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} onMemoryUpdate={handleMemoryUpdate} memoryVersion={memoryVersion} scrollToSegment={scrollToSegment} onScrollToSegmentHandled={() => setScrollToSegment(null)} />
                     </Tab.Pane>
                     <Tab.Pane eventKey="memory">
-                      <MemoryEditor allSources={sources} memoryVersion={memoryVersion} onSourceUpdate={handleSourceUpdate} />
+                      <MemoryEditor 
+                        allSources={sources} 
+                        memoryVersion={memoryVersion} 
+                        onSourceUpdate={handleSourceUpdate} 
+                        onNavigateToSegment={(segmentIndex) => {
+                          if (selectedSource) {
+                            handleNavigateToSegment(selectedSource.id, segmentIndex);
+                          }
+                        }}
+                      />
                     </Tab.Pane>
                   </SourceProvider>
                   <Tab.Pane eventKey="settings">

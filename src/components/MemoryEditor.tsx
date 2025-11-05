@@ -19,6 +19,7 @@ interface MemoryEditorProps {
   allSources: Source[];
   memoryVersion: number;
   onSourceUpdate: (updatedSource: Source) => void;
+  onNavigateToSegment: (segmentIndex: number) => void;
 }
 
 interface ImportedMemory {
@@ -26,14 +27,19 @@ interface ImportedMemory {
   sourceTitle: string;
 }
 
+interface Usage {
+  text: string;
+  index: number;
+}
+
 interface ProcessedMemory {
   target: string;
   alternatives: string[];
   sourceTitle?: string;
-  usage: (string | null)[];
+  usage: Usage[];
 }
 
-const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, onSourceUpdate }) => {
+const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, onSourceUpdate, onNavigateToSegment }) => {
   const { source, segments } = useSource();
   const { handleSetItem, setError } = useApp();
 
@@ -176,9 +182,14 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
     }
   };
 
-  const getMemoryUsage = (memoryText: string) => {
+  const getMemoryUsage = (memoryText: string): Usage[] => {
     if (!source) return [];
-    return segments.map((segment, index) => segment.includes(memoryText) ? `Segment ${index + 1}` : null).filter(Boolean);
+    return segments.map((segment, index) => {
+        if (segment.includes(memoryText)) {
+            return { text: `Segment ${index + 1}`, index: index };
+        }
+        return null;
+    }).filter((u): u is Usage => u !== null);
   };
 
   const finalMemories = useMemo(() => {
@@ -322,7 +333,16 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
               )}
             </Card.Body>
             <Card.Footer className="text-muted">
-              Usage: {[...new Set(mem.usage)].join(', ') || 'None'}
+              Usage: {mem.usage.length > 0 ? (
+                [...new Map(mem.usage.map(item => [item.index, item])).values()].map((u, i, arr) => (
+                    <React.Fragment key={u.index}>
+                        <Button className='memory-usage-example' variant="link" size="sm" onClick={() => onNavigateToSegment(u.index)} style={{textDecoration: 'none', padding: '0'}}>
+                            {u.text}
+                        </Button>
+                        {i < arr.length - 1 ? ', ' : ''}
+                    </React.Fragment>
+                ))
+              ) : 'None'}
             </Card.Footer>
           </Card>
         ))}

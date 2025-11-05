@@ -81,6 +81,14 @@ html, body, #root {
   margin-top: 0.25em;
 }
 
+[data-theme="brite"] .memory-usage-example {
+  padding-left: 0.4em !important;
+  padding-right: 0.4em !important;
+  margin-bottom: 0.5em;
+  margin-left: 0.5em;
+  margin-right: 0.25em;
+}
+
 [data-theme="quartz"] select option {
   color: black;
 }
