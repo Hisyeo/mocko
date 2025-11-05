@@ -22,9 +22,11 @@ interface SourceEditorProps {
   onDelete: (sourceId: string) => void;
   onDuplicate: (source: Source) => void;
   translationsVersion: number;
+  openPreview: boolean;
+  onPreviewOpened: () => void;
 }
 
-const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate, onDelete, onDuplicate, translationsVersion }) => {
+const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate, onDelete, onDuplicate, translationsVersion, openPreview, onPreviewOpened }) => {
   const { source, decompressedContent } = useSource();
   const { grammarCheck, setError, handleSetItem, updateStorageVersion } = useApp();
 
@@ -51,6 +53,13 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
   const [compressionLevel, setCompressionLevel] = useState<CompressionLevel>(1);
   const [originalCompression, setOriginalCompression] = useState(false);
   const [originalCompressionLevel, setOriginalCompressionLevel] = useState(1);
+
+  useEffect(() => {
+    if (openPreview) {
+      setShowRenPreview(true);
+      onPreviewOpened();
+    }
+  }, [openPreview, onPreviewOpened]);
 
   const calculateSourceSize = (sourceId: string) => {
     let total = 0;
@@ -103,6 +112,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
       setDefaultGrammarRule(source.defaultGrammarRule || '');
       validateRegex(rule);
       setSourceSize(calculateSourceSize(source.id));
+      // setShowRenPreview(false);
       
       const compression = source.compression || false;
       const level = source.compressionLevel === undefined ? 1 : source.compressionLevel;

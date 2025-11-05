@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Card, Form, Stack, ProgressBar } from 'react-bootstrap';
-import { CompressionLevel, useApp } from '../AppContext';
+import { Button, Card, Form, Stack, ProgressBar, Row, Col } from 'react-bootstrap';
+import { CompressionLevel, useApp, SourceSelectionLocation } from '../AppContext';
 
 const Settings: React.FC = () => {
   const { 
@@ -12,7 +12,8 @@ const Settings: React.FC = () => {
     defaultGrammarRule, setDefaultGrammarRule,
     storageVersion, updateStorageVersion,
     defaultCompression, setDefaultCompression,
-    defaultCompressionLevel, setDefaultCompressionLevel
+    defaultCompressionLevel, setDefaultCompressionLevel,
+    sourceSelectionLocation, handleSetSourceSelectionLocation
   } = useApp();
   const [storageUsage, setStorageUsage] = useState({ used: 0, percentage: 0 });
 
@@ -101,6 +102,23 @@ const Settings: React.FC = () => {
       <Card className="mt-4">
         <Card.Header>Session Settings</Card.Header>
         <Card.Body>
+          <Form.Group as={Row} className="mb-3">
+            <Form.Label column sm="4">
+              Source Selection Starting Location
+            </Form.Label>
+            <Col sm="8">
+              <Form.Select 
+                value={sourceSelectionLocation} 
+                onChange={(e) => handleSetSourceSelectionLocation(e.target.value as SourceSelectionLocation)}
+              >
+                <option value="source-top">Source - Top</option>
+                <option value="source-preview">Source - Preview</option>
+                <option value="translation-first">Translation - First Segment</option>
+                <option value="translation-incomplete">Translation - First Incomplete Segment</option>
+              </Form.Select>
+            </Col>
+          </Form.Group>
+          <hr />
           <Form.Check 
             type="switch"
             id="spell-check-switch"

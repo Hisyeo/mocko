@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 
 export type CompressionLevel = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | undefined;
+export type SourceSelectionLocation = 'translation-first' | 'translation-incomplete' | 'source-top' | 'source-preview';
 
 interface AppContextType {
   theme: string;
@@ -24,6 +25,8 @@ interface AppContextType {
   setDefaultCompression: (value: boolean) => void;
   defaultCompressionLevel: CompressionLevel;
   setDefaultCompressionLevel: (value: CompressionLevel) => void;
+  sourceSelectionLocation: SourceSelectionLocation;
+  handleSetSourceSelectionLocation: (value: SourceSelectionLocation) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -39,6 +42,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [storageVersion, setStorageVersion] = useState(0);
   const [defaultCompression, rawSetDefaultCompression] = useState(() => localStorage.getItem('defaultCompression') === 'true');
   const [defaultCompressionLevel, rawSetDefaultCompressionLevel] = useState<CompressionLevel>(() => parseInt(localStorage.getItem('defaultCompressionLevel') || '1', 10) as CompressionLevel);
+  const [sourceSelectionLocation, setSourceSelectionLocation] = useState<SourceSelectionLocation>(() => (localStorage.getItem('sourceSelectionLocation') as SourceSelectionLocation) || 'source-top');
+
 
   const updateStorageVersion = useCallback(() => setStorageVersion(v => v + 1), []);
 
@@ -106,6 +111,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [handleSetItem]);
 
+  const handleSetSourceSelectionLocation = (value: SourceSelectionLocation) => {
+    if (handleSetItem('sourceSelectionLocation', value)) {
+        setSourceSelectionLocation(value);
+    }
+  };
+
   useEffect(() => {
     updateStorageVersion(); // Initial calculation
   }, [updateStorageVersion]);
@@ -125,8 +136,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       defaultCompression,
       setDefaultCompression,
       defaultCompressionLevel,
-      setDefaultCompressionLevel
-    }), [ theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch, defaultGrammarRule, setDefaultGrammarRule, error, handleSetItem, storageVersion, updateStorageVersion, defaultCompression, setDefaultCompression, defaultCompressionLevel, setDefaultCompressionLevel ])}>
+      setDefaultCompressionLevel,
+      sourceSelectionLocation,
+      handleSetSourceSelectionLocation
+    }), [ theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch, defaultGrammarRule, setDefaultGrammarRule, error, handleSetItem, storageVersion, updateStorageVersion, defaultCompression, setDefaultCompression, defaultCompressionLevel, setDefaultCompressionLevel, sourceSelectionLocation, handleSetSourceSelectionLocation ])}>
       {children}
     </AppContext.Provider>
   );
@@ -139,4 +152,3 @@ export const useApp = () => {
   }
   return context;
 };
-

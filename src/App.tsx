@@ -67,10 +67,11 @@ const App: React.FC = () => {
   const [expandedOutlines, setExpandedOutlines] = useState<Record<string, boolean>>({});
   const [scrollToSegment, setScrollToSegment] = useState<{ sourceId: string; segmentIndex: number; } | null>(null);
   const [activeTab, setActiveTab] = useState('source');
+  const [openPreviewForSource, setOpenPreviewForSource] = useState<string | null>(null);
 
   const {
     theme, error, setError, handleSetItem, updateStorageVersion,
-    defaultCompression, defaultCompressionLevel
+    defaultCompression, defaultCompressionLevel, sourceSelectionLocation
   } = useApp();
 
   useEffect(() => {
@@ -129,11 +130,60 @@ const App: React.FC = () => {
     handleSetItem('sidebarWidth', String(widthRef.current));
   };
 
+  const findFirstIncompleteSegment = (source: Source): number => {
+    const rawTranslations = localStorage.getItem(`translations_${source.id}`);
+    if (!rawTranslations) return 0;
+  
+    try {
+      let decompressed = rawTranslations;
+      if (source.compression) {
+        decompressed = pako.inflate(atobUint8Array(rawTranslations), { to: 'string' });
+      }
+      const translations = JSON.parse(decompressed);
+      const rule = source.segmentationRule || '\n';
+      const segments = source.content.split(new RegExp(rule)).map(s => s.trim()).filter(Boolean);
+  
+      const firstIncompleteIndex = segments.findIndex(seg => {
+        const translationData = translations[seg];
+        const text = (typeof translationData === 'object' && translationData !== null) ? translationData.text : translationData;
+        return !text && translationData?.segmentType !== 'Skip';
+      });
+  
+      return firstIncompleteIndex === -1 ? 0 : firstIncompleteIndex;
+    } catch (e) {
+      console.error("Failed to find incomplete segment", e);
+      return 0;
+    }
+  };
+
   const handleSelectSource = (source: Source) => {
     setSelectedSource(source);
     setExpandedOutlines(prev => ({
-      [source.id]: prev[source.id] || false // Keep expanded if it was already, otherwise collapse
+      [source.id]: prev[source.id] || false
     }));
+
+    switch (sourceSelectionLocation) {
+      case 'translation-first':
+        setActiveTab('translation');
+        setScrollToSegment({ sourceId: source.id, segmentIndex: 0 });
+        setOpenPreviewForSource(null);
+        break;
+      case 'translation-incomplete':
+        setActiveTab('translation');
+        const incompleteIndex = findFirstIncompleteSegment(source);
+        setScrollToSegment({ sourceId: source.id, segmentIndex: incompleteIndex });
+        setOpenPreviewForSource(null);
+        break;
+      case 'source-preview':
+        setActiveTab('source');
+        setOpenPreviewForSource(source.id);
+        break;
+      case 'source-top':
+      default:
+        setActiveTab('source');
+        setOpenPreviewForSource(null);
+        break;
+    }
   }
 
   const handleAddSource = (title: string, content: string) => {
@@ -594,7 +644,7 @@ const App: React.FC = () => {
                 <Tab.Content>
                   <SourceProvider source={selectedSource}>
                     <Tab.Pane eventKey="source">
-                      <SourceEditor onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} allSources={sources} translationsVersion={translationsVersion} />
+                      <SourceEditor onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} allSources={sources} translationsVersion={translationsVersion} openPreview={openPreviewForSource === selectedSource?.id} onPreviewOpened={() => setOpenPreviewForSource(null)} />
                     </Tab.Pane>
                     <Tab.Pane eventKey="translation">
                       <TranslationEditor onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} onMemoryUpdate={handleMemoryUpdate} memoryVersion={memoryVersion} scrollToSegment={scrollToSegment} onScrollToSegmentHandled={() => setScrollToSegment(null)} />
