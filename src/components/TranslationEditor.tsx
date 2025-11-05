@@ -24,7 +24,7 @@ const atobUint8Array = (b64: string) => {
 }
 
 type SegmentType = 'Body' | 'Heading' | 'Skip';
-type OutlineLevel = 'Skip' | 'Level 2' | 'Level 3';
+type OutlineLevel = 'Skip' | 'Level 2' | 'Level 3' | 'Level 4' | 'Level 5';
 type DelimiterAction = 'Skip Preceding' | 'Skip Succeeding' | 'Skip Both' | 'Keep Both';
 
 interface TranslationEditorProps {
@@ -516,6 +516,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                     <option value="Skip">Skip</option>
                     <option value="Level 2">Level 2</option>
                     <option value="Level 3">Level 3</option>
+                    <option value="Level 4">Level 4</option>
+                    <option value="Level 5">Level 5</option>
                 </Form.Select>
             </Form.Group>
         )}
@@ -588,6 +590,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     if (segType === 'Heading') {
       if (outLevel === 'Level 2') return <h2>{textToShow}</h2>;
       if (outLevel === 'Level 3') return <h3>{textToShow}</h3>;
+      if (outLevel === 'Level 4') return <h4>{textToShow}</h4>;
+      if (outLevel === 'Level 5') return <h5>{textToShow}</h5>;
     }
     const delimiterBadge = <Badge title='Delimiter' bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiter}</Badge>
     return <p className={`mb-0 ${!translationText && segType !== 'Skip' ? 'source-text' : ''} ${segType === 'Skip' ? 'text-muted' : ''}`}>{textToShow}{delimiter && delimiterBadge}</p>;

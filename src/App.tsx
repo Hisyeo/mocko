@@ -39,6 +39,16 @@ const atobUint8Array = (b64: string) => {
 
 type SortOrder = 'Oldest First' | 'Newest First' | 'Most Recently Modified' | 'Least Recently Modified' | 'Longest Source' | 'Shortest Source' | 'Most Translated' | 'Least Translated' | 'Alphabetical';
 
+interface Heading {
+  text: string;
+  index: number;
+  level: string;
+}
+
+interface TreeNode extends Heading {
+  children: TreeNode[];
+}
+
 const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -57,10 +67,12 @@ const App: React.FC = () => {
   const [expandedOutlines, setExpandedOutlines] = useState<Record<string, boolean>>({});
   const [scrollToSegment, setScrollToSegment] = useState<{ sourceId: string; segmentIndex: number; } | null>(null);
   const [activeTab, setActiveTab] = useState('source');
+  const [showSourcePreview, setShowSourcePreview] = useState(false);
+  const [scrollToPreviewForSource, setScrollToPreviewForSource] = useState<string | null>(null);
 
   const {
     theme, error, setError, handleSetItem, updateStorageVersion,
-    defaultCompression, defaultCompressionLevel
+    defaultCompression, defaultCompressionLevel, sourceSelectionLocation
   } = useApp();
 
   useEffect(() => {
@@ -119,11 +131,61 @@ const App: React.FC = () => {
     handleSetItem('sidebarWidth', String(widthRef.current));
   };
 
+  const findFirstIncompleteSegment = (source: Source): number => {
+    const rawTranslations = localStorage.getItem(`translations_${source.id}`);
+    if (!rawTranslations) return 0;
+  
+    try {
+      let decompressed = rawTranslations;
+      if (source.compression) {
+        decompressed = pako.inflate(atobUint8Array(rawTranslations), { to: 'string' });
+      }
+      const translations = JSON.parse(decompressed);
+      const rule = source.segmentationRule || '\n';
+      const segments = source.content.split(new RegExp(rule)).map(s => s.trim()).filter(Boolean);
+  
+      const firstIncompleteIndex = segments.findIndex(seg => {
+        const translationData = translations[seg];
+        const text = (typeof translationData === 'object' && translationData !== null) ? translationData.text : translationData;
+        return !text && translationData?.segmentType !== 'Skip';
+      });
+  
+      return firstIncompleteIndex === -1 ? 0 : firstIncompleteIndex;
+    } catch (e) {
+      console.error("Failed to find incomplete segment", e);
+      return 0;
+    }
+  };
+
   const handleSelectSource = (source: Source) => {
     setSelectedSource(source);
     setExpandedOutlines(prev => ({
-      [source.id]: prev[source.id] || false // Keep expanded if it was already, otherwise collapse
+      [source.id]: prev[source.id] || false
     }));
+
+    switch (sourceSelectionLocation) {
+      case 'translation-first':
+        setActiveTab('translation');
+        setScrollToSegment({ sourceId: source.id, segmentIndex: 0 });
+        setShowSourcePreview(false);
+        break;
+      case 'translation-incomplete':
+        setActiveTab('translation');
+        const incompleteIndex = findFirstIncompleteSegment(source);
+        setScrollToSegment({ sourceId: source.id, segmentIndex: incompleteIndex });
+        setShowSourcePreview(false);
+        break;
+      case 'source-preview':
+        setActiveTab('source');
+        setShowSourcePreview(true);
+        setScrollToPreviewForSource(source.id);
+        break;
+      case 'source-top':
+      default:
+        setActiveTab('source');
+        setShowSourcePreview(false);
+        break;
+    }
   }
 
   const handleAddSource = (title: string, content: string) => {
@@ -419,7 +481,7 @@ const App: React.FC = () => {
       }
     });
 
-  const getHeadings = (source: Source) => {
+  const getHeadings = (source: Source): Heading[] => {
     const rawTranslations = localStorage.getItem(`translations_${source.id}`);
     if (!rawTranslations) return [];
     try {
@@ -437,10 +499,59 @@ const App: React.FC = () => {
           return { text: transData.text || seg, index, level: transData.outlineLevel };
         }
         return null;
-      }).filter(Boolean);
+      }).filter((h): h is Heading => h !== null);
     } catch (e) {
       return [];
     }
+  };
+
+  const buildTree = (headings: Heading[]): TreeNode[] => {
+    const getLevelNumber = (level: string): number => parseInt(level.replace('Level ', ''), 10);
+    const tree: TreeNode[] = [];
+    const path: TreeNode[] = []; // A stack to keep track of the current parent lineage
+
+    headings.forEach(heading => {
+        let currentLevel = getLevelNumber(heading.level);
+        const node: TreeNode = { ...heading, children: [] };
+
+        const parentLevel = path.length > 0 ? getLevelNumber(path[path.length - 1].level) : 1; // Treat root as level 1
+
+        if (currentLevel > parentLevel + 1) {
+            currentLevel = parentLevel + 1;
+            node.level = `Level ${currentLevel}`;
+        }
+
+        while (path.length > 0 && getLevelNumber(path[path.length - 1].level) >= currentLevel) {
+            path.pop();
+        }
+
+        if (path.length === 0) {
+            tree.push(node);
+        } else {
+            path[path.length - 1].children.push(node);
+        }
+
+        path.push(node);
+    });
+
+    return tree;
+  }
+
+  const renderTree = (nodes: TreeNode[], sourceId: string): React.ReactElement | null => {
+    if (!nodes || nodes.length === 0) return null;
+
+    return (
+      <ul>
+        {nodes.map(node => (
+          <li key={node.index}>
+            <Nav.Link onClick={() => handleOutlineClick(sourceId, node.index)}>
+              {node.text}
+            </Nav.Link>
+            {renderTree(node.children, sourceId)}
+          </li>
+        ))}
+      </ul>
+    );
   };
 
   if (isScreenTooSmall) {
@@ -494,17 +605,13 @@ const App: React.FC = () => {
                     {source.filename ?? source.title}
                   </Nav.Link>
                   {selectedSource?.id === source.id && headings.length > 0 && (
-                    <span title={`${expandedOutlines[source.id] ? 'Collapse' : 'Expand'} outline`} style={{marginRight: '0.5em', cursor: expandedOutlines[source.id] ? 'n-resize' : 's-resize'}} onClick={() => toggleOutline(source.id)} className="ms-auto p-2">{expandedOutlines[source.id] ? '▼' : '▶'}</span>
+                    <span style={{marginRight: '0.5em', cursor: expandedOutlines[source.id] ? 'n-resize' : 's-resize'}} onClick={() => toggleOutline(source.id)} className="ms-auto p-2">{expandedOutlines[source.id] ? '▼' : '▶'}</span>
                   )}
                 </Stack>
                 {expandedOutlines[source.id] && (
-                  <Nav className="flex-column ms-3">
-                    {headings.map(h => h && (
-                      <Nav.Link key={h.index} onClick={() => handleOutlineClick(source.id, h.index)} className={`outline-level-${h.level.replace(' ', '-')}`}>
-                        {h.text}
-                      </Nav.Link>
-                    ))}
-                  </Nav>
+                  <div className="tree-outline">
+                    {renderTree(buildTree(headings), source.id)}
+                  </div>
                 )}
               </React.Fragment>
             )
@@ -539,7 +646,17 @@ const App: React.FC = () => {
                 <Tab.Content>
                   <SourceProvider source={selectedSource}>
                     <Tab.Pane eventKey="source">
-                      <SourceEditor onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} allSources={sources} translationsVersion={translationsVersion} />
+                      <SourceEditor 
+                        onSourceUpdate={handleSourceUpdate} 
+                        onDelete={handleDeleteSource} 
+                        onDuplicate={handleDuplicateSource} 
+                        allSources={sources} 
+                        translationsVersion={translationsVersion} 
+                        showPreview={showSourcePreview}
+                        onTogglePreview={() => setShowSourcePreview(!showSourcePreview)}
+                        shouldScrollToPreview={scrollToPreviewForSource === selectedSource?.id}
+                        onScrolledToPreview={() => setScrollToPreviewForSource(null)}
+                      />
                     </Tab.Pane>
                     <Tab.Pane eventKey="translation">
                       <TranslationEditor onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} onMemoryUpdate={handleMemoryUpdate} memoryVersion={memoryVersion} scrollToSegment={scrollToSegment} onScrollToSegmentHandled={() => setScrollToSegment(null)} />
