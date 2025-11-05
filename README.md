@@ -62,8 +62,8 @@ The project is **done**. The remaining *nice-to-have* todos have been ordered in
 - [x] Comments per segment for when you want to scratch down a thought or share a detail to a co-translator
 - [x] Add a bookmark button that allows you to name the bookmarked segment and navigate to it from a dropdown of all bookmarks
 - [x] Show total local storage usage for browser and for each source
+- [x] Make the Usage section of the memory card show hyperlinks for each usage that you can click and navigate to their location in the translation editing mode
 - [ ] Add session setting for controlling whether Hîsyêô text content is converted to the abugida or syllabary (in the UI and export functions)
-- [ ] Make the Usage section of the memory card a hyperlink that expands into a full scrollable showcase of each source segment, memory in bold, and the translated segment below (if the memory's translation text is found in the translated segment, it should be in bold as well)
 - [ ] Huge: Add UI natlang translations (include other conlangs and Hîsyêô!)
 - [ ] Huge: Add a button to each translation segment for pulling up a modal that presents valid translations as parse trees
 - [ ] Huge: Possibly add more file import types for ODT, DOCX, PDF, or EPUB
