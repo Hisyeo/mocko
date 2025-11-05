@@ -454,19 +454,32 @@ const App: React.FC = () => {
   };
 
   const buildTree = (headings: Heading[]): TreeNode[] => {
+    const getLevelNumber = (level: string): number => parseInt(level.replace('Level ', ''), 10);
     const tree: TreeNode[] = [];
-    let lastLevel2Node: TreeNode | null = null;
+    const path: TreeNode[] = []; // A stack to keep track of the current parent lineage
 
     headings.forEach(heading => {
+        let currentLevel = getLevelNumber(heading.level);
         const node: TreeNode = { ...heading, children: [] };
-        const level = parseInt(heading.level.replace('Level ', ''), 10);
 
-        if (level === 2) {
-            tree.push(node);
-            lastLevel2Node = node;
-        } else if (level === 3 && lastLevel2Node) {
-            lastLevel2Node.children.push(node);
+        const parentLevel = path.length > 0 ? getLevelNumber(path[path.length - 1].level) : 1; // Treat root as level 1
+
+        if (currentLevel > parentLevel + 1) {
+            currentLevel = parentLevel + 1;
+            node.level = `Level ${currentLevel}`;
         }
+
+        while (path.length > 0 && getLevelNumber(path[path.length - 1].level) >= currentLevel) {
+            path.pop();
+        }
+
+        if (path.length === 0) {
+            tree.push(node);
+        } else {
+            path[path.length - 1].children.push(node);
+        }
+
+        path.push(node);
     });
 
     return tree;
