@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Form, Alert, Card, Collapse, Stack, Spinner } from 'react-bootstrap';
+import { Button, Form, Alert, Card, Collapse, Stack, Spinner, ButtonGroup } from 'react-bootstrap';
 import SegmentationPreviewModal from './SegmentationPreviewModal';
 import { Source } from '../App';
 import { CompressionLevel, useApp } from '../AppContext';
@@ -28,16 +28,16 @@ interface SourceEditorProps {
   onScrolledToPreview: () => void;
 }
 
-const SourceEditor: React.FC<SourceEditorProps> = ({ 
-  allSources, 
-  onSourceUpdate, 
-  onDelete, 
-  onDuplicate, 
-  translationsVersion, 
-  showPreview, 
-  onTogglePreview, 
-  shouldScrollToPreview, 
-  onScrolledToPreview 
+const SourceEditor: React.FC<SourceEditorProps> = ({
+  allSources,
+  onSourceUpdate,
+  onDelete,
+  onDuplicate,
+  translationsVersion,
+  showPreview,
+  onTogglePreview,
+  shouldScrollToPreview,
+  onScrolledToPreview
 }) => {
   const { source, decompressedContent } = useSource();
   const { grammarCheck, setError, handleSetItem, updateStorageVersion } = useApp();
@@ -55,7 +55,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
   const [showSegPreview, setShowSegPreview] = useState(false);
   const [stats, setStats] = useState<Record<string, number | string>>({});
   const [sourceSize, setSourceSize] = useState(0);
-  const [renderedContent, setRenderedContent] = useState('');
+  const [renderedContent, setRenderedContent] = useState({ txt: '', md: '', html: '', txt_no_notes: '', md_no_notes: '', html_no_notes: '' });
   const [translatedTitle, setTranslatedTitle] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isExecutingSegmentation, setIsExecutingSegmentation] = useState(false);
@@ -64,6 +64,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
   const [compressionLevel, setCompressionLevel] = useState<CompressionLevel>(1);
   const [originalCompression, setOriginalCompression] = useState(false);
   const [originalCompressionLevel, setOriginalCompressionLevel] = useState(1);
+  const [includeNotes, setIncludeNotes] = useState(true);
   const exportSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -320,38 +321,40 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
     }
   };
 
-  const handleExport = () => {
-    const blob = new Blob([renderedContent], { type: 'text/plain' });
+  const downloadFile = (filename: string, blob: Blob) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
+    a.style.display = 'none';
     a.href = url;
-    a.download = `${filename}_translated.txt`;
+    a.download = filename;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  const handleExport = (format: 'txt' | 'md' | 'html') => {
+    const content = includeNotes ? renderedContent[format] : renderedContent[`${format}_no_notes`];
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    downloadFile(`${filename}_translated.${format}`, blob);
   };
 
-  const handleExportMocko = () => {
+  const handleSaveMockoAs = () => {
     if (!source) return;
 
-    // We read raw from localStorage to preserve compression
     const mockoData = {
       source: { ...source, filename, defaultGrammarRule, compression: isCompressed, compressionLevel },
       translations: localStorage.getItem(`translations_${source.id}`) || '{}',
       memories: localStorage.getItem(`memories_${source.id}`) || '{}',
       delimiters: localStorage.getItem(`delimiters_${source.id}`) || '[]',
     };
-
     const blob = new Blob([JSON.stringify(mockoData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${filename}.mocko`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFile(`${filename}.mocko`, blob);
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(renderedContent).then(() => {
+    const content = includeNotes ? renderedContent.txt : renderedContent.txt_no_notes;
+    navigator.clipboard.writeText(content).then(() => {
       alert('Copied to clipboard!');
     }, () => {
       alert('Failed to copy!');
@@ -379,7 +382,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
                 type="text" 
                 placeholder="Enter filename" 
                 value={filename} 
-                onChange={(e) => { setFilename(e.target.value); setFilenameError(null); }} 
+                onChange={(e) => { setFilename(e.target.value); setFilenameError(null); }}
                 isInvalid={!!filenameError}
               />
               <Form.Control.Feedback type="invalid">
@@ -408,6 +411,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
             <Stack direction='horizontal' gap={3}>
               <Button variant="primary" onClick={handleContentSave} className="mt-2" disabled={!isContentChanged || !!filenameError || !!segmentationRuleError}>Save</Button>
               <Button variant="secondary" onClick={handleContentDiscard} className="mt-2 ml-2" disabled={!isContentChanged}>Discard Changes</Button>
+              <Button variant="success" onClick={handleSaveMockoAs} className="mt-2 ml-2">Save MOCKO file as...</Button>
               <Button variant="info" onClick={handleDuplicate} className="mt-2 ml-2 ms-auto">Duplicate</Button>
               <Button variant="danger" onClick={handleDelete} className="mt-2 ml-2">Delete</Button>
             </Stack>
@@ -491,18 +495,29 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
 
           <div className="mt-4" ref={exportSectionRef}>
             <h2>Export</h2>
-            <Stack direction='horizontal' gap={3}>
-              <Button variant="primary" onClick={handleExport}>Export to TXT</Button>
-              <Button variant="success" onClick={handleExportMocko}>Export to MOCKO</Button>
-              <Button variant="secondary" onClick={handleCopy}>Copy to Clipboard</Button>
-              <Button variant="info" onClick={onTogglePreview} className="ms-auto" active={showPreview}>Preview</Button>
+            <Stack direction="horizontal" gap={3}>
+              <Form.Label className="me-2">Export to</Form.Label>
+              <ButtonGroup>
+                <Button variant="primary" onClick={() => handleExport('txt')}>TXT</Button>
+                <Button variant="primary" onClick={() => handleExport('md')}>MD</Button>
+                <Button variant="primary" onClick={() => handleExport('html')}>HTML</Button>
+              </ButtonGroup>
+              <Form.Check 
+                type="switch"
+                id="include-notes-switch"
+                label="Include Notes"
+                checked={includeNotes}
+                onChange={(e) => setIncludeNotes(e.target.checked)}
+              />
+              <Button variant="secondary" onClick={handleCopy} className="ms-auto">Copy to Clipboard</Button>
+              <Button variant="info" onClick={onTogglePreview} active={showPreview}>Preview</Button>
             </Stack>
             <br/>
             <Collapse in={showPreview}>
               <Card>
                 <Card.Title id='RenPreviewCollapseCardTitle'>{translatedTitle || title}</Card.Title>
                 <Card.Body>
-                      <div dangerouslySetInnerHTML={{ __html: renderedContent.replace(/\n/g, '<br />') }} />
+                  <div dangerouslySetInnerHTML={{ __html: includeNotes ? renderedContent.html : renderedContent.html_no_notes }} />
                 </Card.Body>
               </Card>
             </Collapse>
