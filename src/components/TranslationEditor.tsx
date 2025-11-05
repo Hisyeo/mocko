@@ -590,6 +590,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     if (segType === 'Heading') {
       if (outLevel === 'Level 2') return <h2>{textToShow}</h2>;
       if (outLevel === 'Level 3') return <h3>{textToShow}</h3>;
+      if (outLevel === 'Level 4') return <h4>{textToShow}</h4>;
+      if (outLevel === 'Level 5') return <h5>{textToShow}</h5>;
     }
     const delimiterBadge = <Badge title='Delimiter' bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiter}</Badge>
     return <p className={`mb-0 ${!translationText && segType !== 'Skip' ? 'source-text' : ''} ${segType === 'Skip' ? 'text-muted' : ''}`}>{textToShow}{delimiter && delimiterBadge}</p>;
