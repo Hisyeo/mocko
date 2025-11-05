@@ -24,7 +24,7 @@ const atobUint8Array = (b64: string) => {
 }
 
 type SegmentType = 'Body' | 'Heading' | 'Skip';
-type OutlineLevel = 'Skip' | 'Level 2' | 'Level 3';
+type OutlineLevel = 'Skip' | 'Level 2' | 'Level 3' | 'Level 4' | 'Level 5';
 type DelimiterAction = 'Skip Preceding' | 'Skip Succeeding' | 'Skip Both' | 'Keep Both';
 
 interface TranslationEditorProps {
@@ -516,6 +516,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                     <option value="Skip">Skip</option>
                     <option value="Level 2">Level 2</option>
                     <option value="Level 3">Level 3</option>
+                    <option value="Level 4">Level 4</option>
+                    <option value="Level 5">Level 5</option>
                 </Form.Select>
             </Form.Group>
         )}
