@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button, Form, Alert, Card, Collapse, Stack, Spinner } from 'react-bootstrap';
 import SegmentationPreviewModal from './SegmentationPreviewModal';
 import { Source } from '../App';
@@ -22,11 +22,23 @@ interface SourceEditorProps {
   onDelete: (sourceId: string) => void;
   onDuplicate: (source: Source) => void;
   translationsVersion: number;
-  openPreview: boolean;
-  onPreviewOpened: () => void;
+  showPreview: boolean;
+  onTogglePreview: () => void;
+  shouldScrollToPreview: boolean;
+  onScrolledToPreview: () => void;
 }
 
-const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate, onDelete, onDuplicate, translationsVersion, openPreview, onPreviewOpened }) => {
+const SourceEditor: React.FC<SourceEditorProps> = ({ 
+  allSources, 
+  onSourceUpdate, 
+  onDelete, 
+  onDuplicate, 
+  translationsVersion, 
+  showPreview, 
+  onTogglePreview, 
+  shouldScrollToPreview, 
+  onScrolledToPreview 
+}) => {
   const { source, decompressedContent } = useSource();
   const { grammarCheck, setError, handleSetItem, updateStorageVersion } = useApp();
 
@@ -44,7 +56,6 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
   const [stats, setStats] = useState<Record<string, number | string>>({});
   const [sourceSize, setSourceSize] = useState(0);
   const [renderedContent, setRenderedContent] = useState('');
-  const [showRenPreview, setShowRenPreview] = useState(false);
   const [translatedTitle, setTranslatedTitle] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isExecutingSegmentation, setIsExecutingSegmentation] = useState(false);
@@ -53,13 +64,14 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
   const [compressionLevel, setCompressionLevel] = useState<CompressionLevel>(1);
   const [originalCompression, setOriginalCompression] = useState(false);
   const [originalCompressionLevel, setOriginalCompressionLevel] = useState(1);
+  const exportSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (openPreview) {
-      setShowRenPreview(true);
-      onPreviewOpened();
+    if (shouldScrollToPreview && !isLoading && exportSectionRef.current) {
+      exportSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      onScrolledToPreview();
     }
-  }, [openPreview, onPreviewOpened]);
+  }, [shouldScrollToPreview, isLoading, onScrolledToPreview]);
 
   const calculateSourceSize = (sourceId: string) => {
     let total = 0;
@@ -112,7 +124,6 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
       setDefaultGrammarRule(source.defaultGrammarRule || '');
       validateRegex(rule);
       setSourceSize(calculateSourceSize(source.id));
-      // setShowRenPreview(false);
       
       const compression = source.compression || false;
       const level = source.compressionLevel === undefined ? 1 : source.compressionLevel;
@@ -478,16 +489,16 @@ const SourceEditor: React.FC<SourceEditorProps> = ({ allSources, onSourceUpdate,
             </Card.Body>
           </Card>
 
-          <div className="mt-4">
+          <div className="mt-4" ref={exportSectionRef}>
             <h2>Export</h2>
             <Stack direction='horizontal' gap={3}>
               <Button variant="primary" onClick={handleExport}>Export to TXT</Button>
               <Button variant="success" onClick={handleExportMocko}>Export to MOCKO</Button>
               <Button variant="secondary" onClick={handleCopy}>Copy to Clipboard</Button>
-              <Button variant="info" onClick={() => setShowRenPreview(!showRenPreview)} className="ms-auto" active={showRenPreview}>Preview</Button>
+              <Button variant="info" onClick={onTogglePreview} className="ms-auto" active={showPreview}>Preview</Button>
             </Stack>
             <br/>
-            <Collapse in={showRenPreview}>
+            <Collapse in={showPreview}>
               <Card>
                 <Card.Title id='RenPreviewCollapseCardTitle'>{translatedTitle || title}</Card.Title>
                 <Card.Body>

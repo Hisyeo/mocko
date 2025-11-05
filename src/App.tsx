@@ -67,7 +67,8 @@ const App: React.FC = () => {
   const [expandedOutlines, setExpandedOutlines] = useState<Record<string, boolean>>({});
   const [scrollToSegment, setScrollToSegment] = useState<{ sourceId: string; segmentIndex: number; } | null>(null);
   const [activeTab, setActiveTab] = useState('source');
-  const [openPreviewForSource, setOpenPreviewForSource] = useState<string | null>(null);
+  const [showSourcePreview, setShowSourcePreview] = useState(false);
+  const [scrollToPreviewForSource, setScrollToPreviewForSource] = useState<string | null>(null);
 
   const {
     theme, error, setError, handleSetItem, updateStorageVersion,
@@ -166,22 +167,23 @@ const App: React.FC = () => {
       case 'translation-first':
         setActiveTab('translation');
         setScrollToSegment({ sourceId: source.id, segmentIndex: 0 });
-        setOpenPreviewForSource(null);
+        setShowSourcePreview(false);
         break;
       case 'translation-incomplete':
         setActiveTab('translation');
         const incompleteIndex = findFirstIncompleteSegment(source);
         setScrollToSegment({ sourceId: source.id, segmentIndex: incompleteIndex });
-        setOpenPreviewForSource(null);
+        setShowSourcePreview(false);
         break;
       case 'source-preview':
         setActiveTab('source');
-        setOpenPreviewForSource(source.id);
+        setShowSourcePreview(true);
+        setScrollToPreviewForSource(source.id);
         break;
       case 'source-top':
       default:
         setActiveTab('source');
-        setOpenPreviewForSource(null);
+        setShowSourcePreview(false);
         break;
     }
   }
@@ -644,7 +646,17 @@ const App: React.FC = () => {
                 <Tab.Content>
                   <SourceProvider source={selectedSource}>
                     <Tab.Pane eventKey="source">
-                      <SourceEditor onSourceUpdate={handleSourceUpdate} onDelete={handleDeleteSource} onDuplicate={handleDuplicateSource} allSources={sources} translationsVersion={translationsVersion} openPreview={openPreviewForSource === selectedSource?.id} onPreviewOpened={() => setOpenPreviewForSource(null)} />
+                      <SourceEditor 
+                        onSourceUpdate={handleSourceUpdate} 
+                        onDelete={handleDeleteSource} 
+                        onDuplicate={handleDuplicateSource} 
+                        allSources={sources} 
+                        translationsVersion={translationsVersion} 
+                        showPreview={showSourcePreview}
+                        onTogglePreview={() => setShowSourcePreview(!showSourcePreview)}
+                        shouldScrollToPreview={scrollToPreviewForSource === selectedSource?.id}
+                        onScrolledToPreview={() => setScrollToPreviewForSource(null)}
+                      />
                     </Tab.Pane>
                     <Tab.Pane eventKey="translation">
                       <TranslationEditor onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} onMemoryUpdate={handleMemoryUpdate} memoryVersion={memoryVersion} scrollToSegment={scrollToSegment} onScrollToSegmentHandled={() => setScrollToSegment(null)} />
