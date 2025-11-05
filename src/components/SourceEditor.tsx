@@ -455,7 +455,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
               <option value='\n'/>
               <option value='\. '/>
               <option value='\.|;'/>
-              <option value={"[\\.:;?][\\s\"']*|,\\s*\""}/>
+              <option value={"[\\.:;?!][\\s\"']*|,\\s*\""}/>
             </datalist>
             <Stack direction="horizontal" gap={2}>
               <Button variant="info" onClick={() => setShowSegPreview(true)} className="mt-2" disabled={isExecutingSegmentation || !!segmentationRuleError}>
