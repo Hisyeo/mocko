@@ -334,7 +334,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
         const writable = await fileHandle.createWritable();
         await writable.write(content);
         await writable.close();
-        alert('File saved successfully!');
+        // alert('File saved successfully!');
       } catch (err: any) {
         if (err.name !== 'AbortError') {
           setError({ title: 'File Save Error', message: `Failed to save file: ${err.message}` });
