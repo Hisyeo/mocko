@@ -552,7 +552,7 @@ const App: React.FC = () => {
                   <Nav.Link onClick={() => handleSelectSource(source)} className='flex-grow-1'>
                     {source.filename ?? source.title}
                   </Nav.Link>
-                  {headings.length > 0 && (
+                  {selectedSource?.id === source.id && headings.length > 0 && (
                     <span style={{marginRight: '0.5em', cursor: expandedOutlines[source.id] ? 'n-resize' : 's-resize'}} onClick={() => toggleOutline(source.id)} className="ms-auto p-2">{expandedOutlines[source.id] ? '▼' : '▶'}</span>
                   )}
                 </Stack>
