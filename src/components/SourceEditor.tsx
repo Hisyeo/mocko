@@ -321,40 +321,69 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
     }
   };
 
-  const downloadFile = (filename: string, blob: Blob) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
+  const saveFile = async (content: string, filename: string, mimeType: string) => {
+    if ('showSaveFilePicker' in window) {
+      try {
+        const fileHandle = await (window as any).showSaveFilePicker({
+          suggestedName: filename,
+          types: [{
+            description: 'File',
+            accept: { [mimeType]: ['.' + filename.split('.').pop()] },
+          }],
+        });
+        const writable = await fileHandle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        alert('File saved successfully!');
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          setError({ title: 'File Save Error', message: `Failed to save file: ${err.message}` });
+        }
+      }
+    } else {
+      // Fallback for browsers that do not support showSaveFilePicker
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      // alert('File downloaded successfully!');
+    }
+  };
 
   const handleExport = (format: 'txt' | 'md' | 'html') => {
-    const content = includeNotes ? renderedContent[format] : renderedContent[`${format}_no_notes`];
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    downloadFile(`${filename}_translated.${format}`, blob);
+    const contentToExport = includeNotes ? renderedContent[format] : renderedContent[`${format}_no_notes`];
+    let mimeType = 'text/plain;charset=utf-8';
+    let extension = format;
+    if (format === 'html') {
+      mimeType = 'text/html;charset=utf-8';
+    } else if (format === 'md') {
+      mimeType = 'text/markdown;charset=utf-8';
+    }
+    saveFile(contentToExport, `${filename}_translated.${extension}`, mimeType);
   };
 
   const handleSaveMockoAs = () => {
     if (!source) return;
 
+    // We read raw from localStorage to preserve compression
     const mockoData = {
       source: { ...source, filename, defaultGrammarRule, compression: isCompressed, compressionLevel },
       translations: localStorage.getItem(`translations_${source.id}`) || '{}',
       memories: localStorage.getItem(`memories_${source.id}`) || '{}',
       delimiters: localStorage.getItem(`delimiters_${source.id}`) || '[]',
     };
-    const blob = new Blob([JSON.stringify(mockoData, null, 2)], { type: 'application/json' });
-    downloadFile(`${filename}.mocko`, blob);
+    saveFile(JSON.stringify(mockoData, null, 2), `${filename}.mocko`, 'application/json');
   };
 
   const handleCopy = () => {
-    const content = includeNotes ? renderedContent.txt : renderedContent.txt_no_notes;
-    navigator.clipboard.writeText(content).then(() => {
+    const contentToCopy = includeNotes ? renderedContent.txt : renderedContent.txt_no_notes;
+    navigator.clipboard.writeText(contentToCopy).then(() => {
       alert('Copied to clipboard!');
     }, () => {
       alert('Failed to copy!');
