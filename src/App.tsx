@@ -643,7 +643,7 @@ const App: React.FC = () => {
           <Container fluid>
             <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'source')}>
               <Row className="align-items-center header-row">
-                <Nav variant='pills' className='flex-row'>
+                <Nav fill variant='pills' className='flex-row'>
                   <Nav.Item>
                     <Nav.Link title='Toggle source list' onClick={toggleSidebar}>{sidebarOpen ? '◀' : '▶'}</Nav.Link>
                   </Nav.Item>
@@ -658,6 +658,9 @@ const App: React.FC = () => {
                   </Nav.Item>
                   <Nav.Item>
                     <Nav.Link eventKey='settings'>Settings</Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link href='https://github.com/Hisyeo/mocko/issues/new'>Report Issue 🚨</Nav.Link>
                   </Nav.Item>
                 </Nav>
               </Row>
