@@ -129,7 +129,13 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
             if (!grammarCheck) return [];
             const diagnostics: Diagnostic[] = [];
             const text = view.state.doc.toString();
-            const chars = new InputStream(text); // Adding a period so we can use the EOF docuemnt rule
+            let chars: InputStream;
+            if (grammarRule == 'Sentences' && text.length && /[A-Za-zÔôÊêÎîÛû ]/.test(text.at(-1) as string)) {
+              // Adding a period so that sentences is a little less strict.
+              chars = new InputStream(`${text}.`)
+            } else {
+              chars = new InputStream(text);
+            }
             const lexer = new HisyeoLexer(chars);
             const lexerListener = new HisyeoErrorListener();
             lexer.removeErrorListeners();
