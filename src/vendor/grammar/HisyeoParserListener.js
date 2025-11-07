@@ -266,12 +266,30 @@ export default class HisyeoParserListener extends antlr4.tree.ParseTreeListener 
 	}
 
 
+	// Enter a parse tree produced by HisyeoParser#rawRelativeQuantity.
+	enterRawRelativeQuantity(ctx) {
+	}
+
+	// Exit a parse tree produced by HisyeoParser#rawRelativeQuantity.
+	exitRawRelativeQuantity(ctx) {
+	}
+
+
 	// Enter a parse tree produced by HisyeoParser#nominalQuantity.
 	enterNominalQuantity(ctx) {
 	}
 
 	// Exit a parse tree produced by HisyeoParser#nominalQuantity.
 	exitNominalQuantity(ctx) {
+	}
+
+
+	// Enter a parse tree produced by HisyeoParser#rawNominalQuantity.
+	enterRawNominalQuantity(ctx) {
+	}
+
+	// Exit a parse tree produced by HisyeoParser#rawNominalQuantity.
+	exitRawNominalQuantity(ctx) {
 	}
 
 

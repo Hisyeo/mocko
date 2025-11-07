@@ -180,8 +180,20 @@ export default class HisyeoParserVisitor extends antlr4.tree.ParseTreeVisitor {
 	}
 
 
+	// Visit a parse tree produced by HisyeoParser#rawRelativeQuantity.
+	visitRawRelativeQuantity(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
 	// Visit a parse tree produced by HisyeoParser#nominalQuantity.
 	visitNominalQuantity(ctx) {
+	  return this.visitChildren(ctx);
+	}
+
+
+	// Visit a parse tree produced by HisyeoParser#rawNominalQuantity.
+	visitRawNominalQuantity(ctx) {
 	  return this.visitChildren(ctx);
 	}
 
