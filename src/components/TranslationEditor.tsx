@@ -488,7 +488,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
 
   if (!source) {
     return <div>
-      <ModeHelpAlert mode="translation" />
+      <ModeHelpAlert mode="translation" className='mt-4' />
       Please select a source from the sidebar to start translating.
     </div>;
   }

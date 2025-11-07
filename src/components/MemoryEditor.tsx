@@ -247,7 +247,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
 
   if (!source) {
     return <div>
-      <ModeHelpAlert mode="memory" />
+      <ModeHelpAlert mode="memory" className='mt-4' />
       <p>Please select a source from the sidebar to edit memories.</p>
     </div>;
   }

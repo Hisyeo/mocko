@@ -395,7 +395,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
 
   if (!source) {
     return <div>
-      <ModeHelpAlert mode="source" />
+      <ModeHelpAlert mode="source" className="mt-4" />
       <p>Please select a source from the sidebar to edit.</p>
     </div>;
   }
@@ -408,8 +408,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
         </Spinner>
       ) : (
         <>
-          <ModeHelpAlert mode="source" />
-          <Form noValidate>
+          <ModeHelpAlert mode="source" className='mt-4'/>
+          <Form noValidate className='mt-2'>
             <Form.Group controlId="filename">
               <Form.Label>Filename</Form.Label>
               <Form.Control 
@@ -423,7 +423,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
                 {filenameError}
               </Form.Control.Feedback>
             </Form.Group>
-            <Row className='mt-2'>
+            <Row className='mt-3'>
               <Col>
                 <Form.Group controlId="createdOn">
                   <Form.Label>Created On</Form.Label>
