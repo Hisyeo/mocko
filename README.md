@@ -63,11 +63,16 @@ The project is **done**. The remaining *nice-to-have* todos have been ordered in
 - [x] Add a bookmark button that allows you to name the bookmarked segment and navigate to it from a dropdown of all bookmarks
 - [x] Show total local storage usage for browser and for each source
 - [x] Make the Usage section of the memory card show hyperlinks for each usage that you can click and navigate to their location in the translation editing mode
+- [ ] Add a help box to every screen that can be hidden from the settings menu.
+- [ ] Move Import Memory button to same row as title
+- [ ] Add a Report Issue button to top nav
+- [ ] Add a warning if you try to change a source or close the app and there are unsaved changes
 - [ ] Add session setting for controlling whether Hîsyêô text content is converted to the abugida or syllabary (in the UI and export functions)
 - [ ] Huge: Add UI natlang translations (include other conlangs and Hîsyêô!)
 - [ ] Huge: Add a button to each translation segment for pulling up a modal that presents valid translations as parse trees
 - [ ] Huge: Possibly add more file import types for ODT, DOCX, PDF, or EPUB
 - [ ] Huge: Support identifying and checking styling tags
+- [ ] Huge: Add a mobile-friendly UI
 - [ ] Huge: Add a way to specify the target language and supply ANTLR grammar and hunspell files
 - [ ] ~~Store update timestamp for each source in session and add an update session option in settings that allows users to import a session json file and any duplicate entries will be either overwritten or skipped (user-selectable)~~ No longer needed
 - [ ] ~~Fix for delimiter trimming in the source export output~~ No issue found, need to capture spaces within the segmentation rule
