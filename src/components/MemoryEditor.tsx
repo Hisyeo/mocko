@@ -299,7 +299,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
       </Collapse>
 
       <div className="mt-4">
-        <Alert variant='light'>
+        <Alert variant='light' className='mode-help-alert'>
           Partially matching memories will be marked with an ⚠️ and will not be clickable in the translation editor nor available for autocomplete. When adding memories or alternatives, please utilize text that goes all the way to a word boundary.
         </Alert>
         {Object.entries(finalMemories).map(([sourceText, mem]) => (
