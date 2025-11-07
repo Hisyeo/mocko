@@ -26,6 +26,7 @@ const atobUint8Array = (b64: string) => {
 type SegmentType = 'Body' | 'Heading' | 'Skip';
 type OutlineLevel = 'Skip' | 'Level 2' | 'Level 3' | 'Level 4' | 'Level 5';
 type DelimiterAction = 'Skip Preceding' | 'Skip Succeeding' | 'Skip Both' | 'Keep Both';
+type Placement = 'top' | 'bottom';
 
 interface TranslationEditorProps {
   onSplit: (source: Source, splitIndex: number) => void;
@@ -71,6 +72,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const [isAddingMemory, setIsAddingMemory] = useState(false);
   const [showBookmarkPopover, setShowBookmarkPopover] = useState(false);
+  const [notePopoverPlacement, setNotePopoverPlacement] = useState<Placement>('top');
+  const [bookmarkPopoverPlacement, setBookmarkPopoverPlacement] = useState<Placement>('top');
 
   const [segmentGrammarRule, setSegmentGrammarRule] = useState('');
   const [segmentType, setSegmentType] = useState<SegmentType>('Body');
@@ -547,13 +550,17 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
 
   const notePopover = (
     <Popover id="popover-basic">
-      <Popover.Header as="h3">Segment Note</Popover.Header>
+      <Popover.Header as="h3" className="d-flex justify-content-between align-items-center">
+        Segment Note
+        <Button variant="link" size="sm" onClick={() => setNotePopoverPlacement(p => p === 'top' ? 'bottom' : 'top')}>🔃</Button>
+      </Popover.Header>
       <Popover.Body>
         <Form.Control
           as="textarea"
           rows={3}
           value={currentNote}
           onChange={(e) => setCurrentNote(e.target.value)}
+          autoFocus
         />
       </Popover.Body>
     </Popover>
@@ -561,7 +568,10 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
 
   const bookmarkPopover = (
     <Popover id="popover-bookmark">
-      <Popover.Header as="h3">Bookmark</Popover.Header>
+      <Popover.Header as="h3" className="d-flex justify-content-between align-items-center">
+        Bookmark
+        <Button variant="link" size="sm" onClick={() => setBookmarkPopoverPlacement(p => p === 'top' ? 'bottom' : 'top')}>🔃</Button>
+      </Popover.Header>
       <Popover.Body>
         <Form.Group className="mb-2">
           <Form.Label>Name</Form.Label>
@@ -569,6 +579,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
             type="text" 
             value={currentBookmark?.name || ''} 
             onChange={(e) => setCurrentBookmark(prev => ({ ...prev, name: e.target.value, comment: prev?.comment || '' }))} 
+            autoFocus
           />
         </Form.Group>
         <Form.Group className="mb-2">
@@ -637,7 +648,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         <Stack direction="horizontal" gap={2}>
           <InputGroup size="sm">
           <Dropdown>
-            <Dropdown.Toggle variant="outline-primary" id="dropdown-basic">
+            <Dropdown.Toggle variant="outline-danger" id="dropdown-basic">
               Bookmarks
             </Dropdown.Toggle>
             <Dropdown.Menu>
@@ -651,7 +662,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
             </Dropdown.Menu>
           </Dropdown>
             <Button title='Go to the first incomplete translation segment' variant="outline-info" onClick={handleGoToIncomplete}>Incomplete</Button>
-            <Button title='Go to the last segment' variant="outline-danger" onClick={handleGoToEnd}>⬇</Button>
+            <Button title='Go to the last segment' variant="outline-dark" onClick={handleGoToEnd}>⬇</Button>
             <Form.Control
               id='go-to-segment-number-input'
               type="number"
@@ -701,14 +712,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                     <Stack direction='horizontal' gap={1}>
                       <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(segment)} disabled={isLastSegment || (hasErrors && segmentType !== 'Skip') || (!currentTranslation && segmentType !== 'Skip')}>Save & Edit Next</Button>
                       <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(segment)} disabled={(hasErrors && segmentType !== 'Skip') || (!currentTranslation && segmentType !== 'Skip')}>Save</Button>
+                      <OverlayTrigger trigger="click" placement={notePopoverPlacement} overlay={notePopover} rootClose>
+                        <Button variant={currentNote ? "warning" : "outline-warning"} size="sm" className="mt-2 ml-2">Note</Button>
+                      </OverlayTrigger>
+                      <OverlayTrigger show={showBookmarkPopover} trigger="click" placement={bookmarkPopoverPlacement} overlay={bookmarkPopover} rootClose onToggle={() => setShowBookmarkPopover(!showBookmarkPopover)}>
+                        <Button variant={currentBookmark ? "danger" : "outline-danger"} size="sm" className="mt-2 ml-2" onClick={() => handleBookmarkClick(index)}>Bookmark</Button>
+                      </OverlayTrigger>
                       <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
                       <Form.Label column className='mt-2'>{' '}<small>Segment #{index+1}</small></Form.Label>
-                      <OverlayTrigger trigger="click" placement="top" overlay={notePopover} rootClose>
-                        <Button variant={currentNote ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2 ms-auto">Note</Button>
-                      </OverlayTrigger>
-                      <OverlayTrigger show={showBookmarkPopover} trigger="click" placement="top" overlay={bookmarkPopover} rootClose onToggle={() => setShowBookmarkPopover(!showBookmarkPopover)}>
-                        <Button variant={currentBookmark ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2" onClick={() => handleBookmarkClick(index)}>Bookmark</Button>
-                      </OverlayTrigger>
                       <OverlayTrigger trigger="click" placement="left" overlay={getSettingsPopover(index)} rootClose>
                         <Button variant="secondary" size="sm" className="mt-2">⚙️</Button>
                       </OverlayTrigger>
