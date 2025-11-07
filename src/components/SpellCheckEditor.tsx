@@ -32,9 +32,10 @@ interface SpellCheckEditorProps {
   autofocus?: boolean;
   numberedMemories: Record<number, { source: string, target: string }>;
   grammarRule: string;
+  isDirty?: boolean;
 }
 
-const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, onDiagnosticsChange, autofocus, numberedMemories, grammarRule }) => {
+const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, onDiagnosticsChange, autofocus, numberedMemories, grammarRule, isDirty }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const numberedMemoriesRef = useRef(numberedMemories);
@@ -226,7 +227,7 @@ const SpellCheckEditor: React.FC<SpellCheckEditorProps> = ({ value, onChange, on
     }
   }, [value]);
 
-  return <div ref={editorRef} style={{paddingTop: '0.5em', paddingBottom: '0.5em'}}/>;
+  return <div ref={editorRef} className={isDirty ? 'dirty-outline' : ''} style={{paddingTop: '0.5em', paddingBottom: '0.5em'}}/>;
 };
 
 export default SpellCheckEditor;
