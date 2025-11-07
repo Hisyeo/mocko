@@ -492,9 +492,15 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
 
   const isBookmarkUnchanged = initialBookmark !== null && JSON.stringify(currentBookmark) === JSON.stringify(initialBookmark);
 
-  const settingsPopover = (
+  const getSettingsPopover = (index: number) => (
     <Popover id="popover-basic">
       <Popover.Body>
+        
+        <div title={index === 0 ? 'Cannot split on first segment.' : ''}>
+          <Button variant="info" size="sm" className="w-100 mb-3" onClick={() => handleShowSplitModal(index)} disabled={index === 0}>
+            ✂️ Split Source Before This Segment
+          </Button>
+        </div>
         <Form.Group className="mb-3">
             <Form.Label>Segment Grammar Rule</Form.Label>
             <Form.Select value={segmentGrammarRule} onChange={(e) => setSegmentGrammarRule(e.target.value)} size="sm">
@@ -703,7 +709,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                       <OverlayTrigger show={showBookmarkPopover} trigger="click" placement="top" overlay={bookmarkPopover} rootClose onToggle={() => setShowBookmarkPopover(!showBookmarkPopover)}>
                         <Button variant={currentBookmark ? "primary" : "outline-primary"} size="sm" className="mt-2 ml-2" onClick={() => handleBookmarkClick(index)}>Bookmark</Button>
                       </OverlayTrigger>
-                      <OverlayTrigger trigger="click" placement="left" overlay={settingsPopover} rootClose>
+                      <OverlayTrigger trigger="click" placement="left" overlay={getSettingsPopover(index)} rootClose>
                         <Button variant="secondary" size="sm" className="mt-2">⚙️</Button>
                       </OverlayTrigger>
                     </Stack>
@@ -715,7 +721,6 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                       {noteText && <span title={`Note: ${noteText}`} style={{ paddingRight: '1em' }}>🗒️</span>}
                       {bookmarkData && <span title={`${bookmarkData.name}${bookmarkData.comment ? `:\n${bookmarkData.comment}` : ''}`} style={{ paddingRight: '1em' }}>🔖</span>}
                       <Button variant="link" title='Edit segment' onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
-                      <Button variant="link" title='Split source' onClick={() => handleShowSplitModal(index)} style={{textDecoration: 'none'}} disabled={index===0}>✂️</Button>
                     </Stack>
                   </div>
                 )}
