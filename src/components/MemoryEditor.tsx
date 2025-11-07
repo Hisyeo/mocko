@@ -254,7 +254,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center">
+      <div id="memory-editor-title-bar" className="d-flex justify-content-between align-items-center">
         <h1>{source.title}</h1>
         <Stack direction="horizontal" gap={2}>
           <Button 
@@ -267,8 +267,6 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
           </Button>
         </Stack>
       </div>
-      {/* <h1>{source.title}</h1> */}
-      
     
       <Collapse in={showImportPanel}>
         <div id="import-memories-panel">

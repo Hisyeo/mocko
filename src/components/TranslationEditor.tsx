@@ -649,7 +649,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
           delimiters={delimiters}
         />
       )}
-      <div className="d-flex justify-content-between align-items-center">
+      <div id="translation-editor-title-bar" className="d-flex justify-content-between align-items-center">
         <h1>{translatedTitle || source.title}</h1>
         <Stack direction="horizontal" gap={2}>
           <InputGroup size="sm">
