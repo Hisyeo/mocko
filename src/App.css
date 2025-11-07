@@ -278,3 +278,8 @@ html, body, #root {
 .resizable-popover {
   max-width: none;
 }
+
+.dirty-outline .cm-editor {
+  outline: 2px solid var(--bs-warning);
+  border-radius: 5px;
+}

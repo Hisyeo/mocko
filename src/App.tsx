@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { Container, Nav, Button, Tabs, Tab, Row, Col, Form, InputGroup, Stack, Dropdown } from 'react-bootstrap';
 import './App.css';
 import SourceEditor from './components/SourceEditor';
@@ -8,7 +8,7 @@ import Settings from './components/Settings';
 import AddSourceModal from './components/AddSourceModal';
 import SizeBlocker from './components/SizeBlocker';
 import { CompressionLevel, useApp } from './AppContext';
-import { SourceProvider, getCreationDate } from './SourceContext';
+import { SourceProvider, getCreationDate, useSource } from './SourceContext';
 import Resizer from './components/Resizer';
 import ImportConflictModal from './components/ImportConflictModal';
 import ErrorModal from './components/ErrorModal';
@@ -50,7 +50,7 @@ interface TreeNode extends Heading {
   children: TreeNode[];
 }
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const storedWidth = localStorage.getItem('sidebarWidth');
@@ -75,6 +75,23 @@ const App: React.FC = () => {
     theme, error, setError, handleSetItem, updateStorageVersion,
     defaultCompression, defaultCompressionLevel, sourceSelectionLocation
   } = useApp();
+  
+  const { isDirty, setIsDirty } = useSource();
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (isDirty) {
+        event.preventDefault();
+        event.returnValue = ''; // Required for Chrome
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isDirty]);
 
   useEffect(() => {
     const themeLink = document.getElementById('theme-link') as HTMLLinkElement;
@@ -158,83 +175,98 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSelectSource = (source: Source) => {
-    setSelectedSource(source);
-    setExpandedOutlines(prev => ({
-      [source.id]: prev[source.id] || false
-    }));
-
-    switch (sourceSelectionLocation) {
-      case 'translation-first':
-        setActiveTab('translation');
-        setScrollToSegment({ sourceId: source.id, segmentIndex: 0 });
-        setShowSourcePreview(false);
-        break;
-      case 'translation-incomplete':
-        setActiveTab('translation');
-        const incompleteIndex = findFirstIncompleteSegment(source);
-        setScrollToSegment({ sourceId: source.id, segmentIndex: incompleteIndex });
-        setShowSourcePreview(false);
-        break;
-      case 'source-preview':
-        setActiveTab('source');
-        setShowSourcePreview(true);
-        setScrollToPreviewForSource(source.id);
-        break;
-      case 'source-top':
-      default:
-        setActiveTab('source');
-        setShowSourcePreview(false);
-        break;
+  const confirmAndProceed = (callback: () => void) => {
+    if (isDirty) {
+      if (window.confirm('You have unsaved changes. Are you sure you want to discard them?')) {
+        setIsDirty(false);
+        callback();
+      }
+    } else {
+      callback();
     }
+  };
+
+  const handleSelectSource = (source: Source) => {
+    confirmAndProceed(() => {
+      setSelectedSource(source);
+      setExpandedOutlines(prev => ({
+        [source.id]: prev[source.id] || false
+      }));
+
+      switch (sourceSelectionLocation) {
+        case 'translation-first':
+          setActiveTab('translation');
+          setScrollToSegment({ sourceId: source.id, segmentIndex: 0 });
+          setShowSourcePreview(false);
+          break;
+        case 'translation-incomplete':
+          setActiveTab('translation');
+          const incompleteIndex = findFirstIncompleteSegment(source);
+          setScrollToSegment({ sourceId: source.id, segmentIndex: incompleteIndex });
+          setShowSourcePreview(false);
+          break;
+        case 'source-preview':
+          setActiveTab('source');
+          setShowSourcePreview(true);
+          setScrollToPreviewForSource(source.id);
+          break;
+        case 'source-top':
+        default:
+          setActiveTab('source');
+          setShowSourcePreview(false);
+          break;
+      }
+    });
   }
 
   const handleAddSource = (title: string, content: string) => {
-    const now = Date.now();
-    const newSource: Source = {
-      id: new Date().toISOString(),
-      title,
-      filename: title,
-      content,
-      created: now,
-      modified: now,
-      compression: defaultCompression,
-      compressionLevel: defaultCompressionLevel
-    };
+    confirmAndProceed(() => {
+      const now = Date.now();
+      const newSource: Source = {
+        id: new Date().toISOString(),
+        title,
+        filename: title,
+        content,
+        created: now,
+        modified: now,
+        compression: defaultCompression,
+        compressionLevel: defaultCompressionLevel
+      };
 
-    let finalContent = content;
-    if (newSource.compression) {
-      try {
-        finalContent = btoa(String.fromCharCode(...pako.deflate(content, { level: newSource.compressionLevel })));
-        newSource.content = finalContent;
-      } catch (err: any) {
-        setError({ title: 'Compression Error', message: `Failed to compress new source: ${err.message}` });
-        return;
-      }
-    }
-
-    const updatedSources = [...sources, newSource];
-    let success = handleSetItem('sources', JSON.stringify(updatedSources));
-    if (!success) return;
-
-    const emptyData = ['{}', '{}', '[]'];
-    const keys = [`translations_${newSource.id}`, `memories_${newSource.id}`, `delimiters_${newSource.id}`];
-
-    for (let i = 0; i < keys.length; i++) {
-      let valueToStore = emptyData[i];
+      let finalContent = content;
       if (newSource.compression) {
         try {
-          valueToStore = btoa(String.fromCharCode(...pako.deflate(valueToStore, { level: newSource.compressionLevel })));
+          finalContent = btoa(String.fromCharCode(...pako.deflate(content, { level: newSource.compressionLevel })));
+          newSource.content = finalContent;
         } catch (err: any) {
-          setError({ title: 'Compression Error', message: `Failed to create compressed data for new source: ${err.message}` });
+          setError({ title: 'Compression Error', message: `Failed to compress new source: ${err.message}` });
           return;
         }
       }
-      success = success && handleSetItem(keys[i], valueToStore);
-      if (!success) return;
-    }
 
-    setSources(updatedSources);
+      const updatedSources = [...sources, newSource];
+      let success = handleSetItem('sources', JSON.stringify(updatedSources));
+      if (!success) return;
+
+      const emptyData = ['{}', '{}', '[]'];
+      const keys = [`translations_${newSource.id}`, `memories_${newSource.id}`, `delimiters_${newSource.id}`];
+
+      for (let i = 0; i < keys.length; i++) {
+        let valueToStore = emptyData[i];
+        if (newSource.compression) {
+          try {
+            valueToStore = btoa(String.fromCharCode(...pako.deflate(valueToStore, { level: newSource.compressionLevel })));
+          } catch (err: any) {
+            setError({ title: 'Compression Error', message: `Failed to create compressed data for new source: ${err.message}` });
+            return;
+          }
+        }
+        success = success && handleSetItem(keys[i], valueToStore);
+        if (!success) return;
+      }
+
+      setSources(updatedSources);
+    });
   };
 
   const handleSourceUpdate = (updatedSource: Source) => {
@@ -322,12 +354,14 @@ const App: React.FC = () => {
   };
 
   const handleImportMocko = (data: any) => {
-    const existingSource = sources.find(s => s.filename === data.source.filename);
-    if (existingSource) {
-      setConflictData({ ...data, existingSourceId: existingSource.id });
-    } else {
-      finalizeImport(data, data.source.filename);
-    }
+    confirmAndProceed(() => {
+      const existingSource = sources.find(s => s.filename === data.source.filename);
+      if (existingSource) {
+        setConflictData({ ...data, existingSourceId: existingSource.id });
+      } else {
+        finalizeImport(data, data.source.filename);
+      }
+    });
   };
 
   const finalizeImport = (data: any, newFilename?: string) => {
@@ -448,14 +482,16 @@ const App: React.FC = () => {
   };
 
   const handleNavigateToSegment = (sourceId: string, segmentIndex: number) => {
-    const sourceToSelect = sources.find(s => s.id === sourceId);
-    if (sourceToSelect) {
-      if (selectedSource?.id !== sourceId) {
-        setSelectedSource(sourceToSelect);
+    confirmAndProceed(() => {
+      const sourceToSelect = sources.find(s => s.id === sourceId);
+      if (sourceToSelect) {
+        if (selectedSource?.id !== sourceId) {
+          setSelectedSource(sourceToSelect);
+        }
+        setActiveTab('translation');
+        setScrollToSegment({ sourceId, segmentIndex });
       }
-      setActiveTab('translation');
-      setScrollToSegment({ sourceId, segmentIndex });
-    }
+    });
   };
 
   const toggleOutline = (sourceId: string) => {
@@ -740,5 +776,11 @@ const App: React.FC = () => {
     </div>
   );
 }
+
+const App: React.FC = () => (
+  <SourceProvider source={null}>
+    <AppContent />
+  </SourceProvider>
+);
 
 export default App;

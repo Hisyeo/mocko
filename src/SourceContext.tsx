@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 import { Source } from './App';
 import { useApp } from './AppContext';
 import pako from 'pako';
@@ -8,6 +8,8 @@ interface SourceContextType {
   segments: string[];
   delimiters: string[];
   decompressedContent: string;
+  isDirty: boolean;
+  setIsDirty: (isDirty: boolean) => void;
 }
 
 export const getCreationDate = (source: Source): number => {
@@ -25,6 +27,7 @@ const SourceContext = createContext<SourceContextType | undefined>(undefined);
 
 export const SourceProvider: React.FC<{ source: Source | null, children: React.ReactNode }> = ({ source, children }) => {
   const { setError } = useApp();
+  const [isDirty, setIsDirty] = useState(false);
 
   const decompressedContent = useMemo(() => {
     if (!source) return '';
@@ -58,7 +61,7 @@ export const SourceProvider: React.FC<{ source: Source | null, children: React.R
   }, [source, decompressedContent]);
 
   return (
-    <SourceContext.Provider value={{ source, segments, delimiters, decompressedContent }}>
+    <SourceContext.Provider value={{ source, segments, delimiters, decompressedContent, isDirty, setIsDirty }}>
       {children}
     </SourceContext.Provider>
   );
