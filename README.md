@@ -65,7 +65,7 @@ The project is **done**. The remaining *nice-to-have* todos have been ordered in
 - [x] Make the Usage section of the memory card show hyperlinks for each usage that you can click and navigate to their location in the translation editing mode
 - [x] Add a help box to every screen that can be hidden from the settings menu.
 - [x] Move Import Memory button to same row as title
-- [ ] Add a Report Issue button to top nav
+- [x] Add a Report Issue button to top nav
 - [ ] Add a warning if you try to change a source or close the app and there are unsaved changes
 - [ ] Use other badge colors for delimiters that contain exclamation points and question marks 
 - [ ] Convert exclamation points to periods when inserting delimiters into translation output
