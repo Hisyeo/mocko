@@ -36,6 +36,8 @@ interface TranslationEditorProps {
   memoryVersion: number;
   scrollToSegment: { sourceId: string; segmentIndex: number; } | null;
   onScrollToSegmentHandled: () => void;
+  isDirty: boolean;
+  setIsDirty: (isDirty: boolean) => void;
 }
 
 function isSelectionInSelector(selection: Selection, selector: string): boolean {
@@ -49,8 +51,8 @@ function isSelectionInSelector(selection: Selection, selector: string): boolean 
   return false;
 }
 
-const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTranslationsUpdate, onMemoryUpdate, memoryVersion, scrollToSegment, onScrollToSegmentHandled }) => {
-  const { source, segments, delimiters, isDirty, setIsDirty } = useSource();
+const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTranslationsUpdate, onMemoryUpdate, memoryVersion, scrollToSegment, onScrollToSegmentHandled, isDirty, setIsDirty }) => {
+  const { source, segments, delimiters } = useSource();
   const { grammarCheck, spellCheck, defaultGrammarRule, handleSetItem, setError } = useApp();
 
   const [translations, setTranslations] = useState<Record<string, any>>({});

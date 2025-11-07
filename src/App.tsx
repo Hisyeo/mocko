@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Nav, Button, Tabs, Tab, Row, Col, Form, InputGroup, Stack, Dropdown } from 'react-bootstrap';
 import './App.css';
 import SourceEditor from './components/SourceEditor';
@@ -8,7 +8,7 @@ import Settings from './components/Settings';
 import AddSourceModal from './components/AddSourceModal';
 import SizeBlocker from './components/SizeBlocker';
 import { CompressionLevel, useApp } from './AppContext';
-import { SourceProvider, getCreationDate, useSource } from './SourceContext';
+import { SourceProvider, getCreationDate } from './SourceContext';
 import Resizer from './components/Resizer';
 import ImportConflictModal from './components/ImportConflictModal';
 import ErrorModal from './components/ErrorModal';
@@ -50,7 +50,7 @@ interface TreeNode extends Heading {
   children: TreeNode[];
 }
 
-const AppContent: React.FC = () => {
+const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const storedWidth = localStorage.getItem('sidebarWidth');
@@ -70,13 +70,12 @@ const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState('source');
   const [showSourcePreview, setShowSourcePreview] = useState(false);
   const [scrollToPreviewForSource, setScrollToPreviewForSource] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
 
   const {
     theme, error, setError, handleSetItem, updateStorageVersion,
     defaultCompression, defaultCompressionLevel, sourceSelectionLocation
   } = useApp();
-  
-  const { isDirty, setIsDirty } = useSource();
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -614,173 +613,167 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className={`d-flex ${sidebarOpen ? 'toggled' : ''}`} id="wrapper">
-      <div className="bg-light border-right" id="sidebar-wrapper" style={{ width: sidebarOpen ? sidebarWidth : 0 }}>
-        <div className="sidebar-heading">
-          <Stack direction='horizontal' gap={1}>
-            <span>Your Sources</span>
-            <Dropdown onSelect={(e) => handleSortChange(e as SortOrder)} className='ms-auto' >
-              <Dropdown.Toggle variant="outline-secondary"  id="dropdown-basic">
-                Sort
-              </Dropdown.Toggle>
-              <Dropdown.Menu>
-                <Dropdown.Item eventKey="Alphabetical">Alphabetical</Dropdown.Item>
-                <Dropdown.Item eventKey="Oldest First">Oldest First</Dropdown.Item>
-                <Dropdown.Item eventKey="Newest First">Newest First</Dropdown.Item>
-                <Dropdown.Item eventKey="Most Recently Modified">Most Recently Modified</Dropdown.Item>
-                <Dropdown.Item eventKey="Least Recently Modified">Least Recently Modified</Dropdown.Item>
-                <Dropdown.Item eventKey="Longest Source">Longest Source</Dropdown.Item>
-                <Dropdown.Item eventKey="Shortest Source">Shortest Source</Dropdown.Item>
-                <Dropdown.Item eventKey="Most Translated">Most Translated</Dropdown.Item>
-                <Dropdown.Item eventKey="Least Translated">Least Translated</Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
-            <Button variant='outline-info' onClick={() => setShowAddSourceModal(true)}>+</Button>
-          </Stack>
-        </div>
-        <div className="p-2">
-          <Stack direction='horizontal'>
-            <Form.Control 
-              type="text" 
-              placeholder="Filter sources..." 
-              value={sourceFilter} 
-              onChange={handleFilterChange} 
-            />
-            {sourceFilter && <Button variant="danger"  className="mt-1" onClick={clearFilter} id='sidebar-clear-search-button'>X</Button>}
-          </Stack>
-          
-        </div>
-        <Nav className="flex-column" navbarScroll>
-          {sortedAndFilteredSources.map(source => {
-            const headings = getHeadings(source);
-            return (
-              <React.Fragment key={source.id}>
-                <Stack direction='horizontal' className={selectedSource?.id === source.id ? 'bg-info text-bg-info' : ''}>
-                  <Nav.Link onClick={() => handleSelectSource(source)} className='flex-grow-1'>
-                    {source.filename ?? source.title}
-                  </Nav.Link>
-                  {selectedSource?.id === source.id && headings.length > 0 && (
-                    <span style={{marginRight: '0.5em', cursor: expandedOutlines[source.id] ? 'n-resize' : 's-resize'}} onClick={() => toggleOutline(source.id)} className="ms-auto p-2">{expandedOutlines[source.id] ? '▼' : '▶'}</span>
+    <SourceProvider source={selectedSource}>
+      <div className={`d-flex ${sidebarOpen ? 'toggled' : ''}`} id="wrapper">
+        <div className="bg-light border-right" id="sidebar-wrapper" style={{ width: sidebarOpen ? sidebarWidth : 0 }}>
+          <div className="sidebar-heading">
+            <Stack direction='horizontal' gap={1}>
+              <span>Your Sources</span>
+              <Dropdown onSelect={(e) => handleSortChange(e as SortOrder)} className='ms-auto' >
+                <Dropdown.Toggle variant="outline-secondary"  id="dropdown-basic">
+                  Sort
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  <Dropdown.Item eventKey="Alphabetical">Alphabetical</Dropdown.Item>
+                  <Dropdown.Item eventKey="Oldest First">Oldest First</Dropdown.Item>
+                  <Dropdown.Item eventKey="Newest First">Newest First</Dropdown.Item>
+                  <Dropdown.Item eventKey="Most Recently Modified">Most Recently Modified</Dropdown.Item>
+                  <Dropdown.Item eventKey="Least Recently Modified">Least Recently Modified</Dropdown.Item>
+                  <Dropdown.Item eventKey="Longest Source">Longest Source</Dropdown.Item>
+                  <Dropdown.Item eventKey="Shortest Source">Shortest Source</Dropdown.Item>
+                  <Dropdown.Item eventKey="Most Translated">Most Translated</Dropdown.Item>
+                  <Dropdown.Item eventKey="Least Translated">Least Translated</Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+              <Button variant='outline-info' onClick={() => setShowAddSourceModal(true)}>+</Button>
+            </Stack>
+          </div>
+          <div className="p-2">
+            <Stack direction='horizontal'>
+              <Form.Control 
+                type="text" 
+                placeholder="Filter sources..." 
+                value={sourceFilter} 
+                onChange={handleFilterChange} 
+              />
+              {sourceFilter && <Button variant="danger"  className="mt-1" onClick={clearFilter} id='sidebar-clear-search-button'>X</Button>}
+            </Stack>
+            
+          </div>
+          <Nav className="flex-column" navbarScroll>
+            {sortedAndFilteredSources.map(source => {
+              const headings = getHeadings(source);
+              return (
+                <React.Fragment key={source.id}>
+                  <Stack direction='horizontal' className={selectedSource?.id === source.id ? 'bg-info text-bg-info' : ''}>
+                    <Nav.Link onClick={() => handleSelectSource(source)} className='flex-grow-1'>
+                      {source.filename ?? source.title}
+                    </Nav.Link>
+                    {selectedSource?.id === source.id && headings.length > 0 && (
+                      <span style={{marginRight: '0.5em', cursor: expandedOutlines[source.id] ? 'n-resize' : 's-resize'}} onClick={() => toggleOutline(source.id)} className="ms-auto p-2">{expandedOutlines[source.id] ? '▼' : '▶'}</span>
+                    )}
+                  </Stack>
+                  {expandedOutlines[source.id] && (
+                    <div className="tree-outline">
+                      {renderTree(buildTree(headings), source.id)}
+                    </div>
                   )}
-                </Stack>
-                {expandedOutlines[source.id] && (
-                  <div className="tree-outline">
-                    {renderTree(buildTree(headings), source.id)}
-                  </div>
-                )}
-              </React.Fragment>
-            )
-          })}
-        </Nav>
-      </div>
-      <Resizer onResize={handleResize} onResizeEnd={handleResizeEnd} />
-      <div id="page-content-wrapper">
-        <div className="page-content">
-          <Container fluid>
-            <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'source')}>
-              <Row className="align-items-center header-row">
-                <Nav fill variant='pills' className='flex-row'>
-                  <Nav.Item>
-                    <Nav.Link title='Toggle source list' onClick={toggleSidebar}>{sidebarOpen ? '◀' : '▶'}</Nav.Link>
-                  </Nav.Item>
-                  <Nav.Item>
-                    <Nav.Link eventKey='source'>Source</Nav.Link>
-                  </Nav.Item>
-                  <Nav.Item>
-                    <Nav.Link eventKey='translation'>Translation</Nav.Link>
-                  </Nav.Item>
-                  <Nav.Item>
-                    <Nav.Link eventKey='memory'>Memories</Nav.Link>
-                  </Nav.Item>
-                  <Nav.Item>
-                    <Nav.Link eventKey='settings'>Settings</Nav.Link>
-                  </Nav.Item>
-                  <Nav.Item>
-                    <Nav.Link href='https://github.com/Hisyeo/mocko/issues/new'>Report Issue 🚨</Nav.Link>
-                  </Nav.Item>
-                </Nav>
-              </Row>
-              <Row>
-                <Tab.Content>
-                  <SourceProvider source={selectedSource}>
-                    <Tab.Pane eventKey="source">
-                      <SourceEditor 
-                        onSourceUpdate={handleSourceUpdate} 
-                        onDelete={handleDeleteSource} 
-                        onDuplicate={handleDuplicateSource} 
-                        allSources={sources} 
-                        translationsVersion={translationsVersion} 
-                        showPreview={showSourcePreview}
-                        onTogglePreview={() => setShowSourcePreview(!showSourcePreview)}
-                        shouldScrollToPreview={scrollToPreviewForSource === selectedSource?.id}
-                        onScrolledToPreview={() => setScrollToPreviewForSource(null)}
-                      />
-                    </Tab.Pane>
-                    <Tab.Pane eventKey="translation">
-                      <TranslationEditor onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} onMemoryUpdate={handleMemoryUpdate} memoryVersion={memoryVersion} scrollToSegment={scrollToSegment} onScrollToSegmentHandled={() => setScrollToSegment(null)} />
-                    </Tab.Pane>
-                    <Tab.Pane eventKey="memory">
-                      <MemoryEditor 
-                        allSources={sources} 
-                        memoryVersion={memoryVersion} 
-                        onSourceUpdate={handleSourceUpdate} 
-                        onMemoryUpdate={handleMemoryUpdate}
-                        onNavigateToSegment={(segmentIndex) => {
-                          if (selectedSource) {
-                            handleNavigateToSegment(selectedSource.id, segmentIndex);
-                          }
-                        }}
-                      />
-                    </Tab.Pane>
-                  </SourceProvider>
-                  <Tab.Pane eventKey="settings">
-                    <Settings />
-                  </Tab.Pane>
-                </Tab.Content>
-              </Row>
-            </Tab.Container>
-          </Container>
+                </React.Fragment>
+              )
+            })}
+          </Nav>
         </div>
-        <footer className='mt-auto'>
-            <div className='text-center p-4' style={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}>
-              © 2025 Copyright: <a className='text-reset fw-bold' href='https://hisyeo.github.io/'>
-                Hîsyêô Institute
-              </a>
-            </div>
-        </footer>
+        <Resizer onResize={handleResize} onResizeEnd={handleResizeEnd} />
+        <div id="page-content-wrapper">
+          <div className="page-content">
+            <Container fluid>
+              <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'source')}>
+                <Row className="align-items-center header-row">
+                  <Nav fill variant='pills' className='flex-row'>
+                    <Nav.Item>
+                      <Nav.Link title='Toggle source list' onClick={toggleSidebar}>{sidebarOpen ? '◀' : '▶'}</Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                      <Nav.Link eventKey='source'>Source</Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                      <Nav.Link eventKey='translation'>Translation</Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                      <Nav.Link eventKey='memory'>Memories</Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                      <Nav.Link eventKey='settings'>Settings</Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                      <Nav.Link href='https://github.com/Hisyeo/mocko/issues/new'>Report Issue 🚨</Nav.Link>
+                    </Nav.Item>
+                  </Nav>
+                </Row>
+                <Row>
+                  <Tab.Content>
+                      <Tab.Pane eventKey="source">
+                        <SourceEditor 
+                          onSourceUpdate={handleSourceUpdate} 
+                          onDelete={handleDeleteSource} 
+                          onDuplicate={handleDuplicateSource} 
+                          allSources={sources} 
+                          translationsVersion={translationsVersion} 
+                          showPreview={showSourcePreview}
+                          onTogglePreview={() => setShowSourcePreview(!showSourcePreview)}
+                          shouldScrollToPreview={scrollToPreviewForSource === selectedSource?.id}
+                          onScrolledToPreview={() => setScrollToPreviewForSource(null)}
+                        />
+                      </Tab.Pane>
+                      <Tab.Pane eventKey="translation">
+                        <TranslationEditor onSplit={handleSplitSource} onTranslationsUpdate={handleTranslationsUpdate} onMemoryUpdate={handleMemoryUpdate} memoryVersion={memoryVersion} scrollToSegment={scrollToSegment} onScrollToSegmentHandled={() => setScrollToSegment(null)} isDirty={isDirty} setIsDirty={setIsDirty} />
+                      </Tab.Pane>
+                      <Tab.Pane eventKey="memory">
+                        <MemoryEditor 
+                          allSources={sources} 
+                          memoryVersion={memoryVersion} 
+                          onSourceUpdate={handleSourceUpdate} 
+                          onMemoryUpdate={handleMemoryUpdate}
+                          onNavigateToSegment={(segmentIndex) => {
+                            if (selectedSource) {
+                              handleNavigateToSegment(selectedSource.id, segmentIndex);
+                            }
+                          }}
+                        />
+                      </Tab.Pane>
+                    <Tab.Pane eventKey="settings">
+                      <Settings />
+                    </Tab.Pane>
+                  </Tab.Content>
+                </Row>
+              </Tab.Container>
+            </Container>
+          </div>
+          <footer className='mt-auto'>
+              <div className='text-center p-4' style={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}>
+                © 2025 Copyright: <a className='text-reset fw-bold' href='https://hisyeo.github.io/'>
+                  Hîsyêô Institute
+                </a>
+              </div>
+          </footer>
+        </div>
+        <AddSourceModal 
+          show={showAddSourceModal} 
+          onHide={() => setShowAddSourceModal(false)} 
+          onAddSource={handleAddSource} 
+          onImport={handleImportMocko}
+        />
+        {conflictData && (
+          <ImportConflictModal 
+            show={!!conflictData}
+            onHide={() => setConflictData(null)}
+            onOverwrite={() => finalizeImport(conflictData)}
+            onRename={(newFilename) => finalizeImport(conflictData, newFilename)}
+            existingFilename={conflictData.source.filename}
+            sources={sources}
+          />
+        )}
+        {error && (
+          <ErrorModal 
+            show={!!error}
+            onHide={() => setError(null)}
+            title={error.title}
+            message={error.message}
+          />
+        )}
       </div>
-      <AddSourceModal 
-        show={showAddSourceModal} 
-        onHide={() => setShowAddSourceModal(false)} 
-        onAddSource={handleAddSource} 
-        onImport={handleImportMocko}
-      />
-      {conflictData && (
-        <ImportConflictModal 
-          show={!!conflictData}
-          onHide={() => setConflictData(null)}
-          onOverwrite={() => finalizeImport(conflictData)}
-          onRename={(newFilename) => finalizeImport(conflictData, newFilename)}
-          existingFilename={conflictData.source.filename}
-          sources={sources}
-        />
-      )}
-      {error && (
-        <ErrorModal 
-          show={!!error}
-          onHide={() => setError(null)}
-          title={error.title}
-          message={error.message}
-        />
-      )}
-    </div>
+    </SourceProvider>
   );
 }
-
-const App: React.FC = () => (
-  <SourceProvider source={null}>
-    <AppContent />
-  </SourceProvider>
-);
 
 export default App;
