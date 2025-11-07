@@ -245,7 +245,12 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
 
 
   if (!source) {
-    return <div>Please select a source from the sidebar to edit memories.</div>;
+    return <div>
+      <Alert variant='light' className='mode-help-alert'>
+        Partially matching memories will be marked with an ⚠️ and will not be clickable in the translation editor nor available for autocomplete. When adding memories or alternatives, please utilize text that goes all the way to a word boundary.
+      </Alert>
+      <p>Please select a source from the sidebar to edit memories.</p>
+    </div>;
   }
 
   return (

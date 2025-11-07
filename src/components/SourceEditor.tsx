@@ -393,7 +393,12 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
   const isContentChanged = title !== originalTitle || content !== originalContent || filename !== originalFilename || isCompressed !== originalCompression || compressionLevel !== originalCompressionLevel;
 
   if (!source) {
-    return <div><p>Please select a source from the sidebar to edit.</p></div>;
+    return <div>
+      <Alert variant='light' className='mode-help-alert'>
+        Source editor help content goes here.
+      </Alert>
+      <p>Please select a source from the sidebar to edit.</p>
+    </div>;
   }
 
   return (
@@ -404,6 +409,9 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
         </Spinner>
       ) : (
         <>
+          <Alert variant='light' className='mode-help-alert'>
+            Source editor help content goes here.
+          </Alert>
           <Form noValidate>
             <Form.Group controlId="filename">
               <Form.Label>Filename</Form.Label>

@@ -486,7 +486,12 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   }, [translations, validSegments]);
 
   if (!source) {
-    return <div>Please select a source from the sidebar to start translating.</div>;
+    return <div>
+      <Alert variant='light' className='mode-help-alert'>
+        Translation editor help content goes here.
+      </Alert>
+      Please select a source from the sidebar to start translating.
+    </div>;
   }
 
   const grammarErrors = diagnostics.filter(d => d.severity === 'info');
