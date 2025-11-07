@@ -90,6 +90,10 @@ html, body, #root {
   margin-right: 0.25em;
 }
 
+[data-theme="brite"] .mode-help-alert {
+  margin-top: 0 !important;
+}
+
 [data-theme="quartz"] select option {
   color: black;
 }

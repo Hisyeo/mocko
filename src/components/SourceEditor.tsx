@@ -5,6 +5,7 @@ import { Source } from '../App';
 import { CompressionLevel, useApp } from '../AppContext';
 import { useSource, getCreationDate } from '../SourceContext';
 import pako from 'pako';
+import ModeHelpAlert from './ModeHelpAlert';
 
 // Helper to decode from base64 Uint8Array
 const atobUint8Array = (b64: string) => {
@@ -393,7 +394,10 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
   const isContentChanged = title !== originalTitle || content !== originalContent || filename !== originalFilename || isCompressed !== originalCompression || compressionLevel !== originalCompressionLevel;
 
   if (!source) {
-    return <div><p>Please select a source from the sidebar to edit.</p></div>;
+    return <div>
+      <ModeHelpAlert mode="source" className="mt-4" />
+      <p>Please select a source from the sidebar to edit.</p>
+    </div>;
   }
 
   return (
@@ -404,7 +408,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
         </Spinner>
       ) : (
         <>
-          <Form noValidate>
+          <ModeHelpAlert mode="source" className='mt-4'/>
+          <Form noValidate className='mt-2'>
             <Form.Group controlId="filename">
               <Form.Label>Filename</Form.Label>
               <Form.Control 
@@ -418,7 +423,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
                 {filenameError}
               </Form.Control.Feedback>
             </Form.Group>
-            <Row className='mt-2'>
+            <Row className='mt-3'>
               <Col>
                 <Form.Group controlId="createdOn">
                   <Form.Label>Created On</Form.Label>

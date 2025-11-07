@@ -27,6 +27,8 @@ interface AppContextType {
   setDefaultCompressionLevel: (value: CompressionLevel) => void;
   sourceSelectionLocation: SourceSelectionLocation;
   handleSetSourceSelectionLocation: (value: SourceSelectionLocation) => void;
+  showModeHelp: boolean;
+  setShowModeHelp: (value: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -43,6 +45,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [defaultCompression, rawSetDefaultCompression] = useState(() => localStorage.getItem('defaultCompression') === 'true');
   const [defaultCompressionLevel, rawSetDefaultCompressionLevel] = useState<CompressionLevel>(() => parseInt(localStorage.getItem('defaultCompressionLevel') || '1', 10) as CompressionLevel);
   const [sourceSelectionLocation, setSourceSelectionLocation] = useState<SourceSelectionLocation>(() => (localStorage.getItem('sourceSelectionLocation') as SourceSelectionLocation) || 'source-top');
+  const [showModeHelp, rawSetShowModeHelp] = useState(() => localStorage.getItem('showModeHelp') !== 'false');
 
 
   const updateStorageVersion = useCallback(() => setStorageVersion(v => v + 1), []);
@@ -117,6 +120,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const setShowModeHelp = useCallback((value: boolean) => {
+    if (handleSetItem('showModeHelp', String(value))) {
+      rawSetShowModeHelp(value);
+    }
+  }, [handleSetItem]);
+
   useEffect(() => {
     updateStorageVersion(); // Initial calculation
   }, [updateStorageVersion]);
@@ -138,8 +147,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       defaultCompressionLevel,
       setDefaultCompressionLevel,
       sourceSelectionLocation,
-      handleSetSourceSelectionLocation
-    }), [ theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch, defaultGrammarRule, setDefaultGrammarRule, error, handleSetItem, storageVersion, updateStorageVersion, defaultCompression, setDefaultCompression, defaultCompressionLevel, setDefaultCompressionLevel, sourceSelectionLocation, handleSetSourceSelectionLocation ])}>
+      handleSetSourceSelectionLocation,
+      showModeHelp,
+      setShowModeHelp
+    }), [ theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch, defaultGrammarRule, setDefaultGrammarRule, error, handleSetItem, storageVersion, updateStorageVersion, defaultCompression, setDefaultCompression, defaultCompressionLevel, setDefaultCompressionLevel, sourceSelectionLocation, handleSetSourceSelectionLocation, showModeHelp, setShowModeHelp ])}>
       {children}
     </AppContext.Provider>
   );

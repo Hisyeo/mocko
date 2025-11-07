@@ -13,7 +13,8 @@ const Settings: React.FC = () => {
     storageVersion, updateStorageVersion,
     defaultCompression, setDefaultCompression,
     defaultCompressionLevel, setDefaultCompressionLevel,
-    sourceSelectionLocation, handleSetSourceSelectionLocation
+    sourceSelectionLocation, handleSetSourceSelectionLocation,
+    showModeHelp, setShowModeHelp
   } = useApp();
   const [storageUsage, setStorageUsage] = useState({ used: 0, percentage: 0 });
 
@@ -102,6 +103,14 @@ const Settings: React.FC = () => {
       <Card className="mt-4">
         <Card.Header>Session Settings</Card.Header>
         <Card.Body>
+          <Form.Check 
+            type="switch"
+            id="show-mode-help-switch"
+            label="Show Help Panels"
+            checked={showModeHelp}
+            onChange={(e) => setShowModeHelp(e.target.checked)}
+          />
+          <hr />
           <Form.Group as={Row} className="mb-3">
             <Form.Label column sm="4">
               Source Selection Starting Location

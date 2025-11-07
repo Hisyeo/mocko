@@ -12,6 +12,7 @@ import SplitSourceModal from './SplitSourceModal';
 import pako from 'pako';
 import UnderlinedText from './UnderlinedText';
 import SelectionTooltip from './SelectionTooltip';
+import ModeHelpAlert from './ModeHelpAlert';
 
 // Helper to decode from base64 Uint8Array
 const atobUint8Array = (b64: string) => {
@@ -486,7 +487,10 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   }, [translations, validSegments]);
 
   if (!source) {
-    return <div>Please select a source from the sidebar to start translating.</div>;
+    return <div>
+      <ModeHelpAlert mode="translation" className='mt-4' />
+      Please select a source from the sidebar to start translating.
+    </div>;
   }
 
   const grammarErrors = diagnostics.filter(d => d.severity === 'info');
@@ -649,20 +653,20 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         <h1>{translatedTitle || source.title}</h1>
         <Stack direction="horizontal" gap={2}>
           <InputGroup size="sm">
-          <Dropdown>
-            <Dropdown.Toggle variant="outline-danger" id="dropdown-basic">
-              Bookmarks
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              {bookmarks.length > 0 ? (
-                bookmarks.map(b => (
-                  <Dropdown.Item key={b.index} onClick={() => navigateToSegment(b.index)}>{b.name}</Dropdown.Item>
-                ))
-              ) : (
-                <Dropdown.Item disabled>No bookmarks found</Dropdown.Item>
-              )}
-            </Dropdown.Menu>
-          </Dropdown>
+            <Dropdown>
+              <Dropdown.Toggle variant="outline-danger" id="dropdown-basic">
+                Bookmarks
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                {bookmarks.length > 0 ? (
+                  bookmarks.map(b => (
+                    <Dropdown.Item key={b.index} onClick={() => navigateToSegment(b.index)}>{b.name}</Dropdown.Item>
+                  ))
+                ) : (
+                  <Dropdown.Item disabled>No bookmarks found</Dropdown.Item>
+                )}
+              </Dropdown.Menu>
+            </Dropdown>
             <Button title='Go to the first incomplete translation segment' variant="outline-info" onClick={handleGoToIncomplete}>Incomplete</Button>
             <Button title='Go to the last segment' variant="outline-dark" onClick={handleGoToEnd}>⬇</Button>
             <Form.Control
@@ -688,59 +692,62 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         />
       </Form.Group>
       
-      <ListGroup className="mt-4">
-        {validSegments.slice(0, visibleSegmentCount).map((segment, index) => {
+      <div className='mt-4'>
+        <ModeHelpAlert mode="translation" />
+        <ListGroup>
+          {validSegments.slice(0, visibleSegmentCount).map((segment, index) => {
             const isLastSegment = index === validSegments.length - 1;
             const translationData = translations[segment];
             const noteText = translationData?.note;
             const bookmarkData = translationData?.bookmark;
             const segType = translationData?.segmentType || 'Body';
             const delimiter = delimiters[index]?.replaceAll('\n', '⏎')
-
+            
             return (
               <ListGroup.Item key={index} id={`segment-item-${index}`} className={`d-flex align-items-center ${segType === 'Skip' ? 'list-group-item-light' : ''}`}>
-                {editingSegment === segment ? (
-                  <div className="w-100">
-                    <UnderlinedText text={segment} memories={memories} onInsert={handleInsertMemory} onMemoriesNumbered={onMemoriesNumbered} memoryVersion={memoryVersion} />
-                    {delimiter && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiter}</Badge>}
-                    <SpellCheckEditor 
-                      value={currentTranslation} 
-                      onChange={setCurrentTranslation} 
-                      onDiagnosticsChange={setDiagnostics}
-                      autofocus={editingSegment === segment}
-                      numberedMemories={numberedMemories}
-                      grammarRule={segmentGrammarRule || source.defaultGrammarRule || defaultGrammarRule}
-                    />
-                    <Stack direction='horizontal' gap={1}>
-                      <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(segment)} disabled={isLastSegment || (hasErrors && segmentType !== 'Skip') || (!currentTranslation && segmentType !== 'Skip')}>Save & Edit Next</Button>
-                      <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(segment)} disabled={(hasErrors && segmentType !== 'Skip') || (!currentTranslation && segmentType !== 'Skip')}>Save</Button>
-                      <OverlayTrigger trigger="click" placement={notePopoverPlacement} overlay={notePopover} rootClose>
-                        <Button variant={currentNote ? "warning" : "outline-warning"} size="sm" className="mt-2 ml-2">Note</Button>
-                      </OverlayTrigger>
-                      <OverlayTrigger show={showBookmarkPopover} trigger="click" placement={bookmarkPopoverPlacement} overlay={bookmarkPopover} rootClose onToggle={() => setShowBookmarkPopover(!showBookmarkPopover)}>
-                        <Button variant={currentBookmark ? "danger" : "outline-danger"} size="sm" className="mt-2 ml-2" onClick={() => handleBookmarkClick(index)}>Bookmark</Button>
-                      </OverlayTrigger>
-                      <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
-                      <Form.Label column className='mt-2'>{' '}<small>Segment #{index+1}</small></Form.Label>
-                      <OverlayTrigger trigger="click" placement="left" overlay={getSettingsPopover(index)} rootClose>
-                        <Button variant="secondary" size="sm" className="mt-2">⚙️</Button>
-                      </OverlayTrigger>
-                    </Stack>
-                  </div>
-                ) : (
-                  <div className="d-flex justify-content-between align-items-center w-100">
-                    {renderSegmentContent(segment, translationData, delimiter)}
-                    <Stack direction='horizontal'>
-                      {noteText && <span title={`Note: ${noteText}`} style={{ paddingRight: '1em' }}>🗒️</span>}
-                      {bookmarkData && <span title={`${bookmarkData.name}${bookmarkData.comment ? `:\n${bookmarkData.comment}` : ''}`} style={{ paddingRight: '1em' }}>🔖</span>}
-                      <Button variant="link" title='Edit segment' onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
-                    </Stack>
-                  </div>
-                )}
-              </ListGroup.Item>
-            )
-        })}
-      </ListGroup>
+                  {editingSegment === segment ? (
+                    <div className="w-100">
+                      <UnderlinedText text={segment} memories={memories} onInsert={handleInsertMemory} onMemoriesNumbered={onMemoriesNumbered} memoryVersion={memoryVersion} />
+                      {delimiter && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiter}</Badge>}
+                      <SpellCheckEditor 
+                        value={currentTranslation} 
+                        onChange={setCurrentTranslation} 
+                        onDiagnosticsChange={setDiagnostics}
+                        autofocus={editingSegment === segment}
+                        numberedMemories={numberedMemories}
+                        grammarRule={segmentGrammarRule || source.defaultGrammarRule || defaultGrammarRule}
+                        />
+                      <Stack direction='horizontal' gap={1}>
+                        <Button variant="success" size="sm" className="mt-2" onClick={() => handleSaveAndEditNext(segment)} disabled={isLastSegment || (hasErrors && segmentType !== 'Skip') || (!currentTranslation && segmentType !== 'Skip')}>Save & Edit Next</Button>
+                        <Button variant="primary" size="sm" className="mt-2 ml-2" onClick={() => handleSave(segment)} disabled={(hasErrors && segmentType !== 'Skip') || (!currentTranslation && segmentType !== 'Skip')}>Save</Button>
+                        <OverlayTrigger trigger="click" placement={notePopoverPlacement} overlay={notePopover} rootClose>
+                          <Button variant={currentNote ? "warning" : "outline-warning"} size="sm" className="mt-2 ml-2">Note</Button>
+                        </OverlayTrigger>
+                        <OverlayTrigger show={showBookmarkPopover} trigger="click" placement={bookmarkPopoverPlacement} overlay={bookmarkPopover} rootClose onToggle={() => setShowBookmarkPopover(!showBookmarkPopover)}>
+                          <Button variant={currentBookmark ? "danger" : "outline-danger"} size="sm" className="mt-2 ml-2" onClick={() => handleBookmarkClick(index)}>Bookmark</Button>
+                        </OverlayTrigger>
+                        <Button variant="secondary" size="sm" className="mt-2 ml-2" onClick={handleCancel}>Cancel</Button>
+                        <Form.Label column className='mt-2'>{' '}<small>Segment #{index+1}</small></Form.Label>
+                        <OverlayTrigger trigger="click" placement="left" overlay={getSettingsPopover(index)} rootClose>
+                          <Button variant="secondary" size="sm" className="mt-2">⚙️</Button>
+                        </OverlayTrigger>
+                      </Stack>
+                    </div>
+                  ) : (
+                    <div className="d-flex justify-content-between align-items-center w-100">
+                      {renderSegmentContent(segment, translationData, delimiter)}
+                      <Stack direction='horizontal'>
+                        {noteText && <span title={`Note: ${noteText}`} style={{ paddingRight: '1em' }}>🗒️</span>}
+                        {bookmarkData && <span title={`${bookmarkData.name}${bookmarkData.comment ? `:\n${bookmarkData.comment}` : ''}`} style={{ paddingRight: '1em' }}>🔖</span>}
+                        <Button variant="link" title='Edit segment' onClick={() => handleEdit(segment)} style={{textDecoration: 'none'}}>✏️</Button>
+                      </Stack>
+                    </div>
+                  )}
+                </ListGroup.Item>
+              )
+            })}
+        </ListGroup>
+      </div>
       <div ref={sentinelRef} />
     </div>
   );
