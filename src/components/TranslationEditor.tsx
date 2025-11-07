@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Form, ListGroup, Button, Badge, Stack, Dropdown, InputGroup, OverlayTrigger, Popover, Alert } from 'react-bootstrap';
+import { Form, ListGroup, Button, Badge, Stack, Dropdown, InputGroup, OverlayTrigger, Popover } from 'react-bootstrap';
 import Mark from 'mark.js';
 import { Source } from '../App';
 import SpellCheckEditor from './SpellCheckEditor';
@@ -12,6 +12,7 @@ import SplitSourceModal from './SplitSourceModal';
 import pako from 'pako';
 import UnderlinedText from './UnderlinedText';
 import SelectionTooltip from './SelectionTooltip';
+import ModeHelpAlert from './ModeHelpAlert';
 
 // Helper to decode from base64 Uint8Array
 const atobUint8Array = (b64: string) => {
@@ -487,9 +488,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
 
   if (!source) {
     return <div>
-      <Alert variant='light' className='mode-help-alert'>
-        Translation editor help content goes here.
-      </Alert>
+      <ModeHelpAlert mode="translation" />
       Please select a source from the sidebar to start translating.
     </div>;
   }
@@ -694,9 +693,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       </Form.Group>
       
       <div className='mt-4'>
-        <Alert variant='light' className='mode-help-alert'>
-          Translation editor help content goes here.
-        </Alert>
+        <ModeHelpAlert mode="translation" />
         <ListGroup>
           {validSegments.slice(0, visibleSegmentCount).map((segment, index) => {
             const isLastSegment = index === validSegments.length - 1;

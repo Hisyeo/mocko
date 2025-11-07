@@ -5,6 +5,7 @@ import { Source } from '../App';
 import { CompressionLevel, useApp } from '../AppContext';
 import { useSource, getCreationDate } from '../SourceContext';
 import pako from 'pako';
+import ModeHelpAlert from './ModeHelpAlert';
 
 // Helper to decode from base64 Uint8Array
 const atobUint8Array = (b64: string) => {
@@ -394,9 +395,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
 
   if (!source) {
     return <div>
-      <Alert variant='light' className='mode-help-alert'>
-        Source editor help content goes here.
-      </Alert>
+      <ModeHelpAlert mode="source" />
       <p>Please select a source from the sidebar to edit.</p>
     </div>;
   }
@@ -409,9 +408,7 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
         </Spinner>
       ) : (
         <>
-          <Alert variant='light' className='mode-help-alert'>
-            Source editor help content goes here.
-          </Alert>
+          <ModeHelpAlert mode="source" />
           <Form noValidate>
             <Form.Group controlId="filename">
               <Form.Label>Filename</Form.Label>

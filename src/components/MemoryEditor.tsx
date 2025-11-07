@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Form, Button, Card, Collapse, InputGroup, Badge, Alert, Stack } from 'react-bootstrap';
+import { Form, Button, Card, Collapse, InputGroup, Badge, Stack } from 'react-bootstrap';
 import { Source } from '../App';
 import { useApp } from '../AppContext';
 import { useSource } from '../SourceContext';
 import pako from 'pako';
+import ModeHelpAlert from './ModeHelpAlert';
 
 // Helper to decode from base64 Uint8Array
 const atobUint8Array = (b64: string) => {
@@ -246,9 +247,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
 
   if (!source) {
     return <div>
-      <Alert variant='light' className='mode-help-alert'>
-        Partially matching memories will be marked with an ⚠️ and will not be clickable in the translation editor nor available for autocomplete. When adding memories or alternatives, please utilize text that goes all the way to a word boundary.
-      </Alert>
+      <ModeHelpAlert mode="memory" />
       <p>Please select a source from the sidebar to edit memories.</p>
     </div>;
   }
@@ -304,9 +303,7 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
       </Collapse>
 
       <div className="mt-4">
-        <Alert variant='light' className='mode-help-alert'>
-          Partially matching memories will be marked with an ⚠️ and will not be clickable in the translation editor nor available for autocomplete. When adding memories or alternatives, please utilize text that goes all the way to a word boundary.
-        </Alert>
+        <ModeHelpAlert mode="memory" />
         {Object.entries(finalMemories).map(([sourceText, mem]) => (
           <Card key={sourceText} className="mb-2">
             {mem.sourceTitle && <Card.Header>{mem.sourceTitle}</Card.Header>}
