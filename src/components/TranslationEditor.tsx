@@ -649,20 +649,20 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         <h1>{translatedTitle || source.title}</h1>
         <Stack direction="horizontal" gap={2}>
           <InputGroup size="sm">
-          <Dropdown>
-            <Dropdown.Toggle variant="outline-danger" id="dropdown-basic">
-              Bookmarks
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              {bookmarks.length > 0 ? (
-                bookmarks.map(b => (
-                  <Dropdown.Item key={b.index} onClick={() => navigateToSegment(b.index)}>{b.name}</Dropdown.Item>
-                ))
-              ) : (
-                <Dropdown.Item disabled>No bookmarks found</Dropdown.Item>
-              )}
-            </Dropdown.Menu>
-          </Dropdown>
+            <Dropdown>
+              <Dropdown.Toggle variant="outline-danger" id="dropdown-basic">
+                Bookmarks
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                {bookmarks.length > 0 ? (
+                  bookmarks.map(b => (
+                    <Dropdown.Item key={b.index} onClick={() => navigateToSegment(b.index)}>{b.name}</Dropdown.Item>
+                  ))
+                ) : (
+                  <Dropdown.Item disabled>No bookmarks found</Dropdown.Item>
+                )}
+              </Dropdown.Menu>
+            </Dropdown>
             <Button title='Go to the first incomplete translation segment' variant="outline-info" onClick={handleGoToIncomplete}>Incomplete</Button>
             <Button title='Go to the last segment' variant="outline-dark" onClick={handleGoToEnd}>⬇</Button>
             <Form.Control
