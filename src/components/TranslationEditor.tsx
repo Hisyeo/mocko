@@ -690,7 +690,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       
       <div className='mt-4'>
         <Alert variant='light' className='mode-help-alert'>
-          Partially matching memories will be marked with an ⚠️ and will not be clickable in the translation editor nor available for autocomplete. When adding memories or alternatives, please utilize text that goes all the way to a word boundary.
+          Translation editor help content goes here.
         </Alert>
         <ListGroup>
           {validSegments.slice(0, visibleSegmentCount).map((segment, index) => {
