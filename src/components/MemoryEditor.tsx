@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Form, Button, Card, Collapse, InputGroup, Badge, Alert } from 'react-bootstrap';
+import { Form, Button, Card, Collapse, InputGroup, Badge, Alert, Stack } from 'react-bootstrap';
 import { Source } from '../App';
 import { useApp } from '../AppContext';
 import { useSource } from '../SourceContext';
@@ -250,16 +250,22 @@ const MemoryEditor: React.FC<MemoryEditorProps> = ({ allSources, memoryVersion, 
 
   return (
     <div>
-      <h1>{source.title}</h1>
+      <div className="d-flex justify-content-between align-items-center">
+        <h1>{source.title}</h1>
+        <Stack direction="horizontal" gap={2}>
+          <Button 
+            onClick={() => setShowImportPanel(!showImportPanel)}
+            aria-controls="import-memories-panel"
+            aria-expanded={showImportPanel}
+            active={showImportPanel}
+          >
+            Import Memories
+          </Button>
+        </Stack>
+      </div>
+      {/* <h1>{source.title}</h1> */}
       
-      <Button 
-        onClick={() => setShowImportPanel(!showImportPanel)}
-        aria-controls="import-memories-panel"
-        aria-expanded={showImportPanel}
-        className="mt-4"
-      >
-        Import Memories
-      </Button>
+    
       <Collapse in={showImportPanel}>
         <div id="import-memories-panel">
           <Card className="mt-2">
