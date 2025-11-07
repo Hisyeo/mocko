@@ -260,3 +260,12 @@ html, body, #root {
 .tree-outline .nav-link {
   padding: 0.25rem 0;
 }
+
+.resizable-textarea {
+  resize: both;
+  overflow: auto;
+}
+
+.resizable-popover {
+  max-width: none;
+}

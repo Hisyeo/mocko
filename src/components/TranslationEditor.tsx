@@ -549,7 +549,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   );
 
   const notePopover = (
-    <Popover id="popover-basic">
+    <Popover id="popover-basic" className="resizable-popover">
       <Popover.Header as="h3" className="d-flex justify-content-between align-items-center">
         Segment Note
         <Button variant="link" size="sm" onClick={() => setNotePopoverPlacement(p => p === 'top' ? 'bottom' : 'top')}>🔃</Button>
@@ -561,13 +561,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
           value={currentNote}
           onChange={(e) => setCurrentNote(e.target.value)}
           autoFocus
+          className="resizable-textarea"
         />
       </Popover.Body>
     </Popover>
   );
 
   const bookmarkPopover = (
-    <Popover id="popover-bookmark">
+    <Popover id="popover-bookmark" className="resizable-popover">
       <Popover.Header as="h3" className="d-flex justify-content-between align-items-center">
         Bookmark
         <Button variant="link" size="sm" onClick={() => setBookmarkPopoverPlacement(p => p === 'top' ? 'bottom' : 'top')}>🔃</Button>
@@ -589,6 +590,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
             rows={3} 
             value={currentBookmark?.comment || ''}
             onChange={(e) => setCurrentBookmark(prev => ({ ...prev, name: prev?.name || '', comment: e.target.value }))} 
+            className="resizable-textarea"
           />
         </Form.Group>
         <Stack direction="horizontal" gap={2}>
