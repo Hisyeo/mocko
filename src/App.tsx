@@ -74,7 +74,8 @@ const App: React.FC = () => {
 
   const {
     theme, error, setError, handleSetItem, updateStorageVersion,
-    defaultCompression, defaultCompressionLevel, sourceSelectionLocation
+    defaultCompression, defaultCompressionLevel, sourceSelectionLocation,
+    translationSanitization
   } = useApp();
 
   useEffect(() => {
@@ -713,6 +714,7 @@ const App: React.FC = () => {
                           onTogglePreview={() => setShowSourcePreview(!showSourcePreview)}
                           shouldScrollToPreview={scrollToPreviewForSource === selectedSource?.id}
                           onScrolledToPreview={() => setScrollToPreviewForSource(null)}
+                          translationSanitization={translationSanitization}
                         />
                       </Tab.Pane>
                       <Tab.Pane eventKey="translation">

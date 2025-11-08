@@ -1,5 +1,5 @@
 self.onmessage = (e) => {
-  const { task, content, segmentationRule, translations, oldTranslations } = e.data;
+  const { task, content, segmentationRule, translations, oldTranslations, translationSanitization } = e.data;
 
   const countWords = (text) => {
     if (typeof text !== 'string') return 0;
@@ -56,6 +56,12 @@ self.onmessage = (e) => {
         htmlParagraphBuffer = '';
       };
 
+      const sanitize = (text) => {
+        if (!translationSanitization) return text;
+        // Add more sanitization rules here
+        return text.replace(/!/g, '.');
+      };
+
       segments.forEach((seg, i) => {
         const trimmedSeg = seg.trim();
         if (!trimmedSeg) return;
@@ -82,6 +88,8 @@ self.onmessage = (e) => {
             translationText = translationData;
           }
         }
+
+        translationText = sanitize(translationText);
 
         if (format === 'html' && translationData?.segmentType === 'Heading') {
           flushHtmlParagraphBuffer();
