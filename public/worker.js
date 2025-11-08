@@ -89,8 +89,6 @@ self.onmessage = (e) => {
           }
         }
 
-        translationText = sanitize(translationText);
-
         if (format === 'html' && translationData?.segmentType === 'Heading') {
           flushHtmlParagraphBuffer();
           const level = translationData.outlineLevel?.replace('Level ', '') || '2';
@@ -104,12 +102,13 @@ self.onmessage = (e) => {
         } else {
           // Handle preceding delimiter
           if (i > 0 && delimiters[i-1]) {
+            const currentDelim = sanitize(delimiters[i-1])
             const prevAction = prevTranslationData?.delimiterAction;
             if (prevAction !== 'Skip Succeeding' && prevAction !== 'Skip Both') {
                 const currentAction = translationData?.delimiterAction;
                 if (currentAction !== 'Skip Preceding' && currentAction !== 'Skip Both') {
-                    if (format === 'html') htmlParagraphBuffer += delimiters[i-1];
-                    else reconstructed += delimiters[i-1];
+                    if (format === 'html') htmlParagraphBuffer += currentDelim;
+                    else reconstructed += currentDelim;
                 }
             }
           }
