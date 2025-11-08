@@ -124,6 +124,9 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   };
 
   useEffect(() => {
+    const scrollContainer = document.querySelector('#page-content-wrapper');
+    if (!scrollContainer) return;
+
     const handleScroll = () => {
       if (!scrollingReturnButtonsEnabled) {
         setShowGoToTop(false);
@@ -132,13 +135,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       }
 
       // Sensitivity: 1 (low) -> 10 (high)
-      // Threshold should be high for low sensitivity, low for high sensitivity.
+      // Threshold should be low for low sensitivity, high for high sensitivity.
       const topThreshold = 1500 - (scrollingReturnButtonsSensitivity * 100); // Range: 1400px to 500px
-      setShowGoToTop(window.scrollY > topThreshold);
+      setShowGoToTop(scrollContainer.scrollTop > topThreshold);
 
       if (editingSegmentRef.current) {
         const rect = editingSegmentRef.current.getBoundingClientRect();
-        const editingThreshold = 600 - (scrollingReturnButtonsSensitivity * 50); // Range: 550px to 100px
+        // Higher sensitivity means a larger threshold, making the button appear sooner.
+        const editingThreshold = 100 + (scrollingReturnButtonsSensitivity * 40); // Range: 140px to 500px
         const isOutOfView = rect.bottom < editingThreshold || rect.top > window.innerHeight - editingThreshold;
         setShowGoToEditing(isOutOfView);
       } else {
@@ -146,8 +150,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
   }, [scrollingReturnButtonsEnabled, scrollingReturnButtonsSensitivity, editingSegment]);
 
   useEffect(() => {
@@ -593,7 +597,10 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   };
 
   const handleGoToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const scrollContainer = document.querySelector('#page-content-wrapper');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleGoToEditing = () => {
