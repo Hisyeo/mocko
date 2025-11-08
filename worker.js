@@ -1,5 +1,5 @@
 self.onmessage = (e) => {
-  const { task, content, segmentationRule, translations, oldTranslations } = e.data;
+  const { task, content, segmentationRule, translations, oldTranslations, translationSanitization } = e.data;
 
   const countWords = (text) => {
     if (typeof text !== 'string') return 0;
@@ -56,6 +56,12 @@ self.onmessage = (e) => {
         htmlParagraphBuffer = '';
       };
 
+      const sanitize = (text) => {
+        if (!translationSanitization) return text;
+        // Add more sanitization rules here
+        return text.replace(/!/g, '.');
+      };
+
       segments.forEach((seg, i) => {
         const trimmedSeg = seg.trim();
         if (!trimmedSeg) return;
@@ -96,12 +102,13 @@ self.onmessage = (e) => {
         } else {
           // Handle preceding delimiter
           if (i > 0 && delimiters[i-1]) {
+            const currentDelim = sanitize(delimiters[i-1])
             const prevAction = prevTranslationData?.delimiterAction;
             if (prevAction !== 'Skip Succeeding' && prevAction !== 'Skip Both') {
                 const currentAction = translationData?.delimiterAction;
                 if (currentAction !== 'Skip Preceding' && currentAction !== 'Skip Both') {
-                    if (format === 'html') htmlParagraphBuffer += delimiters[i-1];
-                    else reconstructed += delimiters[i-1];
+                    if (format === 'html') htmlParagraphBuffer += currentDelim;
+                    else reconstructed += currentDelim;
                 }
             }
           }
