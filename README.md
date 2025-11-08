@@ -66,7 +66,7 @@ The project is **done**. The remaining *nice-to-have* todos have been ordered in
 - [x] Add a help box to every screen that can be hidden from the settings menu.
 - [x] Move Import Memory button to same row as title
 - [x] Add a Report Issue button to top nav
-- [ ] Add a warning if you try to change a source or close the app and there are unsaved changes
+- [x] Add a warning if you try to change a source or close the app and there are unsaved changes
 - [ ] Use other badge colors for delimiters that contain exclamation points and question marks 
 - [ ] Convert exclamation points to periods when inserting delimiters into translation output
 - [ ] Add session setting for controlling whether Hîsyêô text content is converted to the abugida or syllabary (in the UI and export functions)
