@@ -15,7 +15,9 @@ const Settings: React.FC = () => {
     defaultCompressionLevel, setDefaultCompressionLevel,
     sourceSelectionLocation, handleSetSourceSelectionLocation,
     showModeHelp, setShowModeHelp,
-    translationSanitization, setTranslationSanitization
+    translationSanitization, setTranslationSanitization,
+    scrollingReturnButtonsEnabled, setScrollingReturnButtonsEnabled,
+    scrollingReturnButtonsSensitivity, setScrollingReturnButtonsSensitivity
   } = useApp();
   const [storageUsage, setStorageUsage] = useState({ used: 0, percentage: 0 });
 
@@ -128,6 +130,29 @@ const Settings: React.FC = () => {
               </Form.Select>
             </Col>
           </Form.Group>
+          <hr />
+          <Form.Check
+            type="switch"
+            id="scrolling-return-buttons-switch"
+            label="Scrolling Return Buttons"
+            checked={scrollingReturnButtonsEnabled}
+            onChange={(e) => setScrollingReturnButtonsEnabled(e.target.checked)}
+          />
+          {scrollingReturnButtonsEnabled && (
+            <Form.Group controlId="scrollingReturnButtonsSensitivity" className="mt-3">
+              <Form.Label>Display Sensitivity: {scrollingReturnButtonsSensitivity}</Form.Label>
+              <Form.Range
+                min="1"
+                max="10"
+                step="1"
+                value={scrollingReturnButtonsSensitivity}
+                onChange={(e) => setScrollingReturnButtonsSensitivity(parseInt(e.target.value, 10))}
+              />
+              <Form.Text>
+                Changing the sensitivity will determine how far away from either home or the editing segment that you can scroll before you see the buttons.
+              </Form.Text>
+            </Form.Group>
+          )}
           <hr />
           <Form.Check 
             type="switch"

@@ -13,6 +13,7 @@ import pako from 'pako';
 import UnderlinedText from './UnderlinedText';
 import SelectionTooltip from './SelectionTooltip';
 import ModeHelpAlert from './ModeHelpAlert';
+import ScrollToButtons from './ScrollToButtons';
 
 // Helper to decode from base64 Uint8Array
 const atobUint8Array = (b64: string) => {
@@ -53,7 +54,7 @@ function isSelectionInSelector(selection: Selection, selector: string): boolean 
 
 const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTranslationsUpdate, onMemoryUpdate, memoryVersion, scrollToSegment, onScrollToSegmentHandled, isDirty, setIsDirty }) => {
   const { source, segments, delimiters } = useSource();
-  const { grammarCheck, spellCheck, defaultGrammarRule, handleSetItem, setError } = useApp();
+  const { grammarCheck, spellCheck, defaultGrammarRule, handleSetItem, setError, scrollingReturnButtonsEnabled, scrollingReturnButtonsSensitivity } = useApp();
 
   const [translations, setTranslations] = useState<Record<string, any>>({});
   const [editingSegment, setEditingSegment] = useState<string | null>(null);
@@ -84,6 +85,10 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const [delimiterAction, setDelimiterAction] = useState<DelimiterAction>('Skip Succeeding');
   
   const [initialEditorState, setInitialEditorState] = useState<any>(null);
+
+  const [showGoToTop, setShowGoToTop] = useState(false);
+  const [showGoToEditing, setShowGoToEditing] = useState(false);
+  const editingSegmentRef = useRef<HTMLElement | null>(null);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -117,6 +122,44 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         </Badge>
     );
   };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!scrollingReturnButtonsEnabled) {
+        setShowGoToTop(false);
+        setShowGoToEditing(false);
+        return;
+      }
+
+      // Sensitivity: 1 (low) -> 10 (high)
+      // Threshold should be high for low sensitivity, low for high sensitivity.
+      const topThreshold = 1500 - (scrollingReturnButtonsSensitivity * 100); // Range: 1400px to 500px
+      setShowGoToTop(window.scrollY > topThreshold);
+
+      if (editingSegmentRef.current) {
+        const rect = editingSegmentRef.current.getBoundingClientRect();
+        const editingThreshold = 600 - (scrollingReturnButtonsSensitivity * 50); // Range: 550px to 100px
+        const isOutOfView = rect.bottom < editingThreshold || rect.top > window.innerHeight - editingThreshold;
+        setShowGoToEditing(isOutOfView);
+      } else {
+        setShowGoToEditing(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [scrollingReturnButtonsEnabled, scrollingReturnButtonsSensitivity, editingSegment]);
+
+  useEffect(() => {
+    if (editingSegment) {
+      const currentIndex = validSegments.indexOf(editingSegment);
+      if (currentIndex !== -1) {
+        editingSegmentRef.current = document.getElementById(`segment-item-${currentIndex}`);
+      }
+    } else {
+      editingSegmentRef.current = null;
+    }
+  }, [editingSegment, validSegments]);
 
   useEffect(() => {
     if (editingSegment && initialEditorState) {
@@ -549,6 +592,16 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
     }
   };
 
+  const handleGoToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleGoToEditing = () => {
+    if (editingSegmentRef.current) {
+      editingSegmentRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   const bookmarks = useMemo(() => {
     return validSegments.map((seg, index) => {
       const data = translations[seg];
@@ -823,6 +876,12 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         </ListGroup>
       </div>
       <div ref={sentinelRef} />
+      <ScrollToButtons
+        showGoToTop={showGoToTop}
+        onGoToTop={handleGoToTop}
+        showGoToEditing={showGoToEditing}
+        onGoToEditing={handleGoToEditing}
+      />
     </div>
   );
 }

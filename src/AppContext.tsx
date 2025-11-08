@@ -31,6 +31,10 @@ interface AppContextType {
   setShowModeHelp: (value: boolean) => void;
   translationSanitization: boolean;
   setTranslationSanitization: (value: boolean) => void;
+  scrollingReturnButtonsEnabled: boolean;
+  setScrollingReturnButtonsEnabled: (value: boolean) => void;
+  scrollingReturnButtonsSensitivity: number;
+  setScrollingReturnButtonsSensitivity: (value: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -49,6 +53,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [sourceSelectionLocation, setSourceSelectionLocation] = useState<SourceSelectionLocation>(() => (localStorage.getItem('sourceSelectionLocation') as SourceSelectionLocation) || 'source-top');
   const [showModeHelp, rawSetShowModeHelp] = useState(() => localStorage.getItem('showModeHelp') !== 'false');
   const [translationSanitization, rawSetTranslationSanitization] = useState(() => localStorage.getItem('translationSanitization') !== 'false');
+  const [scrollingReturnButtonsEnabled, rawSetScrollingReturnButtonsEnabled] = useState(() => localStorage.getItem('scrollingReturnButtonsEnabled') !== 'false');
+  const [scrollingReturnButtonsSensitivity, rawSetScrollingReturnButtonsSensitivity] = useState(() => parseInt(localStorage.getItem('scrollingReturnButtonsSensitivity') || '5', 10));
 
 
   const updateStorageVersion = useCallback(() => setStorageVersion(v => v + 1), []);
@@ -135,6 +141,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [handleSetItem]);
 
+  const setScrollingReturnButtonsEnabled = useCallback((value: boolean) => {
+    if (handleSetItem('scrollingReturnButtonsEnabled', String(value))) {
+      rawSetScrollingReturnButtonsEnabled(value);
+    }
+  }, [handleSetItem]);
+
+  const setScrollingReturnButtonsSensitivity = useCallback((value: number) => {
+    if (handleSetItem('scrollingReturnButtonsSensitivity', String(value))) {
+      rawSetScrollingReturnButtonsSensitivity(value);
+    }
+  }, [handleSetItem]);
+
   useEffect(() => {
     updateStorageVersion(); // Initial calculation
   }, [updateStorageVersion]);
@@ -160,8 +178,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       showModeHelp,
       setShowModeHelp,
       translationSanitization,
-      setTranslationSanitization
-    }), [ theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch, defaultGrammarRule, setDefaultGrammarRule, error, handleSetItem, storageVersion, updateStorageVersion, defaultCompression, setDefaultCompression, defaultCompressionLevel, setDefaultCompressionLevel, sourceSelectionLocation, handleSetSourceSelectionLocation, showModeHelp, setShowModeHelp, translationSanitization, setTranslationSanitization ])}>
+      setTranslationSanitization,
+      scrollingReturnButtonsEnabled,
+      setScrollingReturnButtonsEnabled,
+      scrollingReturnButtonsSensitivity,
+      setScrollingReturnButtonsSensitivity
+    }), [ theme, setTheme, grammarCheck, setGrammarCheck, spellCheck, setSpellCheck, autocomplete, setAutocomplete, wiktionarySearch, setWiktionarySearch, defaultGrammarRule, setDefaultGrammarRule, error, handleSetItem, storageVersion, updateStorageVersion, defaultCompression, setDefaultCompression, defaultCompressionLevel, setDefaultCompressionLevel, sourceSelectionLocation, handleSetSourceSelectionLocation, showModeHelp, setShowModeHelp, translationSanitization, setTranslationSanitization, scrollingReturnButtonsEnabled, setScrollingReturnButtonsEnabled, scrollingReturnButtonsSensitivity, setScrollingReturnButtonsSensitivity ])}>
       {children}
     </AppContext.Provider>
   );
