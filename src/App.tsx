@@ -696,7 +696,7 @@ const App: React.FC = () => {
                       <Nav.Link eventKey='settings'>Settings</Nav.Link>
                     </Nav.Item>
                     <Nav.Item>
-                      <Nav.Link href='https://github.com/Hisyeo/mocko/issues/new'>Report Issue 🚨</Nav.Link>
+                      <Nav.Link target='_blank' href='https://github.com/Hisyeo/mocko/issues/new'>Report Issue 🚨</Nav.Link>
                     </Nav.Item>
                   </Nav>
                 </Row>
