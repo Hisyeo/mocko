@@ -361,12 +361,12 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
 
   const handleExport = (format: 'txt' | 'md' | 'html') => {
     const contentToExport = includeNotes ? renderedContent[format] : renderedContent[`${format}_no_notes`];
-    let mimeType = 'text/plain;charset=utf-8';
+    let mimeType = 'text/plain';
     let extension = format;
     if (format === 'html') {
-      mimeType = 'text/html;charset=utf-8';
+      mimeType = 'text/html';
     } else if (format === 'md') {
-      mimeType = 'text/markdown;charset=utf-8';
+      mimeType = 'text/markdown';
     }
     saveFile(contentToExport, `${filename}_translated.${extension}`, mimeType);
   };
