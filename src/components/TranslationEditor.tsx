@@ -92,6 +92,32 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
 
   const { ref: sentinelRef, isIntersecting } = useIntersectionObserver({ threshold: 0.1 });
 
+  const getDelimiterBadge = (delimiter?: string) => {
+    if (!delimiter) return null;
+
+    const getColor = () => {
+        if (delimiter.includes('!')) return 'warning';
+        if (delimiter.includes('?')) return 'info';
+        return 'secondary';
+    }
+
+    const getTitle = () => {
+        if (delimiter.includes('!')) return 'Delimiter (Exclamation)';
+        if (delimiter.includes('?')) return 'Delimiter (Question)';
+        return 'Delimiter';
+    }
+
+    return (
+        <Badge 
+            title={getTitle()} 
+            bg={getColor()} 
+            style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}
+        >
+            {delimiter}
+        </Badge>
+    );
+  };
+
   useEffect(() => {
     if (editingSegment && initialEditorState) {
       const currentState = {
@@ -666,7 +692,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
       if (outLevel === 'Level 4') return <h4>{textToShow}</h4>;
       if (outLevel === 'Level 5') return <h5>{textToShow}</h5>;
     }
-    const delimiterBadge = <Badge title='Delimiter' bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em', fontSize: '0.8em'}}>{delimiter}</Badge>
+    const delimiterBadge = getDelimiterBadge(delimiter);
     return <p className={`mb-0 ${!translationText && segType !== 'Skip' ? 'source-text' : ''} ${segType === 'Skip' ? 'text-muted' : ''}`}>{textToShow}{delimiter && delimiterBadge}</p>;
   };
 
@@ -755,7 +781,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
                   {editingSegment === segment ? (
                     <div className="w-100">
                       <UnderlinedText text={segment} memories={memories} onInsert={handleInsertMemory} onMemoriesNumbered={onMemoriesNumbered} memoryVersion={memoryVersion} />
-                      {delimiter && <Badge bg="secondary" style={{marginLeft: '0.5em', padding: '0.75em'}}>{delimiter}</Badge>}
+                      {getDelimiterBadge(delimiter)}
                       <SpellCheckEditor 
                         value={currentTranslation} 
                         onChange={setCurrentTranslation} 
