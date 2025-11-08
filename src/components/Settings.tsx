@@ -14,7 +14,8 @@ const Settings: React.FC = () => {
     defaultCompression, setDefaultCompression,
     defaultCompressionLevel, setDefaultCompressionLevel,
     sourceSelectionLocation, handleSetSourceSelectionLocation,
-    showModeHelp, setShowModeHelp
+    showModeHelp, setShowModeHelp,
+    translationSanitization, setTranslationSanitization
   } = useApp();
   const [storageUsage, setStorageUsage] = useState({ used: 0, percentage: 0 });
 
@@ -149,6 +150,17 @@ const Settings: React.FC = () => {
               <option value="new-tab">New Tab</option>
             </Form.Control>
           </Form.Group>
+          <hr />
+          <Form.Check
+            type="switch"
+            id="translation-sanitization-switch"
+            label="Translation Output Sanitization"
+            checked={translationSanitization}
+            onChange={(e) => setTranslationSanitization(e.target.checked)}
+          />
+          <Form.Text>
+            This setting will cause any exclamation points to be rendered as regular periods in the translation output. Turning this off will cause exclamation points to remain as-is in the translation output. At a later time, additional sanitization practices may be added.
+          </Form.Text>
           <hr />
           <Form.Check 
             type="switch"

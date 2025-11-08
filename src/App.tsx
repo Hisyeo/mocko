@@ -74,7 +74,8 @@ const App: React.FC = () => {
 
   const {
     theme, error, setError, handleSetItem, updateStorageVersion,
-    defaultCompression, defaultCompressionLevel, sourceSelectionLocation
+    defaultCompression, defaultCompressionLevel, sourceSelectionLocation,
+    translationSanitization
   } = useApp();
 
   useEffect(() => {
@@ -696,7 +697,7 @@ const App: React.FC = () => {
                       <Nav.Link eventKey='settings'>Settings</Nav.Link>
                     </Nav.Item>
                     <Nav.Item>
-                      <Nav.Link href='https://github.com/Hisyeo/mocko/issues/new'>Report Issue 🚨</Nav.Link>
+                      <Nav.Link target='_blank' href='https://github.com/Hisyeo/mocko/issues/new'>Report Issue 🚨</Nav.Link>
                     </Nav.Item>
                   </Nav>
                 </Row>
@@ -713,6 +714,7 @@ const App: React.FC = () => {
                           onTogglePreview={() => setShowSourcePreview(!showSourcePreview)}
                           shouldScrollToPreview={scrollToPreviewForSource === selectedSource?.id}
                           onScrolledToPreview={() => setScrollToPreviewForSource(null)}
+                          translationSanitization={translationSanitization}
                         />
                       </Tab.Pane>
                       <Tab.Pane eventKey="translation">

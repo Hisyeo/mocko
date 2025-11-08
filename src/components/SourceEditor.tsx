@@ -27,6 +27,7 @@ interface SourceEditorProps {
   onTogglePreview: () => void;
   shouldScrollToPreview: boolean;
   onScrolledToPreview: () => void;
+  translationSanitization: boolean;
 }
 
 const SourceEditor: React.FC<SourceEditorProps> = ({
@@ -38,7 +39,8 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
   showPreview,
   onTogglePreview,
   shouldScrollToPreview,
-  onScrolledToPreview
+  onScrolledToPreview,
+  translationSanitization
 }) => {
   const { source, decompressedContent } = useSource();
   const { grammarCheck, setError, handleSetItem, updateStorageVersion } = useApp();
@@ -157,9 +159,9 @@ const SourceEditor: React.FC<SourceEditorProps> = ({
           setIsLoading(false);
         }
       };
-      worker.postMessage({ task: 'stats', content: decompressedContent, segmentationRule: rule, translations });
+      worker.postMessage({ task: 'stats', content: decompressedContent, segmentationRule: rule, translations, translationSanitization });
     }
-  }, [source, translationsVersion, decompressedContent, setError]);
+  }, [source, translationsVersion, decompressedContent, setError, translationSanitization]);
 
   const handleDefaultSegmentRuleChange : React.ChangeEventHandler<HTMLInputElement> = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (typeof event.target.value == 'string' && source?.id) {
