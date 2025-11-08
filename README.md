@@ -69,7 +69,7 @@ The project is **done**. The remaining *nice-to-have* todos have been ordered in
 - [x] Add a warning if you try to change a source or close the app and there are unsaved changes
 - [x] Use other badge colors for delimiters that contain exclamation points and question marks 
 - [x] Convert exclamation points to periods when inserting delimiters into translation output
-- [ ] Add scrolling return buttons that allow you to quickly return to home or the editing segment
+- [x] Add scrolling return buttons that allow you to quickly return to home or the editing segment
 - [ ] Add session setting for controlling whether Hîsyêô text content is converted to the abugida or syllabary (in the UI and export functions)
 - [ ] Huge: Add UI natlang translations (include other conlangs and Hîsyêô!)
 - [ ] Huge: Add a button to each translation segment for pulling up a modal that presents valid translations as parse trees
