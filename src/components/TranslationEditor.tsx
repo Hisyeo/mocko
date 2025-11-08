@@ -13,6 +13,7 @@ import pako from 'pako';
 import UnderlinedText from './UnderlinedText';
 import SelectionTooltip from './SelectionTooltip';
 import ModeHelpAlert from './ModeHelpAlert';
+import ScrollToButtons from './ScrollToButtons';
 
 // Helper to decode from base64 Uint8Array
 const atobUint8Array = (b64: string) => {
@@ -53,7 +54,7 @@ function isSelectionInSelector(selection: Selection, selector: string): boolean 
 
 const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTranslationsUpdate, onMemoryUpdate, memoryVersion, scrollToSegment, onScrollToSegmentHandled, isDirty, setIsDirty }) => {
   const { source, segments, delimiters } = useSource();
-  const { grammarCheck, spellCheck, defaultGrammarRule, handleSetItem, setError } = useApp();
+  const { grammarCheck, spellCheck, defaultGrammarRule, handleSetItem, setError, scrollingReturnButtonsEnabled, scrollingReturnButtonsSensitivity } = useApp();
 
   const [translations, setTranslations] = useState<Record<string, any>>({});
   const [editingSegment, setEditingSegment] = useState<string | null>(null);
@@ -84,6 +85,11 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   const [delimiterAction, setDelimiterAction] = useState<DelimiterAction>('Skip Succeeding');
   
   const [initialEditorState, setInitialEditorState] = useState<any>(null);
+
+  const [showGoToTop, setShowGoToTop] = useState(false);
+  const [showGoToEditing, setShowGoToEditing] = useState(false);
+  const editingSegmentRef = useRef<HTMLElement | null>(null);
+  const [initialScrollTop, setInitialScrollTop] = useState<number | null>(null);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -117,6 +123,48 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         </Badge>
     );
   };
+
+  useEffect(() => {
+    const scrollContainer = document.querySelector('#page-content-wrapper');
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      if (!scrollingReturnButtonsEnabled) {
+        setShowGoToTop(false);
+        setShowGoToEditing(false);
+        return;
+      }
+
+      // Sensitivity: 1 (low) -> 10 (high).
+      // For low sensitivity, user has to scroll more for buttons to appear.
+      const topThreshold = 2500 - ((scrollingReturnButtonsSensitivity - 1) * 220); // Range: 2500px down to 520px
+      setShowGoToTop(scrollContainer.scrollTop > topThreshold);
+
+      if (editingSegment && initialScrollTop !== null) {
+        // For low sensitivity (1), threshold is high (1500px), requiring a lot of scrolling.
+        // For high sensitivity (10), threshold is low (204px), requiring little scrolling.
+        const editingThreshold = 1500 - ((scrollingReturnButtonsSensitivity - 1) * 144); // Range: 1500px down to 204px
+        const scrollDifference = Math.abs(scrollContainer.scrollTop - initialScrollTop);
+        setShowGoToEditing(scrollDifference > editingThreshold);
+      } else {
+        setShowGoToEditing(false);
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, [scrollingReturnButtonsEnabled, scrollingReturnButtonsSensitivity, editingSegment, initialScrollTop]);
+
+  useEffect(() => {
+    if (editingSegment) {
+      const currentIndex = validSegments.indexOf(editingSegment);
+      if (currentIndex !== -1) {
+        editingSegmentRef.current = document.getElementById(`segment-item-${currentIndex}`);
+      }
+    } else {
+      editingSegmentRef.current = null;
+    }
+  }, [editingSegment, validSegments]);
 
   useEffect(() => {
     if (editingSegment && initialEditorState) {
@@ -266,6 +314,11 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
   }, [tooltipRef, isAddingMemory]);
 
   const handleEdit = (segment: string) => {
+    const scrollContainer = document.querySelector('#page-content-wrapper');
+    if (scrollContainer) {
+        setInitialScrollTop(scrollContainer.scrollTop);
+    }
+
     const trimmedSegment = segment.trim();
     setEditingSegment(trimmedSegment);
     const translationData = translations[trimmedSegment];
@@ -343,6 +396,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         setTranslations(updatedTranslations);
         onTranslationsUpdate();
         setEditingSegment(null);
+        setInitialScrollTop(null);
         setIsDirty(false);
       }
     }
@@ -375,6 +429,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
           handleEdit(nextSegmentToEdit);
         } else {
           setEditingSegment(null);
+          setInitialScrollTop(null);
         }
       }
     }
@@ -382,6 +437,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
 
   const handleCancel = () => {
     setEditingSegment(null);
+    setInitialScrollTop(null);
     setIsDirty(false);
   };
 
@@ -546,6 +602,19 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
           setShowBookmarkPopover(false);
         }
       }
+    }
+  };
+
+  const handleGoToTop = () => {
+    const scrollContainer = document.querySelector('#page-content-wrapper');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleGoToEditing = () => {
+    if (editingSegmentRef.current) {
+      editingSegmentRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
@@ -823,6 +892,12 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({ onSplit, onTransl
         </ListGroup>
       </div>
       <div ref={sentinelRef} />
+      <ScrollToButtons
+        showGoToTop={showGoToTop}
+        onGoToTop={handleGoToTop}
+        showGoToEditing={showGoToEditing}
+        onGoToEditing={handleGoToEditing}
+      />
     </div>
   );
 }
