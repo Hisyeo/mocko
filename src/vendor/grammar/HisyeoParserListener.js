@@ -275,6 +275,15 @@ export default class HisyeoParserListener extends antlr4.tree.ParseTreeListener 
 	}
 
 
+	// Enter a parse tree produced by HisyeoParser#number.
+	enterNumber(ctx) {
+	}
+
+	// Exit a parse tree produced by HisyeoParser#number.
+	exitNumber(ctx) {
+	}
+
+
 	// Enter a parse tree produced by HisyeoParser#nominalQuantity.
 	enterNominalQuantity(ctx) {
 	}
