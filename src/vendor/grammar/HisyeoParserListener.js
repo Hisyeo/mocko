@@ -1,4 +1,4 @@
-// Generated from /run/media/jake/Windows/Users/madca/IdeaProjects/antlr-hisyeo/grammar/HisyeoParser.g4 by ANTLR 4.13.2
+// Generated from grammar/HisyeoParser.g4 by ANTLR 4.13.2
 // jshint ignore: start
 import antlr4 from 'antlr4';
 
